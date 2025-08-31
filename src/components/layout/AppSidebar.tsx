@@ -25,7 +25,7 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="glass-strong border-r border-glass-border/80 backdrop-blur-xl">
+    <Sidebar collapsible="icon" className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <SidebarHeader className={`border-b border-glass-border/60 ${isCollapsed ? 'p-4' : 'p-8'}`}>
         <div className="flex items-center gap-4">
           <div className="relative flex-shrink-0">
@@ -58,8 +58,9 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
                       asChild 
+                      size="lg"
                       className={`
-                        h-14 rounded-xl transition-all duration-300 relative overflow-hidden group
+                        rounded-xl transition-all duration-300 relative overflow-hidden group
                         ${isActive 
                           ? 'bg-primary text-primary-foreground font-semibold shadow-lg' 
                           : 'hover:bg-accent/80 hover:text-accent-foreground hover:shadow-md'

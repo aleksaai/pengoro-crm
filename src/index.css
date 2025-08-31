@@ -158,7 +158,7 @@ All colors MUST be HSL.
   }
   
   .glass-card {
-    @apply glass rounded-xl p-8 transition-all duration-300 hover:shadow-lg;
+    @apply glass rounded-xl p-8;
     animation: fade-in 0.4s ease-out;
   }
   
