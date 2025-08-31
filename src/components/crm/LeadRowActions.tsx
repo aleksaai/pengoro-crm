@@ -121,7 +121,7 @@ export function LeadRowActions({
               Convert to Deal
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to convert <strong>{lead.name}</strong> from <strong>{lead.company}</strong> to a deal in your pipeline? 
+              Are you sure you want to convert <strong>{lead.name}</strong> to a deal in your pipeline? 
               This will remove them from the leads list and create a new deal opportunity.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -146,7 +146,7 @@ export function LeadRowActions({
               Abandon Lead
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to abandon <strong>{lead.name}</strong> from <strong>{lead.company}</strong>? 
+              Are you sure you want to abandon <strong>{lead.name}</strong>? 
               This action cannot be undone and the lead will be permanently removed from your pipeline.
             </AlertDialogDescription>
           </AlertDialogHeader>

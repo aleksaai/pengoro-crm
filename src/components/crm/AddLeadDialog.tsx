@@ -21,7 +21,6 @@ interface AddLeadDialogProps {
   onOpenChange: (open: boolean) => void;
   onAddLead: (lead: {
     name: string;
-    company: string;
     email: string;
     phone: string;
     source: string;
@@ -32,7 +31,6 @@ interface AddLeadDialogProps {
 export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
-    company: "",
     email: "",
     phone: "",
     source: "",
@@ -45,7 +43,6 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
       onAddLead(formData);
       setFormData({
         name: "",
-        company: "",
         email: "",
         phone: "",
         source: "",
@@ -70,16 +67,6 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="bg-input/50 border-glass-border"
               required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="company">Company</Label>
-            <Input
-              id="company"
-              value={formData.company}
-              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-              className="bg-input/50 border-glass-border"
             />
           </div>
 
