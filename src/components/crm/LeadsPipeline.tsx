@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Plus, Upload, User, Mail, Phone } from "lucide-react";
+import { Search, Filter, Plus, Upload, Mail, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "./AddLeadDialog";
 import { MassUploadDialog } from "./MassUploadDialog";
@@ -55,20 +55,19 @@ const getSourceBadgeClass = (source: string) => {
 
 const leadStages = [
   { id: "New", title: "New Leads", color: "bg-info", count: 0 },
-  { id: "Contacted", title: "Contacted", color: "bg-warning", count: 0 },
   { id: "Not Reached", title: "Not Reached", color: "bg-muted", count: 0 },
   { id: "Webinar Confirmed", title: "Webinar Confirmed", color: "bg-success", count: 0 },
   { id: "Call-Back", title: "Call-Back Scheduled", color: "bg-accent", count: 0 },
-  { id: "Qualified", title: "Qualified", color: "bg-success", count: 0 },
   { id: "Abandoned", title: "Abandoned", color: "bg-destructive", count: 0 },
 ];
 
 interface LeadCardProps {
   lead: Lead;
   onClick: (lead: Lead) => void;
+  onConvert: (lead: Lead) => void;
 }
 
-function LeadCard({ lead, onClick }: LeadCardProps) {
+function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
   const {
     attributes,
     listeners,
@@ -93,7 +92,7 @@ function LeadCard({ lead, onClick }: LeadCardProps) {
       className="glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30"
       onClick={() => onClick(lead)}
     >
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-foreground text-sm truncate">{lead.name}</h4>
@@ -101,54 +100,22 @@ function LeadCard({ lead, onClick }: LeadCardProps) {
               <Mail className="w-3 h-3" />
               <span className="truncate">{lead.email}</span>
             </div>
-            {lead.phone && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                <Phone className="w-3 h-3" />
-                <span>{lead.phone}</span>
-              </div>
-            )}
           </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={(e) => { e.stopPropagation(); onConvert(lead); }}
+            aria-label="Convert lead to deal"
+            title="Convert to Discovery Call"
+          >
+            Convert
+          </Button>
         </div>
 
-        <div className="space-y-2">
-          {/* Source Badge */}
-          <Badge className={`${getSourceBadgeClass(lead.source)} text-xs px-2 py-0.5 rounded-md`}>
-            {lead.source}
-          </Badge>
-
-          {/* Assigned Agent */}
-          {lead.assigned_to && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <User className="w-3 h-3" />
-              <span className="truncate">{lead.assigned_to}</span>
-            </div>
-          )}
-
-          {/* Interested Products */}
-          {lead.interested_products && lead.interested_products.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {lead.interested_products.slice(0, 2).map(product => (
-                <Badge key={product} variant="outline" className="text-xs px-1 py-0">
-                  {product}
-                </Badge>
-              ))}
-              {lead.interested_products.length > 2 && (
-                <Badge variant="outline" className="text-xs px-1 py-0">
-                  +{lead.interested_products.length - 2}
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Date */}
-        <div className="text-xs text-muted-foreground">
-          {new Date(lead.created_at).toLocaleDateString('de-DE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          })}
-        </div>
+        <Badge className={`${getSourceBadgeClass(lead.source)} text-[10px] px-2 py-0.5 rounded-md w-fit`}>
+          {lead.source}
+        </Badge>
       </div>
     </div>
   );
@@ -158,9 +125,10 @@ interface DropZoneProps {
   stage: typeof leadStages[0];
   leads: Lead[];
   onLeadClick: (lead: Lead) => void;
+  onConvert: (lead: Lead) => void;
 }
 
-function DropZone({ stage, leads, onLeadClick }: DropZoneProps) {
+function DropZone({ stage, leads, onLeadClick, onConvert }: DropZoneProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
   });
@@ -188,6 +156,7 @@ function DropZone({ stage, leads, onLeadClick }: DropZoneProps) {
               key={lead.id}
               lead={lead}
               onClick={onLeadClick}
+              onConvert={onConvert}
             />
           ))}
         </SortableContext>
@@ -216,7 +185,7 @@ export function LeadsPipeline() {
   const { toast } = useToast();
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -293,6 +262,16 @@ export function LeadsPipeline() {
 
   const handleLeadClick = (lead: Lead) => {
     setSelectedLead(lead);
+  };
+
+  const handleConvertToDeal = async (lead: Lead) => {
+    try {
+      await updateLead(lead.id, { status: "Discovery Call Booked" });
+      toast({ title: "Converted", description: `${lead.name} moved to Discovery Call` });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Error", description: "Failed to convert lead", variant: "destructive" });
+    }
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -433,7 +412,7 @@ export function LeadsPipeline() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-7 gap-4 min-h-[600px]">
+        <div className="grid grid-cols-5 gap-4 min-h-[600px]">
           {stagesWithLeads.map((stage) => (
             <SortableContext key={stage.id} items={[stage.id]} strategy={verticalListSortingStrategy}>
               <div
@@ -444,6 +423,7 @@ export function LeadsPipeline() {
                   stage={stage}
                   leads={stage.leads}
                   onLeadClick={handleLeadClick}
+                  onConvert={handleConvertToDeal}
                 />
               </div>
             </SortableContext>

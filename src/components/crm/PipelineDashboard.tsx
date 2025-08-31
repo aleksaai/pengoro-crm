@@ -297,7 +297,7 @@ export function PipelineDashboard() {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
-  const { updateLead } = useLeads();
+  const { updateLead, leads: allLeads } = useLeads();
   const { toast } = useToast();
 
   // Fetch registered users on component mount
@@ -334,13 +334,21 @@ export function PipelineDashboard() {
   // Get unique agents from registered users only
   const uniqueAgents = registeredUsers.map(user => user.full_name).filter(Boolean);
 
-  // Filter stages based on selected agent
-  const filteredStages = stages.map(stage => ({
-    ...stage,
-    deals: selectedAgent === "all" 
+  // Filter stages based on selected agent and merge DB leads
+  const filteredStages = stages.map(stage => {
+    const stageStatus = getStatusFromStage(stage.id);
+    const dbDeals = allLeads
+      .filter(l => l.status === stageStatus)
+      .filter(l => selectedAgent === "all" || l.assigned_to === selectedAgent);
+
+    const stageDeals = selectedAgent === "all" 
       ? stage.deals 
-      : stage.deals.filter(deal => deal.assigned_to === selectedAgent)
-  }));
+      : stage.deals.filter(deal => deal.assigned_to === selectedAgent);
+
+    // merge by id to avoid duplicates
+    const merged = [...stageDeals, ...dbDeals.filter(d => !stageDeals.some(s => s.id === d.id))];
+    return { ...stage, deals: merged };
+  });
 
   const totalDeals = filteredStages.reduce((acc, stage) => acc + stage.deals.length, 0);
   const totalAllDeals = stages.reduce((acc, stage) => acc + stage.deals.length, 0);
