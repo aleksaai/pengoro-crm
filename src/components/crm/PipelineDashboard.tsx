@@ -5,7 +5,6 @@ import { User, Mail, Phone, Tag, Calendar } from "lucide-react";
 const dealStages = [
   { 
     name: "Discovery Call Booked", 
-    count: 15,
     deals: [
       { 
         name: "Tech Solutions GmbH", 
@@ -27,26 +26,11 @@ const dealStages = [
         email: "mike@digitalcorp.eu",
         interested_products: ["PKV", "Insurances"],
         date: "2024-01-13"
-      },
-      { 
-        name: "StartUp Inc", 
-        contact: "Anna Wilson", 
-        email: "anna@startup.com",
-        interested_products: ["PAV"],
-        date: "2024-01-12"
-      },
-      { 
-        name: "Global Systems", 
-        contact: "Tom Brown", 
-        email: "tom@globalsystems.net",
-        interested_products: ["Real Estate", "Investments"],
-        date: "2024-01-11"
       }
     ]
   },
   { 
     name: "Second Meeting Booked",
-    count: 12,
     deals: [
       { 
         name: "Enterprise Solutions", 
@@ -68,19 +52,11 @@ const dealStages = [
         email: "emma@futuretech.io",
         interested_products: ["PKV"],
         date: "2024-01-08"
-      },
-      { 
-        name: "Big Corp Ltd", 
-        contact: "James Wilson", 
-        email: "james@bigcorp.com",
-        interested_products: ["PAV", "Real Estate"],
-        date: "2024-01-07"
       }
     ]
   },
   { 
     name: "Follow-Up Scheduled",
-    count: 8,
     deals: [
       { 
         name: "Mega Enterprise", 
@@ -95,19 +71,11 @@ const dealStages = [
         email: "maria@techgiants.com",
         interested_products: ["Investments", "Real Estate"],
         date: "2024-01-05"
-      },
-      { 
-        name: "Digital Leaders", 
-        contact: "Alex Johnson", 
-        email: "alex@digitalleaders.net",
-        interested_products: ["Insurances"],
-        date: "2024-01-04"
       }
     ]
   },
   { 
     name: "Closing Call Scheduled",
-    count: 5,
     deals: [
       { 
         name: "Premium Corp", 
@@ -122,83 +90,89 @@ const dealStages = [
         email: "michael@elite.com",
         interested_products: ["Real Estate"],
         date: "2024-01-02"
+      }
+    ]
+  },
+  { 
+    name: "Stuck",
+    deals: [
+      { 
+        name: "Difficult Client Ltd", 
+        contact: "Peter Wilson", 
+        email: "peter@difficult.com",
+        interested_products: ["PKV"],
+        date: "2023-12-15"
       },
       { 
-        name: "Success Ltd", 
-        contact: "Sophie White", 
-        email: "sophie@success.co.uk",
-        interested_products: ["PKV", "Insurances"],
-        date: "2024-01-01"
+        name: "Slow Corp", 
+        contact: "Jane Slow", 
+        email: "jane@slow.com",
+        interested_products: ["PAV", "Insurances"],
+        date: "2023-12-10"
       }
     ]
   }
 ];
 
 export function PipelineDashboard() {
-  const totalDeals = dealStages.reduce((acc, stage) => acc + stage.count, 0);
+  const totalDeals = dealStages.reduce((acc, stage) => acc + stage.deals.length, 0);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       {/* Header */}
       <div className="glass-card">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
-              Sales Pipeline
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Track deals through the sales process
-            </p>
-          </div>
+          <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
+            Sales Pipeline
+          </h1>
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Total Active Deals:</span>
+            <span className="text-sm text-muted-foreground">Active Deals:</span>
             <span className="text-lg font-semibold text-foreground">{totalDeals}</span>
           </div>
         </div>
       </div>
 
-      {/* Pipeline Stages */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Pipeline Columns */}
+      <div className="grid grid-cols-5 gap-4 h-[calc(100vh-200px)]">
         {dealStages.map((stage, index) => (
-          <div key={stage.name} className="space-y-4">
-            {/* Stage Header */}
-            <div className="glass-card">
+          <div key={stage.name} className="flex flex-col">
+            {/* Column Header */}
+            <div className="glass-card mb-3 flex-shrink-0">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-foreground">{stage.name}</h3>
-                <Badge className="bg-muted text-muted-foreground px-3 py-1">
+                <h3 className="font-medium text-foreground text-sm leading-tight">
+                  {stage.name}
+                </h3>
+                <Badge className="bg-muted text-muted-foreground px-2 py-1 text-xs">
                   {stage.deals.length}
                 </Badge>
               </div>
             </div>
 
-            {/* Deals */}
-            <div className="space-y-3">
+            {/* Deals List - Scrollable */}
+            <div className="flex-1 space-y-2 overflow-y-auto pr-1">
               {stage.deals.map((deal, dealIndex) => (
                 <div 
                   key={dealIndex} 
-                  className="glass-card hover:bg-glass/30 transition-colors cursor-pointer"
+                  className="glass-card hover:bg-glass/50 transition-colors cursor-pointer p-3"
                 >
-                  <div className="space-y-3">
-                    {/* Deal Name & Contact */}
-                    <div className="space-y-1">
-                      <h4 className="font-medium text-foreground text-sm">{deal.name}</h4>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <User className="w-3 h-3" />
-                        <span>{deal.contact}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Mail className="w-3 h-3" />
-                        <span>{deal.email}</span>
-                      </div>
+                  <div className="space-y-2">
+                    {/* Company Name */}
+                    <h4 className="font-medium text-foreground text-sm leading-tight">
+                      {deal.name}
+                    </h4>
+                    
+                    {/* Contact */}
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <User className="w-3 h-3" />
+                      <span className="truncate">{deal.contact}</span>
                     </div>
 
                     {/* Products */}
                     {deal.interested_products && deal.interested_products.length > 0 && (
                       <div className="flex gap-1 flex-wrap">
                         {deal.interested_products.map(product => (
-                          <Badge key={product} variant="outline" className="text-xs px-1 py-0">
-                            <Tag className="w-2 h-2 mr-1" />
+                          <Badge key={product} variant="outline" className="text-xs px-1 py-0 h-5">
                             {product}
                           </Badge>
                         ))}
@@ -206,7 +180,7 @@ export function PipelineDashboard() {
                     )}
 
                     {/* Date */}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Calendar className="w-3 h-3" />
                       <span>{new Date(deal.date).toLocaleDateString('de-DE')}</span>
                     </div>
