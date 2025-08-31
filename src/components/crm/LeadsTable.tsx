@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CopyableText } from "@/components/ui/copyable-text";
 import { Search, Filter, Plus } from "lucide-react";
 import { AddLeadDialog } from "./AddLeadDialog";
 import { LeadRowActions } from "./LeadRowActions";
@@ -185,7 +186,10 @@ export function LeadsTable() {
               >
                 <TableCell className="py-4">
                   <div className="space-y-1">
-                    <div className="font-medium text-foreground text-sm">{lead.name}</div>
+                    <CopyableText 
+                      text={lead.name}
+                      className="font-medium text-foreground text-sm hover:bg-transparent"
+                    />
                     {lead.interested_products && lead.interested_products.length > 0 && (
                       <div className="flex gap-1 mt-1">
                         {lead.interested_products.slice(0, 2).map(product => (
@@ -204,8 +208,14 @@ export function LeadsTable() {
                 </TableCell>
                 <TableCell className="py-4">
                   <div className="space-y-1">
-                    <div className="text-sm text-foreground">{lead.email}</div>
-                    <div className="text-xs text-muted-foreground">{lead.phone}</div>
+                    <CopyableText 
+                      text={lead.email}
+                      className="text-sm text-foreground hover:bg-transparent"
+                    />
+                    <CopyableText 
+                      text={lead.phone}
+                      className="text-xs text-muted-foreground hover:bg-transparent"
+                    />
                   </div>
                 </TableCell>
                 <TableCell className="py-4">
