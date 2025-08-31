@@ -1,9 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, Mail, Phone, Tag, Calendar } from "lucide-react";
 import { useState } from "react";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { LeadDetailsModal } from "./LeadDetailsModal";
 import { useLeads, type Lead } from "@/hooks/useLeads";
@@ -212,10 +211,7 @@ function DealCard({ deal, onDealClick }: DealCardProps) {
       {...attributes}
       {...listeners}
       className="glass-card hover:bg-glass/50 transition-colors cursor-pointer p-3"
-      onClick={(e) => {
-        e.preventDefault();
-        onDealClick(deal);
-      }}
+      onClick={() => onDealClick(deal)}
     >
       <div className="space-y-2">
         {/* Company Name */}
@@ -250,6 +246,20 @@ function DealCard({ deal, onDealClick }: DealCardProps) {
   );
 }
 
+interface StageColumnProps {
+  stage: { id: string; name: string; deals: Lead[] };
+  children: React.ReactNode;
+}
+
+function StageColumn({ stage, children }: StageColumnProps) {
+  const { setNodeRef } = useDroppable({ id: stage.id });
+  return (
+    <div ref={setNodeRef} className="flex flex-col">
+      {children}
+    </div>
+  );
+}
+
 export function PipelineDashboard() {
   const [stages, setStages] = useState(dealStages);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -258,7 +268,7 @@ export function PipelineDashboard() {
   const totalDeals = stages.reduce((acc, stage) => acc + stage.deals.length, 0);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -276,31 +286,46 @@ export function PipelineDashboard() {
 
     // Find source and target stages
     const sourceStage = stages.find(stage => stage.deals.some(deal => deal.id === activeId));
-    const targetStage = stages.find(stage => stage.id === overId);
+    // Target can be a container (stage.id) or another deal id within a container
+    let targetStage = stages.find(stage => stage.id === overId);
+    if (!targetStage) {
+      targetStage = stages.find(stage => stage.deals.some(deal => deal.id === overId));
+    }
 
-    if (!sourceStage || !targetStage || sourceStage.id === targetStage.id) return;
+    if (!sourceStage || !targetStage) return;
 
-    // Update the deal status to match the new stage
+    if (sourceStage.id === targetStage.id) {
+      // Reorder within the same stage
+      const oldIndex = sourceStage.deals.findIndex(d => d.id === activeId);
+      const newIndex = sourceStage.deals.findIndex(d => d.id === overId);
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+      setStages(prev => prev.map(stage =>
+        stage.id === sourceStage!.id
+          ? { ...stage, deals: arrayMove(stage.deals, oldIndex, newIndex) }
+          : stage
+      ));
+      return;
+    }
+
+    // Move across stages
     const updatedDeal = { ...sourceDeal, status: targetStage.name };
 
-    // Update stages state
     setStages(prev => prev.map(stage => {
       if (stage.id === sourceStage.id) {
         return { ...stage, deals: stage.deals.filter(deal => deal.id !== activeId) };
       }
-      if (stage.id === targetStage.id) {
+      if (stage.id === targetStage!.id) {
         return { ...stage, deals: [...stage.deals, updatedDeal] };
       }
       return stage;
     }));
 
-    // Update in backend
+    // Persist
     try {
       await updateLead(activeId, { status: targetStage.name });
     } catch (error) {
       console.error("Failed to update lead status:", error);
-      // Revert changes on error
-      setStages(dealStages);
     }
   };
 
@@ -344,12 +369,9 @@ export function PipelineDashboard() {
       >
         <div className="grid grid-cols-5 gap-4 h-[calc(100vh-200px)]">
           {stages.map((stage, index) => (
-            <div key={stage.id} className="flex flex-col">
-              {/* Column Header - Drop Zone */}
-              <div 
-                className="glass-card mb-3 flex-shrink-0"
-                id={stage.id}
-              >
+            <StageColumn key={stage.id} stage={stage}>
+              {/* Column Header */}
+              <div className="glass-card mb-3 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-foreground text-sm leading-tight">
                     {stage.name}
@@ -392,7 +414,7 @@ export function PipelineDashboard() {
                   ))}
                 </div>
               </SortableContext>
-            </div>
+            </StageColumn>
           ))}
         </div>
       </DndContext>
