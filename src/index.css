@@ -131,6 +131,27 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  /* Remove all focus outlines globally */
+  *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Remove focus ring from all form elements */
+  input:focus,
+  textarea:focus,
+  select:focus,
+  button:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: inherit;
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
     background-image: 
@@ -248,6 +269,17 @@ All colors MUST be HSL.
   }
 
   .modern-input {
-    @apply glass-subtle transition-all duration-200 focus:glass-glow focus:border-primary/40;
+    @apply glass-subtle transition-all duration-200 hover:glass-glow hover:border-primary/40;
+  }
+
+  /* Remove focus rings and outlines from all interactive elements */
+  .glass-card *:focus,
+  .glass-card *:focus-visible,
+  button:focus,
+  button:focus-visible,
+  [role="button"]:focus,
+  [role="button"]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
   }
 }
