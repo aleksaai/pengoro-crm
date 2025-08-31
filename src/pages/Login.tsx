@@ -93,28 +93,26 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 animate-fade-in">
       <div className="w-full max-w-md space-y-8">
-        {/* Logo and Header */}
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <img 
-              src={logo} 
-              alt="Pengoro Logo" 
-              className="h-16 w-auto animate-float"
-            />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
-              Welcome Back
-            </h1>
-            <p className="text-muted-foreground font-medium">
-              {isSignUp ? "Create your account to get started" : "Sign in to your account"}
-            </p>
-          </div>
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
+            Welcome Back
+          </h1>
+          <p className="text-muted-foreground font-medium">
+            {isSignUp ? "Create your account to get started" : "Sign in to your account"}
+          </p>
         </div>
 
         {/* Auth Form */}
         <Card className="glass-card border-0 animate-slide-up">
-          <CardHeader className="space-y-1 pb-4">
+          <CardHeader className="space-y-4 pb-4">
+            <div className="flex justify-center">
+              <img 
+                src={logo} 
+                alt="Pengoro Logo" 
+                className="h-12 w-auto"
+              />
+            </div>
             <CardTitle className="text-2xl font-display font-semibold text-center">
               {isSignUp ? "Create Account" : "Sign In"}
             </CardTitle>
