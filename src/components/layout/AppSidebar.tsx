@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import pengoroLogo from "@/assets/pengoro-logo.png";
 
@@ -20,27 +21,30 @@ const navItems = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar className="glass-strong border-r border-glass-border/80 backdrop-blur-xl">
-      <SidebarHeader className="p-8 border-b border-glass-border/60">
+    <Sidebar collapsible="icon" className="glass-strong border-r border-glass-border/80 backdrop-blur-xl">
+      <SidebarHeader className={`border-b border-glass-border/60 ${isCollapsed ? 'p-4' : 'p-8'}`}>
         <div className="flex items-center gap-4">
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <img 
               src={pengoroLogo} 
               alt="Pengoro" 
               className="w-12 h-12 rounded-xl shadow-lg"
             />
-            
           </div>
-          <div className="space-y-1">
-            <h2 className="font-display font-bold text-xl text-foreground">
-              Pengoro
-            </h2>
-            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              CRM System
-            </p>
-          </div>
+          {!isCollapsed && (
+            <div className="space-y-1">
+              <h2 className="font-display font-bold text-xl text-foreground">
+                Pengoro
+              </h2>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                CRM System
+              </p>
+            </div>
+          )}
         </div>
       </SidebarHeader>
       
@@ -65,8 +69,8 @@ export function AppSidebar() {
                     >
                       <NavLink to={item.url} className="flex items-center gap-4 px-5">
                         <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'drop-shadow-sm' : 'group-hover:scale-110'}`} />
-                        <span className="font-display font-medium text-base tracking-wide">{item.title}</span>
-                        {isActive && (
+                        {!isCollapsed && <span className="font-display font-medium text-base tracking-wide">{item.title}</span>}
+                        {isActive && !isCollapsed && (
                           <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-foreground/30 rounded-l-full"></div>
                         )}
                       </NavLink>
