@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Filter, Plus, Upload } from "lucide-react";
+import { Search, Filter, Plus, Upload, User } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "./AddLeadDialog";
 import { MassUploadDialog } from "./MassUploadDialog";
 import { LeadRowActions } from "./LeadRowActions";
 import { LeadDetailsModal } from "./LeadDetailsModal";
 import { useLeads, type Lead } from "@/hooks/useLeads";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface LeadHistoryEntry {
   id: string;
@@ -52,13 +55,58 @@ export function LeadsTable() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<string>("all");
+  const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const { leads, loading, createLead, updateLead } = useLeads();
+  const { toast } = useToast();
 
-  const filteredLeads = leads.filter(lead =>
-    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.phone.includes(searchTerm)
-  );
+  // Fetch registered users on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .order('full_name');
+
+        if (error) throw error;
+
+        const users = data?.map(profile => ({
+          id: profile.user_id,
+          full_name: profile.full_name || profile.email || 'Unknown User',
+          email: profile.email || ''
+        })) || [];
+
+        setRegisteredUsers(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load users",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchUsers();
+  }, [toast]);
+
+  // Get unique agents from registered users only
+  const uniqueAgents = registeredUsers.map(user => user.full_name).filter(Boolean);
+
+  // Filter leads by search term and selected agent
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = 
+      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.phone.includes(searchTerm);
+    
+    const matchesAgent = selectedAgent === "all" || lead.assigned_to === selectedAgent;
+    
+    return matchesSearch && matchesAgent;
+  });
+
+  const totalLeads = leads.length;
 
   const handleAddLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     await createLead(leadData);
@@ -151,21 +199,38 @@ export function LeadsTable() {
       <div className="glass-card overflow-hidden">
         {/* Search and Filter Header */}
         <div className="p-4 border-b border-glass-border/40">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search leads by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="modern-input pl-10 h-10 text-sm"
-              />
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search leads by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="modern-input pl-10 h-10 text-sm"
+                />
+              </div>
+              
+              {/* Agent Filter Dropdown */}
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-muted-foreground" />
+                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                  <SelectTrigger className="w-48 h-10 bg-background border-border">
+                    <SelectValue placeholder="Filter by agent" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border shadow-lg z-50">
+                    <SelectItem value="all">All Agents ({totalLeads})</SelectItem>
+                    {uniqueAgents.map(agent => {
+                      const agentLeads = leads.filter(lead => lead.assigned_to === agent).length;
+                      return (
+                        <SelectItem key={agent} value={agent}>
+                          {agent} ({agentLeads})
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Button variant="outline" size="sm" className="glass-subtle border-glass-border h-10 px-4">
-              <Filter className="w-4 h-4 mr-2" />
-              Filter
-            </Button>
-          </div>
         </div>
         <Table>
           <TableHeader>
