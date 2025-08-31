@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { User, Calendar, GripVertical, Clock } from "lucide-react";
+import { User, Calendar, GripVertical, Clock, Filter, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
@@ -7,6 +7,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { LeadDetailsModal } from "./LeadDetailsModal";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 const dealStages = [
   { 
@@ -292,10 +294,25 @@ export function PipelineDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activeDeal, setActiveDeal] = useState<Lead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const { updateLead } = useLeads();
   const { toast } = useToast();
   
-  const totalDeals = stages.reduce((acc, stage) => acc + stage.deals.length, 0);
+  // Get unique agents for filter dropdown
+  const uniqueAgents = Array.from(
+    new Set(dealStages.flatMap(stage => stage.deals).map(deal => deal.assigned_to))
+  ).filter(Boolean).sort();
+
+  // Filter stages based on selected agent
+  const filteredStages = stages.map(stage => ({
+    ...stage,
+    deals: selectedAgent === "all" 
+      ? stage.deals 
+      : stage.deals.filter(deal => deal.assigned_to === selectedAgent)
+  }));
+
+  const totalDeals = filteredStages.reduce((acc, stage) => acc + stage.deals.length, 0);
+  const totalAllDeals = stages.reduce((acc, stage) => acc + stage.deals.length, 0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { 
@@ -423,10 +440,36 @@ export function PipelineDashboard() {
               Drag deals between stages to update their status
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Active Deals:</span>
-            <span className="text-lg font-semibold text-foreground">{totalDeals}</span>
+          <div className="flex items-center gap-4">
+            {/* Agent Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                <SelectTrigger className="w-48 h-9 bg-background border-border">
+                  <SelectValue placeholder="Filter by agent" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border shadow-lg z-50">
+                  <SelectItem value="all">All Agents ({totalAllDeals})</SelectItem>
+                  {uniqueAgents.map(agent => {
+                    const agentDeals = stages.flatMap(s => s.deals).filter(d => d.assigned_to === agent).length;
+                    return (
+                      <SelectItem key={agent} value={agent}>
+                        {agent} ({agentDeals})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Deal Counter */}
+            <div className="flex items-center gap-2 border-l border-border pl-4">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {selectedAgent === "all" ? "Active Deals:" : `${selectedAgent}'s Deals:`}
+              </span>
+              <span className="text-lg font-semibold text-foreground">{totalDeals}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -439,7 +482,7 @@ export function PipelineDashboard() {
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-5 gap-4 h-[calc(100vh-220px)]">
-          {stages.map((stage) => (
+          {filteredStages.map((stage) => (
             <DropZone 
               key={stage.id} 
               stage={stage}
