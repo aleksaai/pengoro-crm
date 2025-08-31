@@ -10,7 +10,6 @@ import { User, Session } from '@supabase/supabase-js';
 import logo from "@/assets/pengoro-logo.png";
 
 export default function Login() {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,38 +51,19 @@ export default function Login() {
     setError("");
 
     try {
-      if (isSignUp) {
-        const redirectUrl = `${window.location.origin}/`;
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectUrl
-          }
-        });
-        
-        if (error) throw error;
-        
-        if (!error) {
-          setError("Check your email for a verification link!");
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
     } catch (error: any) {
       if (error.message.includes("Email not confirmed")) {
         setError("Please check your email and click the verification link before signing in.");
       } else if (error.message.includes("Invalid login credentials")) {
         setError("Invalid email or password. Please check your credentials.");
-      } else if (error.message.includes("User already registered")) {
-        setError("An account with this email already exists. Try signing in instead.");
       } else {
-        setError(error.message || "An error occurred during authentication");
+        setError(error.message || "An error occurred during sign in");
       }
     } finally {
       setLoading(false);
@@ -99,7 +79,7 @@ export default function Login() {
             Welcome Back
           </h1>
           <p className="text-muted-foreground font-medium">
-            {isSignUp ? "Create your account to get started" : "Sign in to your account"}
+            Sign in to your account
           </p>
         </div>
 
@@ -114,7 +94,7 @@ export default function Login() {
               />
             </div>
             <CardTitle className="text-2xl font-display font-semibold text-center">
-              {isSignUp ? "Create Account" : "Sign In"}
+              Sign In
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -166,26 +146,13 @@ export default function Login() {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    {isSignUp ? "Creating Account..." : "Signing In..."}
+                    Signing In...
                   </span>
                 ) : (
-                  isSignUp ? "Create Account" : "Sign In"
+                  "Sign In"
                 )}
               </Button>
             </form>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setError("");
-                }}
-                className="text-sm text-primary hover:text-primary-hover transition-colors font-medium"
-              >
-                {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-              </button>
-            </div>
           </CardContent>
         </Card>
 
