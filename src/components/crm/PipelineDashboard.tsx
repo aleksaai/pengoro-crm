@@ -1,16 +1,18 @@
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Phone, Tag, Calendar } from "lucide-react";
+import { User, Calendar, GripVertical, Clock } from "lucide-react";
 import { useState } from "react";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { LeadDetailsModal } from "./LeadDetailsModal";
 import { useLeads, type Lead } from "@/hooks/useLeads";
+import { useToast } from "@/hooks/use-toast";
 
 const dealStages = [
   { 
     id: "discovery",
-    name: "Discovery Call Booked", 
+    name: "Discovery Call", 
+    color: "bg-blue-50 border-blue-200",
     deals: [
       { 
         id: "deal-1",
@@ -55,7 +57,8 @@ const dealStages = [
   },
   { 
     id: "second-meeting",
-    name: "Second Meeting Booked",
+    name: "Second Meeting",
+    color: "bg-purple-50 border-purple-200",
     deals: [
       { 
         id: "deal-4",
@@ -87,7 +90,8 @@ const dealStages = [
   },
   { 
     id: "follow-up",
-    name: "Follow-Up Scheduled",
+    name: "Follow-Up",
+    color: "bg-orange-50 border-orange-200",
     deals: [
       { 
         id: "deal-6",
@@ -119,7 +123,8 @@ const dealStages = [
   },
   { 
     id: "closing",
-    name: "Closing Call Scheduled",
+    name: "Closing Call",
+    color: "bg-green-50 border-green-200",
     deals: [
       { 
         id: "deal-8",
@@ -152,6 +157,7 @@ const dealStages = [
   { 
     id: "stuck",
     name: "Stuck",
+    color: "bg-red-50 border-red-200",
     deals: [
       { 
         id: "deal-10",
@@ -165,19 +171,6 @@ const dealStages = [
         created_at: "2023-12-15T09:00:00Z",
         updated_at: "2023-12-15T09:00:00Z",
         created_by: "user-10"
-      },
-      { 
-        id: "deal-11",
-        name: "Slow Corp", 
-        email: "jane@slow.com",
-        phone: "+49 621 34343434",
-        source: "Referral",
-        status: "Stuck",
-        assigned_to: "Jane Slow",
-        interested_products: ["PAV", "Insurances"],
-        created_at: "2023-12-10T14:00:00Z",
-        updated_at: "2023-12-10T14:00:00Z",
-        created_by: "user-11"
       }
     ]
   }
@@ -186,9 +179,10 @@ const dealStages = [
 interface DealCardProps {
   deal: Lead;
   onDealClick: (deal: Lead) => void;
+  isDragOverlay?: boolean;
 }
 
-function DealCard({ deal, onDealClick }: DealCardProps) {
+function DealCard({ deal, onDealClick, isDragOverlay = false }: DealCardProps) {
   const {
     attributes,
     listeners,
@@ -201,60 +195,93 @@ function DealCard({ deal, onDealClick }: DealCardProps) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1,
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Don't trigger click if we're dragging
+    if (isDragging) return;
+    e.stopPropagation();
+    onDealClick(deal);
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className="glass-card hover:bg-glass/50 transition-colors cursor-pointer p-3"
-      onClick={() => onDealClick(deal)}
+      className={`
+        relative group bg-white border border-border rounded-lg shadow-sm transition-all duration-200
+        ${isDragging ? 'opacity-50 rotate-3 shadow-lg' : 'hover:shadow-md hover:-translate-y-0.5'}
+        ${isDragOverlay ? 'shadow-xl border-primary/50' : ''}
+      `}
     >
-      <div className="space-y-2">
-        {/* Company Name */}
-        <h4 className="font-medium text-foreground text-sm leading-tight">
-          {deal.name}
-        </h4>
-        
-        {/* Contact */}
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <User className="w-3 h-3" />
-          <span className="truncate">{deal.assigned_to}</span>
-        </div>
+      {/* Drag Handle */}
+      <div 
+        {...attributes} 
+        {...listeners}
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+      >
+        <GripVertical className="w-3 h-3 text-muted-foreground" />
+      </div>
 
-        {/* Products */}
-        {deal.interested_products && deal.interested_products.length > 0 && (
-          <div className="flex gap-1 flex-wrap">
-            {deal.interested_products.map(product => (
-              <Badge key={product} variant="outline" className="text-xs px-1 py-0 h-5">
-                {product}
-              </Badge>
-            ))}
+      {/* Card Content */}
+      <div className="p-3 cursor-pointer" onClick={handleClick}>
+        <div className="space-y-2">
+          {/* Company Name */}
+          <h4 className="font-medium text-foreground text-sm leading-tight pr-6">
+            {deal.name}
+          </h4>
+          
+          {/* Assigned User */}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <User className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{deal.assigned_to}</span>
           </div>
-        )}
 
-        {/* Date */}
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Calendar className="w-3 h-3" />
-          <span>{new Date(deal.created_at).toLocaleDateString('de-DE')}</span>
+          {/* Products */}
+          {deal.interested_products && deal.interested_products.length > 0 && (
+            <div className="flex gap-1 flex-wrap">
+              {deal.interested_products.slice(0, 2).map(product => (
+                <Badge key={product} variant="outline" className="text-xs px-1.5 py-0.5 h-auto">
+                  {product}
+                </Badge>
+              ))}
+              {deal.interested_products.length > 2 && (
+                <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-auto text-muted-foreground">
+                  +{deal.interested_products.length - 2}
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Date */}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Calendar className="w-3 h-3 flex-shrink-0" />
+            <span>{new Date(deal.created_at).toLocaleDateString('de-DE')}</span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-interface StageColumnProps {
-  stage: { id: string; name: string; deals: Lead[] };
+interface DropZoneProps {
+  stage: { id: string; name: string; color: string; deals: Lead[] };
   children: React.ReactNode;
+  isOver?: boolean;
 }
 
-function StageColumn({ stage, children }: StageColumnProps) {
+function DropZone({ stage, children, isOver = false }: DropZoneProps) {
   const { setNodeRef } = useDroppable({ id: stage.id });
+
   return (
-    <div ref={setNodeRef} className="flex flex-col">
+    <div 
+      ref={setNodeRef} 
+      className={`
+        flex flex-col h-full min-h-96 rounded-xl border-2 transition-all duration-200
+        ${isOver ? 'border-primary bg-primary/5 shadow-md' : `border-dashed ${stage.color}`}
+      `}
+    >
       {children}
     </div>
   );
@@ -263,53 +290,71 @@ function StageColumn({ stage, children }: StageColumnProps) {
 export function PipelineDashboard() {
   const [stages, setStages] = useState(dealStages);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [activeDeal, setActiveDeal] = useState<Lead | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const { updateLead } = useLeads();
+  const { toast } = useToast();
   
   const totalDeals = stages.reduce((acc, stage) => acc + stage.deals.length, 0);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor)
+    useSensor(PointerSensor, { 
+      activationConstraint: { 
+        distance: 8 
+      } 
+    })
   );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const deal = stages.flatMap(stage => stage.deals).find(deal => deal.id === active.id);
+    setActiveDeal(deal || null);
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveDeal(null);
+    setDragOverStage(null);
 
     if (!over) return;
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Find the deal being dragged
+    // Find the deal and stages
     const sourceDeal = stages.flatMap(stage => stage.deals).find(deal => deal.id === activeId);
     if (!sourceDeal) return;
 
-    // Find source and target stages
     const sourceStage = stages.find(stage => stage.deals.some(deal => deal.id === activeId));
-    // Target can be a container (stage.id) or another deal id within a container
     let targetStage = stages.find(stage => stage.id === overId);
+    
+    // If dropping on another deal, find its stage
     if (!targetStage) {
       targetStage = stages.find(stage => stage.deals.some(deal => deal.id === overId));
     }
 
     if (!sourceStage || !targetStage) return;
 
+    // Same stage reordering
     if (sourceStage.id === targetStage.id) {
-      // Reorder within the same stage
       const oldIndex = sourceStage.deals.findIndex(d => d.id === activeId);
-      const newIndex = sourceStage.deals.findIndex(d => d.id === overId);
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
-
-      setStages(prev => prev.map(stage =>
-        stage.id === sourceStage!.id
-          ? { ...stage, deals: arrayMove(stage.deals, oldIndex, newIndex) }
-          : stage
-      ));
+      let newIndex = sourceStage.deals.findIndex(d => d.id === overId);
+      
+      // If dropping on the container itself, place at end
+      if (newIndex === -1) newIndex = sourceStage.deals.length;
+      
+      if (oldIndex !== newIndex) {
+        setStages(prev => prev.map(stage =>
+          stage.id === sourceStage.id
+            ? { ...stage, deals: arrayMove(stage.deals, oldIndex, newIndex) }
+            : stage
+        ));
+      }
       return;
     }
 
-    // Move across stages
-    const updatedDeal = { ...sourceDeal, status: targetStage.name };
+    // Cross-stage movement
+    const updatedDeal = { ...sourceDeal, status: getStatusFromStage(targetStage.id) };
 
     setStages(prev => prev.map(stage => {
       if (stage.id === sourceStage.id) {
@@ -321,12 +366,34 @@ export function PipelineDashboard() {
       return stage;
     }));
 
-    // Persist
+    // Update backend
     try {
-      await updateLead(activeId, { status: targetStage.name });
+      await updateLead(activeId, { status: getStatusFromStage(targetStage.id) });
+      toast({
+        title: "Deal moved",
+        description: `${sourceDeal.name} moved to ${targetStage.name}`,
+      });
     } catch (error) {
-      console.error("Failed to update lead status:", error);
+      console.error("Failed to update deal:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move deal. Please try again.",
+        variant: "destructive",
+      });
+      // Revert on error
+      setStages(dealStages);
     }
+  };
+
+  const getStatusFromStage = (stageId: string): string => {
+    const stageMap: Record<string, string> = {
+      discovery: "Discovery Call Booked",
+      "second-meeting": "Second Meeting Booked", 
+      "follow-up": "Follow-Up Scheduled",
+      closing: "Closing Call Scheduled",
+      stuck: "Stuck"
+    };
+    return stageMap[stageId] || "New";
   };
 
   const handleDealClick = (deal: Lead) => {
@@ -335,8 +402,6 @@ export function PipelineDashboard() {
 
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
     await updateLead(leadId, updates);
-    
-    // Update local state
     setStages(prev => prev.map(stage => ({
       ...stage,
       deals: stage.deals.map(deal => 
@@ -350,76 +415,89 @@ export function PipelineDashboard() {
       {/* Header */}
       <div className="glass-card">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
-            Sales Pipeline
-          </h1>
+          <div>
+            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
+              Sales Pipeline
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Drag deals between stages to update their status
+            </p>
+          </div>
           <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-muted-foreground" />
+            <Clock className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Active Deals:</span>
             <span className="text-lg font-semibold text-foreground">{totalDeals}</span>
           </div>
         </div>
       </div>
 
-      {/* Pipeline Columns */}
+      {/* Pipeline */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-5 gap-4 h-[calc(100vh-200px)]">
-          {stages.map((stage, index) => (
-            <StageColumn key={stage.id} stage={stage}>
-              {/* Column Header */}
-              <div className="glass-card mb-3 flex-shrink-0">
+        <div className="grid grid-cols-5 gap-4 h-[calc(100vh-220px)]">
+          {stages.map((stage) => (
+            <DropZone 
+              key={stage.id} 
+              stage={stage}
+              isOver={dragOverStage === stage.id}
+            >
+              {/* Stage Header */}
+              <div className="p-4 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-foreground text-sm leading-tight">
+                  <h3 className="font-semibold text-foreground text-sm">
                     {stage.name}
                   </h3>
-                  <Badge className="bg-muted text-muted-foreground px-2 py-1 text-xs">
+                  <Badge className="bg-muted text-muted-foreground px-2 py-1 text-xs font-medium">
                     {stage.deals.length}
                   </Badge>
                 </div>
               </div>
 
-              {/* Deals List - Scrollable */}
-              <SortableContext 
-                items={stage.deals.map(deal => deal.id)} 
-                strategy={verticalListSortingStrategy}
-              >
-                <div 
-                  className="flex-1 space-y-2 overflow-y-auto pr-1 min-h-20 p-2 rounded-lg border-2 border-dashed border-transparent transition-colors"
-                  style={{
-                    borderColor: 'var(--dnd-over-color, transparent)'
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    (e.currentTarget as HTMLElement).style.setProperty('--dnd-over-color', 'hsl(var(--primary))');
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    (e.currentTarget as HTMLElement).style.setProperty('--dnd-over-color', 'transparent');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    (e.currentTarget as HTMLElement).style.setProperty('--dnd-over-color', 'transparent');
-                  }}
+              {/* Deals Container */}
+              <div className="flex-1 p-3 overflow-y-auto">
+                <SortableContext 
+                  items={stage.deals.map(deal => deal.id)} 
+                  strategy={verticalListSortingStrategy}
                 >
-                  {stage.deals.map((deal) => (
-                    <DealCard
-                      key={deal.id}
-                      deal={deal}
-                      onDealClick={handleDealClick}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </StageColumn>
+                  <div className="space-y-3">
+                    {stage.deals.map((deal) => (
+                      <DealCard
+                        key={deal.id}
+                        deal={deal}
+                        onDealClick={handleDealClick}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+                
+                {/* Empty State */}
+                {stage.deals.length === 0 && (
+                  <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                    Drop deals here
+                  </div>
+                )}
+              </div>
+            </DropZone>
           ))}
         </div>
+
+        {/* Drag Overlay */}
+        <DragOverlay>
+          {activeDeal && (
+            <DealCard 
+              deal={activeDeal} 
+              onDealClick={() => {}} 
+              isDragOverlay 
+            />
+          )}
+        </DragOverlay>
       </DndContext>
 
-      {/* Lead Details Modal */}
+      {/* Modal */}
       <LeadDetailsModal
         lead={selectedLead}
         open={!!selectedLead}
