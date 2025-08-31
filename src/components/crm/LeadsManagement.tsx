@@ -108,7 +108,7 @@ export function LeadsManagement() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="glass-card modern-card">
+      <div className="glass-card">
         <div className="flex items-center justify-between">
           <div className="space-y-3">
             <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
@@ -134,7 +134,7 @@ export function LeadsManagement() {
         </div>
       </div>
 
-      <Card className="glass-card modern-card border-0 overflow-hidden">
+      <Card className="glass-card border-0 overflow-hidden">
         <CardHeader className="pb-6">
           <div className="flex items-center gap-6">
             <div className="relative flex-1">

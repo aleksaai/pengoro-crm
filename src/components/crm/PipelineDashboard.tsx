@@ -64,7 +64,7 @@ export function PipelineDashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="glass-card modern-card">
+      <div className="glass-card">
         <div className="space-y-4">
           <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
             Sales Pipeline
@@ -89,7 +89,7 @@ export function PipelineDashboard() {
         {dealStages.map((stage, index) => (
           <Card 
             key={stage.name} 
-            className="modern-card border-0 overflow-hidden"
+            className="glass-card border-0 overflow-hidden"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <CardHeader className="pb-4 space-y-4">
