@@ -10,8 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Filter, Plus } from "lucide-react";
+import { Search, Filter, Plus, Upload } from "lucide-react";
 import { AddLeadDialog } from "./AddLeadDialog";
+import { MassUploadDialog } from "./MassUploadDialog";
 import { LeadRowActions } from "./LeadRowActions";
 import { LeadDetailsModal } from "./LeadDetailsModal";
 import { useLeads, type Lead } from "@/hooks/useLeads";
@@ -50,6 +51,7 @@ export function LeadsTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showMassUpload, setShowMassUpload] = useState(false);
   const { leads, loading, createLead, updateLead } = useLeads();
 
   const filteredLeads = leads.filter(lead =>
@@ -61,6 +63,13 @@ export function LeadsTable() {
   const handleAddLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     await createLead(leadData);
     setShowAddDialog(false);
+  };
+
+  const handleMassUpload = async (leads: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>[]) => {
+    for (const leadData of leads) {
+      await createLead(leadData);
+    }
+    setShowMassUpload(false);
   };
 
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
@@ -118,13 +127,23 @@ export function LeadsTable() {
               </p>
             </div>
           </div>
-          <Button 
-            onClick={() => setShowAddDialog(true)}
-            className="modern-button h-11 px-6 text-sm font-medium shadow-lg"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Lead
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={() => setShowAddDialog(true)}
+              className="modern-button h-11 px-6 text-sm font-medium shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Lead
+            </Button>
+            <Button 
+              onClick={() => setShowMassUpload(true)}
+              variant="outline"
+              className="glass-subtle border-glass-border h-11 px-6 text-sm font-medium"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Mass Upload
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -257,6 +276,12 @@ export function LeadsTable() {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onAddLead={handleAddLead}
+      />
+
+      <MassUploadDialog
+        open={showMassUpload}
+        onOpenChange={setShowMassUpload}
+        onUploadLeads={handleMassUpload}
       />
 
       <LeadDetailsModal
