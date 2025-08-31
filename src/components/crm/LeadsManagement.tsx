@@ -156,20 +156,20 @@ export function LeadsManagement() {
           {filteredLeads.map((lead, index) => (
             <div 
               key={lead.id} 
-              className="group p-6 rounded-xl bg-gradient-to-r from-glass/40 to-glass-accent/40 border border-glass-border/60 hover:border-primary/30 transition-all duration-300 hover:shadow-lg backdrop-blur-sm"
+              className="p-6 rounded-xl bg-glass/40 border border-glass-border/60 backdrop-blur-sm"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-4">
                   <div className="flex items-center gap-4 flex-wrap">
-                    <h3 className="font-display font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+                    <h3 className="font-display font-semibold text-lg text-foreground">
                       {lead.name}
                     </h3>
                     <div className="flex items-center gap-3">
-                      <Badge className={`${getStatusBadgeClass(lead.status)} px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 hover:scale-105`}>
+                      <Badge className={`${getStatusBadgeClass(lead.status)} px-3 py-1.5 text-xs font-medium rounded-full`}>
                         {lead.status}
                       </Badge>
-                      <Badge className={`${getSourceBadgeClass(lead.source)} px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 hover:scale-105`}>
+                      <Badge className={`${getSourceBadgeClass(lead.source)} px-3 py-1.5 text-xs font-medium rounded-full`}>
                         {lead.source}
                       </Badge>
                     </div>
@@ -190,7 +190,7 @@ export function LeadsManagement() {
                   </div>
                 </div>
                 <div className="text-right space-y-2 ml-6">
-                  <div className="font-display font-bold text-2xl text-primary group-hover:text-primary-deep transition-colors">
+                  <div className="font-display font-bold text-2xl text-primary">
                     {lead.value}
                   </div>
                   <div className="text-xs text-muted-foreground font-medium">

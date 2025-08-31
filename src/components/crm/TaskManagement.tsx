@@ -265,7 +265,7 @@ export function TaskManagement() {
             {tasks.map((task) => (
               <div 
                 key={task.id} 
-                className="p-4 rounded-lg bg-muted/20 border border-glass-border hover:bg-muted/30 transition-colors cursor-pointer"
+                className="p-4 rounded-lg bg-muted/20 border border-glass-border cursor-pointer"
                 onClick={() => toggleTaskStatus(task.id)}
               >
                 <div className="flex items-start justify-between">

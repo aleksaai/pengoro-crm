@@ -31,7 +31,7 @@ export function AppSidebar() {
               alt="Pengoro" 
               className="w-12 h-12 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110"
             />
-            <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-primary/20 to-primary-glow/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+            
           </div>
           <div className="space-y-1">
             <h2 className="font-display font-bold text-xl text-foreground group-hover:text-primary transition-colors">
@@ -57,16 +57,13 @@ export function AppSidebar() {
                       className={`
                         h-14 rounded-xl transition-all duration-300 relative overflow-hidden group
                         ${isActive 
-                          ? 'bg-gradient-to-r from-primary to-primary-deep text-primary-foreground font-semibold shadow-lg' 
+                          ? 'bg-primary text-primary-foreground font-semibold shadow-lg' 
                           : 'hover:bg-accent/80 hover:text-accent-foreground hover:shadow-md'
                         }
                       `}
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
                       <NavLink to={item.url} className="flex items-center gap-4 px-5">
-                        {isActive && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-primary-glow/20 to-transparent opacity-50"></div>
-                        )}
                         <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'drop-shadow-sm' : 'group-hover:scale-110'}`} />
                         <span className="font-display font-medium text-base tracking-wide">{item.title}</span>
                         {isActive && (

@@ -89,7 +89,7 @@ export function PipelineDashboard() {
         {dealStages.map((stage, index) => (
           <Card 
             key={stage.name} 
-            className="modern-card border-0 overflow-hidden group"
+            className="modern-card border-0 overflow-hidden"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <CardHeader className="pb-4 space-y-4">
@@ -97,11 +97,11 @@ export function PipelineDashboard() {
                 <CardTitle className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">
                   {stage.name}
                 </CardTitle>
-                <Badge className={`${stage.color} px-3 py-1.5 text-xs font-bold rounded-full transition-all duration-200 group-hover:scale-110`}>
+                <Badge className={`${stage.color} px-3 py-1.5 text-xs font-bold rounded-full`}>
                   {stage.count}
                 </Badge>
               </div>
-              <div className="text-3xl font-display font-bold text-foreground group-hover:text-primary transition-colors">
+              <div className="text-3xl font-display font-bold text-foreground">
                 {stage.value}
               </div>
             </CardHeader>
@@ -109,18 +109,18 @@ export function PipelineDashboard() {
               {stage.deals.map((deal, dealIndex) => (
                 <div 
                   key={dealIndex} 
-                  className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-glass/30 to-glass-accent/30 border border-glass-border/40 hover:border-primary/30 transition-all duration-200 hover:shadow-md backdrop-blur-sm group/deal"
+                  className="flex items-center justify-between p-4 rounded-xl bg-glass/30 border border-glass-border/40 backdrop-blur-sm"
                 >
                   <div className="space-y-2">
-                    <p className="font-display font-medium text-sm text-foreground group-hover/deal:text-primary transition-colors">
+                    <p className="font-display font-medium text-sm text-foreground">
                       {deal.name}
                     </p>
-                    <Badge className={`${getSourceBadgeClass(deal.source)} text-2xs px-2 py-1 rounded-md transition-all duration-200 hover:scale-105`}>
+                    <Badge className={`${getSourceBadgeClass(deal.source)} text-2xs px-2 py-1 rounded-md`}>
                       {deal.source}
                     </Badge>
                   </div>
                   <div className="text-right">
-                    <span className="font-display font-bold text-base text-primary group-hover/deal:text-primary-deep transition-colors">
+                    <span className="font-display font-bold text-base text-primary">
                       {deal.value}
                     </span>
                   </div>
