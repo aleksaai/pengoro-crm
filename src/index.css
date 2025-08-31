@@ -163,7 +163,7 @@ All colors MUST be HSL.
   }
   
   .glass-strong {
-    @apply backdrop-blur-lg bg-glass-strong/85 border border-glass-border/80;
+    @apply backdrop-blur-lg border border-glass-border/80;
     background: linear-gradient(145deg, hsl(var(--glass-strong)) 0%, hsl(var(--glass-accent)) 100%);
     box-shadow: 
       0 12px 48px 0 hsl(var(--shadow-glass-strong) / 0.15),
