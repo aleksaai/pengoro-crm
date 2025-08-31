@@ -14,6 +14,7 @@ import { Search, Filter, Plus } from "lucide-react";
 import { AddLeadDialog } from "./AddLeadDialog";
 import { LeadRowActions } from "./LeadRowActions";
 import { LeadDetailsModal } from "./LeadDetailsModal";
+import { useLeads, type Lead } from "@/hooks/useLeads";
 
 export interface LeadHistoryEntry {
   id: string;
@@ -23,109 +24,7 @@ export interface LeadHistoryEntry {
   user: string;
 }
 
-export interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  source: string;
-  status: string;
-  createdAt: string;
-  notes?: string;
-  assignedTo?: string;
-  interestedProducts?: string[];
-  history?: LeadHistoryEntry[];
-  transcripts?: Array<{id: string, name: string, url: string}>;
-}
-
-const sampleLeads: Lead[] = [
-  {
-    id: "1",
-    name: "John Smith",
-    email: "john@techsolutions.de",
-    phone: "+49 123 456 789",
-    source: "Meta Ads",
-    status: "New",
-    createdAt: "2024-01-15",
-    assignedTo: "Sarah Smith",
-    interestedProducts: ["PKV", "Investments"],
-    history: [
-      {
-        id: "1",
-        timestamp: "2024-01-15T10:00:00Z",
-        action: "Lead created",
-        details: "Lead was imported from Meta Ads campaign",
-        user: "System"
-      }
-    ]
-  },
-  {
-    id: "2",
-    name: "Sarah Johnson",
-    email: "sarah@marketingplus.com",
-    phone: "+49 987 654 321",
-    source: "Website",
-    status: "New", 
-    createdAt: "2024-01-14",
-    interestedProducts: ["PAV", "Insurances"],
-    history: [
-      {
-        id: "2",
-        timestamp: "2024-01-14T14:30:00Z",
-        action: "Lead created",
-        details: "Lead submitted contact form on website",
-        user: "System"
-      }
-    ]
-  },
-  {
-    id: "3", 
-    name: "Michael Brown",
-    email: "m.brown@digitalcorp.eu",
-    phone: "+49 555 123 456",
-    source: "Meta Ads",
-    status: "Contacted",
-    createdAt: "2024-01-13",
-    assignedTo: "Mike Johnson",
-    interestedProducts: ["Real Estate", "Investments"],
-    notes: "Interested in premium investment packages. Call back on Friday.",
-    history: [
-      {
-        id: "3",
-        timestamp: "2024-01-13T09:00:00Z",
-        action: "Lead created",
-        details: "Lead was imported from Meta Ads campaign",
-        user: "System"
-      },
-      {
-        id: "4",
-        timestamp: "2024-01-13T15:30:00Z",
-        action: "Status updated",
-        details: "Status changed from New to Contacted",
-        user: "Mike Johnson"
-      }
-    ]
-  },
-  {
-    id: "4",
-    name: "Emma Wilson", 
-    email: "emma@startup.io",
-    phone: "+49 777 888 999",
-    source: "Referral",
-    status: "New",
-    createdAt: "2024-01-12",
-    interestedProducts: ["PKV"],
-    history: [
-      {
-        id: "5",
-        timestamp: "2024-01-12T11:45:00Z",
-        action: "Lead created",
-        details: "Lead was referred by existing customer",
-        user: "System"
-      }
-    ]
-  }
-];
+export { type Lead };
 
 const getSourceBadgeClass = (source: string) => {
   switch (source) {
@@ -148,71 +47,52 @@ const getStatusBadgeClass = (status: string) => {
 };
 
 export function LeadsTable() {
-  const [leads, setLeads] = useState<Lead[]>(sampleLeads);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const { leads, loading, createLead, updateLead } = useLeads();
 
   const filteredLeads = leads.filter(lead =>
     lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.email.toLowerCase().includes(searchTerm.toLowerCase())
+    lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.phone.includes(searchTerm)
   );
 
-  const handleAddLead = (newLead: Omit<Lead, 'id' | 'createdAt'>) => {
-    const historyEntry: LeadHistoryEntry = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      action: "Lead created",
-      details: "New lead was added manually",
-      user: "Current User"
-    };
-    
-    const lead: Lead = {
-      ...newLead,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
-      status: "New",
-      history: [historyEntry]
-    };
-    setLeads([lead, ...leads]);
+  const handleAddLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+    await createLead(leadData);
+    setShowAddDialog(false);
+  };
+
+  const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
+    await updateLead(leadId, updates);
   };
 
   const handleConvertToDeal = (leadId: string) => {
-    // Remove lead from leads list (simulate conversion to deal)
-    setLeads(leads.filter(lead => lead.id !== leadId));
     console.log(`Converting lead ${leadId} to deal`);
   };
 
   const handleAbandonLead = (leadId: string) => {
-    // Remove lead from leads list
-    setLeads(leads.filter(lead => lead.id !== leadId));
     console.log(`Abandoning lead ${leadId}`);
   };
 
-  const handleUpdateStatus = (leadId: string, newStatus: string) => {
-    setLeads(leads.map(lead => 
-      lead.id === leadId ? { ...lead, status: newStatus } : lead
-    ));
-  };
-
-  const handleUpdateLead = (leadId: string, updates: Partial<Lead>) => {
-    setLeads(leads.map(lead => 
-      lead.id === leadId ? { ...lead, ...updates } : lead
-    ));
-    // Update selectedLead if it's the same lead
-    if (selectedLead?.id === leadId) {
-      setSelectedLead({ ...selectedLead, ...updates });
-    }
+  const handleUpdateStatus = async (leadId: string, newStatus: string) => {
+    await updateLead(leadId, { status: newStatus });
   };
 
   const handleLeadClick = (lead: Lead) => {
     setSelectedLead(lead);
-    setIsDetailsModalOpen(true);
   };
 
   const newLeadsCount = leads.filter(lead => lead.status === "New").length;
   const contactedLeadsCount = leads.filter(lead => lead.status === "Contacted").length;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -239,7 +119,7 @@ export function LeadsTable() {
             </div>
           </div>
           <Button 
-            onClick={() => setIsAddDialogOpen(true)}
+            onClick={() => setShowAddDialog(true)}
             className="modern-button h-11 px-6 text-sm font-medium shadow-lg"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -306,16 +186,16 @@ export function LeadsTable() {
                 <TableCell className="py-4">
                   <div className="space-y-1">
                     <div className="font-medium text-foreground text-sm">{lead.name}</div>
-                    {lead.interestedProducts && lead.interestedProducts.length > 0 && (
+                    {lead.interested_products && lead.interested_products.length > 0 && (
                       <div className="flex gap-1 mt-1">
-                        {lead.interestedProducts.slice(0, 2).map(product => (
+                        {lead.interested_products.slice(0, 2).map(product => (
                           <Badge key={product} variant="outline" className="text-xs px-1 py-0">
                             {product}
                           </Badge>
                         ))}
-                        {lead.interestedProducts.length > 2 && (
+                        {lead.interested_products.length > 2 && (
                           <Badge variant="outline" className="text-xs px-1 py-0">
-                            +{lead.interestedProducts.length - 2}
+                            +{lead.interested_products.length - 2}
                           </Badge>
                         )}
                       </div>
@@ -330,7 +210,7 @@ export function LeadsTable() {
                 </TableCell>
                 <TableCell className="py-4">
                   <div className="text-sm text-foreground">
-                    {lead.assignedTo || (
+                    {lead.assigned_to || (
                       <span className="text-muted-foreground">Unassigned</span>
                     )}
                   </div>
@@ -347,7 +227,7 @@ export function LeadsTable() {
                 </TableCell>
                 <TableCell className="py-4">
                   <div className="text-sm text-muted-foreground">
-                    {new Date(lead.createdAt).toLocaleDateString('de-DE', { 
+                    {new Date(lead.created_at).toLocaleDateString('de-DE', { 
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric'
@@ -375,15 +255,15 @@ export function LeadsTable() {
       </div>
 
       <AddLeadDialog 
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
         onAddLead={handleAddLead}
       />
 
       <LeadDetailsModal
         lead={selectedLead}
-        open={isDetailsModalOpen}
-        onOpenChange={setIsDetailsModalOpen}
+        open={!!selectedLead}
+        onOpenChange={(open) => !open && setSelectedLead(null)}
         onUpdateLead={handleUpdateLead}
       />
     </div>
