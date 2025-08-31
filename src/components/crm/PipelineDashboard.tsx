@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { User, Calendar, GripVertical, Clock, Filter, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -9,6 +9,7 @@ import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const dealStages = [
   { 
@@ -295,13 +296,43 @@ export function PipelineDashboard() {
   const [activeDeal, setActiveDeal] = useState<Lead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
+  const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const { updateLead } = useLeads();
   const { toast } = useToast();
+
+  // Fetch registered users on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .order('full_name');
+
+        if (error) throw error;
+
+        const users = data?.map(profile => ({
+          id: profile.user_id,
+          full_name: profile.full_name || profile.email || 'Unknown User',
+          email: profile.email || ''
+        })) || [];
+
+        setRegisteredUsers(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load users",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchUsers();
+  }, [toast]);
   
-  // Get unique agents for filter dropdown
-  const uniqueAgents = Array.from(
-    new Set(dealStages.flatMap(stage => stage.deals).map(deal => deal.assigned_to))
-  ).filter(Boolean).sort();
+  // Get unique agents from registered users only
+  const uniqueAgents = registeredUsers.map(user => user.full_name).filter(Boolean);
 
   // Filter stages based on selected agent
   const filteredStages = stages.map(stage => ({

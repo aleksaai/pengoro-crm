@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,17 +21,45 @@ interface LeadDetailsModalProps {
 }
 
 const productOptions = ["PKV", "PAV", "Investments", "Insurances", "Real Estate"];
-const users = ["John Doe", "Sarah Smith", "Mike Johnson", "Anna Brown"];
 
 export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: LeadDetailsModalProps) {
   const [editedLead, setEditedLead] = useState<Lead | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [viewingTranscript, setViewingTranscript] = useState<{content: string, name: string} | null>(null);
+  const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(lead?.id || null);
+
+  // Fetch registered users when modal opens
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .order('full_name');
+
+        if (error) throw error;
+
+        const users = data?.map(profile => ({
+          id: profile.user_id,
+          full_name: profile.full_name || profile.email || 'Unknown User',
+          email: profile.email || ''
+        })) || [];
+
+        setRegisteredUsers(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+
+    if (open && lead) {
+      fetchUsers();
+    }
+  }, [open, lead]);
 
   if (!lead) return null;
 
@@ -225,10 +253,14 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
                         <SelectTrigger className="modern-input">
                           <SelectValue placeholder="Select user" />
                         </SelectTrigger>
-                        <SelectContent className="glass-card border-glass-border">
-                          {users.map(user => (
-                            <SelectItem key={user} value={user}>{user}</SelectItem>
-                          ))}
+                        <SelectContent className="glass-card border-glass-border bg-background shadow-lg z-50">
+                          {registeredUsers.length > 0 ? (
+                            registeredUsers.map(user => (
+                              <SelectItem key={user.id} value={user.full_name}>{user.full_name}</SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem disabled value="none">No users available</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     ) : (

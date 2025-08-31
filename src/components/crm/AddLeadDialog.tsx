@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import type { Lead } from "@/hooks/useLeads";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddLeadDialogProps {
   open: boolean;
@@ -15,9 +17,39 @@ interface AddLeadDialogProps {
 
 const productOptions = ["PKV", "PAV", "Investments", "Insurances", "Real Estate"];
 const sourceOptions = ["Meta Ads", "Website", "Referral", "LinkedIn", "Email Campaign", "Manual"];
-const users = ["John Doe", "Sarah Smith", "Mike Johnson", "Anna Brown"];
 
 export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogProps) {
+  const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
+  const { toast } = useToast();
+
+  // Fetch registered users on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .order('full_name');
+
+        if (error) throw error;
+
+        const users = data?.map(profile => ({
+          id: profile.user_id,
+          full_name: profile.full_name || profile.email || 'Unknown User',
+          email: profile.email || ''
+        })) || [];
+
+        setRegisteredUsers(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+
+    if (open) {
+      fetchUsers();
+    }
+  }, [open]);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -118,10 +150,14 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
               <SelectTrigger className="bg-input/50 border-glass-border">
                 <SelectValue placeholder="Select user" />
               </SelectTrigger>
-              <SelectContent className="glass-strong border-glass-border">
-                {users.map(user => (
-                  <SelectItem key={user} value={user}>{user}</SelectItem>
-                ))}
+              <SelectContent className="glass-strong border-glass-border bg-background shadow-lg z-50">
+                {registeredUsers.length > 0 ? (
+                  registeredUsers.map(user => (
+                    <SelectItem key={user.id} value={user.full_name}>{user.full_name}</SelectItem>
+                  ))
+                ) : (
+                  <SelectItem disabled value="none">No users available</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
