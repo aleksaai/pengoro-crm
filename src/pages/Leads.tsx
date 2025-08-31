@@ -1,7 +1,7 @@
-import { LeadsManagement } from "@/components/crm/LeadsManagement";
+import { LeadsTable } from "@/components/crm/LeadsTable";
 
 const Leads = () => {
-  return <LeadsManagement />;
+  return <LeadsTable />;
 };
 
 export default Leads;

@@ -25,8 +25,7 @@ interface AddLeadDialogProps {
     email: string;
     phone: string;
     source: string;
-    status: string;
-    value: string;
+    notes?: string;
   }) => void;
 }
 
@@ -37,8 +36,7 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
     email: "",
     phone: "",
     source: "",
-    status: "New",
-    value: ""
+    notes: ""
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,8 +49,7 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
         email: "",
         phone: "",
         source: "",
-        status: "New",
-        value: ""
+        notes: ""
       });
       onOpenChange(false);
     }
@@ -126,12 +123,12 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="value">Estimated Value (€)</Label>
+            <Label htmlFor="notes">Notes (Optional)</Label>
             <Input
-              id="value"
-              value={formData.value}
-              onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-              placeholder="e.g., €5,000"
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Any additional information..."
               className="bg-input/50 border-glass-border"
             />
           </div>
