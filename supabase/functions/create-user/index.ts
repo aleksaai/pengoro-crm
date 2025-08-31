@@ -52,32 +52,21 @@ Deno.serve(async (req) => {
 
     console.log('User created successfully:', user.user?.email);
 
-    // The profile should be automatically created by the trigger
-    // Let's verify it was created
-    const { data: profile, error: profileError } = await supabaseAdmin
+    // Ensure profile exists with both id and user_id
+    const profileId = crypto.randomUUID();
+    const { error: insertError } = await supabaseAdmin
       .from('profiles')
-      .select('*')
-      .eq('user_id', user.user!.id)
-      .single();
+      .insert({
+        id: profileId,
+        user_id: user.user!.id,
+        email: user.user!.email,
+        full_name: 'Aleksa Spalevic'
+      });
 
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
-      // Try to create the profile manually if trigger failed
-      const { error: insertError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          user_id: user.user!.id,
-          email: user.user!.email,
-          full_name: 'Aleksa Spalevic'
-        });
-      
-      if (insertError) {
-        console.error('Manual profile creation failed:', insertError);
-      } else {
-        console.log('Profile created manually');
-      }
+    if (insertError) {
+      console.error('Profile insert failed (possibly already exists):', insertError);
     } else {
-      console.log('Profile created successfully via trigger:', profile);
+      console.log('Profile created with id and user_id:', { id: profileId, user_id: user.user!.id });
     }
 
     return new Response(

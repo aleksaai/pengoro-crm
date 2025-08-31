@@ -10,8 +10,8 @@ import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Tasks from "./pages/Tasks";
 import Login from "./pages/Login";
+import Setup from "./pages/Setup";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -23,6 +23,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/setup" element={<Setup />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <CRMLayout>
