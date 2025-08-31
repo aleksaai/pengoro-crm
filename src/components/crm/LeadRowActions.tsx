@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Phone, CheckCircle, X, TrendingUp } from "lucide-react";
+import { MoreVertical, Phone, CheckCircle, X, TrendingUp, PhoneOff, Video, Clock } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 
 interface LeadRowActionsProps {
@@ -36,27 +36,27 @@ export function LeadRowActions({
   const [showAbandonDialog, setShowAbandonDialog] = useState(false);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
 
-  const handleContactLead = () => {
-    onUpdateStatus(lead.id, "Contacted");
-  };
-
-  const handleQualifyLead = () => {
-    onUpdateStatus(lead.id, "Qualified");
-  };
-
-  const handleConvertToDeal = () => {
+  const handleConvertToPipeline = () => {
     onConvertToDeal(lead.id);
     setShowConvertDialog(false);
+  };
+
+  const handleNotReached = () => {
+    onUpdateStatus(lead.id, "Not Reached");
+  };
+
+  const handleWebinarConfirmed = () => {
+    onUpdateStatus(lead.id, "Webinar Confirmed");
+  };
+
+  const handleCallBack = () => {
+    onUpdateStatus(lead.id, "Call-Back");
   };
 
   const handleAbandonLead = () => {
     onAbandonLead(lead.id);
     setShowAbandonDialog(false);
   };
-
-  const canMarkAsContacted = lead.status === "New";
-  const canQualify = lead.status === "Contacted";
-  const canConvert = lead.status === "Qualified" || lead.status === "Contacted";
 
   return (
     <>
@@ -66,42 +66,47 @@ export function LeadRowActions({
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 bg-background/95 backdrop-blur-sm border-glass-border/40">
+        <DropdownMenuContent align="end" className="w-52 bg-background/95 backdrop-blur-sm border-glass-border/40 shadow-lg z-50">
           
-          {canMarkAsContacted && (
-            <DropdownMenuItem 
-              onClick={handleContactLead}
-              className="cursor-pointer hover:bg-glass/50"
-            >
-              <Phone className="mr-2 h-4 w-4" />
-              Mark as Contacted
-            </DropdownMenuItem>
-          )}
+          {/* Convert to Pipeline Deal */}
+          <DropdownMenuItem 
+            onClick={() => setShowConvertDialog(true)}
+            className="cursor-pointer hover:bg-success/10 hover:text-success focus:bg-success/10 focus:text-success"
+          >
+            <TrendingUp className="mr-2 h-4 w-4" />
+            Convert to Pipeline Deal
+          </DropdownMenuItem>
 
-          {canQualify && (
-            <DropdownMenuItem 
-              onClick={handleQualifyLead}
-              className="cursor-pointer hover:bg-glass/50"
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Mark as Qualified
-            </DropdownMenuItem>
-          )}
+          {/* Not Reached */}
+          <DropdownMenuItem 
+            onClick={handleNotReached}
+            className="cursor-pointer hover:bg-glass/50"
+          >
+            <PhoneOff className="mr-2 h-4 w-4" />
+            Not Reached
+          </DropdownMenuItem>
 
-          {canConvert && (
-            <>
-              <DropdownMenuSeparator className="bg-glass-border/40" />
-              <DropdownMenuItem 
-                onClick={() => setShowConvertDialog(true)}
-                className="cursor-pointer hover:bg-success/10 hover:text-success focus:bg-success/10 focus:text-success"
-              >
-                <TrendingUp className="mr-2 h-4 w-4" />
-                Convert to Deal
-              </DropdownMenuItem>
-            </>
-          )}
+          {/* Webinar Confirmed */}
+          <DropdownMenuItem 
+            onClick={handleWebinarConfirmed}
+            className="cursor-pointer hover:bg-glass/50"
+          >
+            <Video className="mr-2 h-4 w-4" />
+            Webinar Confirmed
+          </DropdownMenuItem>
+
+          {/* Call-Back */}
+          <DropdownMenuItem 
+            onClick={handleCallBack}
+            className="cursor-pointer hover:bg-glass/50"
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            Call-Back
+          </DropdownMenuItem>
 
           <DropdownMenuSeparator className="bg-glass-border/40" />
+          
+          {/* Abandon Lead */}
           <DropdownMenuItem 
             onClick={() => setShowAbandonDialog(true)}
             className="cursor-pointer hover:bg-destructive/10 hover:text-destructive focus:bg-destructive/10 focus:text-destructive"
@@ -112,26 +117,26 @@ export function LeadRowActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Convert to Deal Confirmation */}
+      {/* Convert to Pipeline Deal Confirmation */}
       <AlertDialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
         <AlertDialogContent className="glass-strong border-glass-border/60">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-success" />
-              Convert to Deal
+              Convert to Pipeline Deal
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to convert <strong>{lead.name}</strong> to a deal in your pipeline? 
-              This will remove them from the leads list and create a new deal opportunity.
+              Are you sure you want to convert <strong>{lead.name}</strong> to a pipeline deal? 
+              This will move them to the Discovery Call stage in your sales pipeline.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="glass-subtle border-glass-border">Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleConvertToDeal}
+              onClick={handleConvertToPipeline}
               className="bg-success hover:bg-success/90 text-success-foreground"
             >
-              Convert to Deal
+              Convert to Pipeline Deal
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
