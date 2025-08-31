@@ -63,40 +63,67 @@ export function PipelineDashboard() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="glass-card">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Sales Pipeline</h1>
-        <p className="text-muted-foreground">
-          Total Pipeline Value: <span className="font-semibold text-primary">€{totalValue.toLocaleString()}</span>
-        </p>
+    <div className="space-y-8 animate-fade-in">
+      <div className="glass-card modern-card">
+        <div className="space-y-4">
+          <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
+            Sales Pipeline
+          </h1>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Pipeline Value</span>
+              <span className="text-3xl font-display font-bold text-primary">€{totalValue.toLocaleString()}</span>
+            </div>
+            <div className="h-12 w-px bg-border/60"></div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Deals</span>
+              <span className="text-2xl font-display font-semibold text-foreground">
+                {dealStages.reduce((acc, stage) => acc + stage.count, 0)}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {dealStages.map((stage) => (
-          <Card key={stage.name} className="glass-card border-0">
-            <CardHeader className="pb-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {dealStages.map((stage, index) => (
+          <Card 
+            key={stage.name} 
+            className="modern-card border-0 overflow-hidden group"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <CardHeader className="pb-4 space-y-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">
                   {stage.name}
                 </CardTitle>
-                <Badge className={`${stage.color} px-2 py-1 text-xs font-medium rounded-full border`}>
+                <Badge className={`${stage.color} px-3 py-1.5 text-xs font-bold rounded-full transition-all duration-200 group-hover:scale-110`}>
                   {stage.count}
                 </Badge>
               </div>
-              <div className="text-2xl font-bold text-foreground">
+              <div className="text-3xl font-display font-bold text-foreground group-hover:text-primary transition-colors">
                 {stage.value}
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {stage.deals.map((deal, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                  <div>
-                    <p className="font-medium text-sm text-foreground">{deal.name}</p>
-                    <Badge className={`${getSourceBadgeClass(deal.source)} text-xs px-2 py-0.5 mt-1 rounded-md border`}>
+              {stage.deals.map((deal, dealIndex) => (
+                <div 
+                  key={dealIndex} 
+                  className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-glass/30 to-glass-accent/30 border border-glass-border/40 hover:border-primary/30 transition-all duration-200 hover:shadow-md backdrop-blur-sm group/deal"
+                >
+                  <div className="space-y-2">
+                    <p className="font-display font-medium text-sm text-foreground group-hover/deal:text-primary transition-colors">
+                      {deal.name}
+                    </p>
+                    <Badge className={`${getSourceBadgeClass(deal.source)} text-2xs px-2 py-1 rounded-md transition-all duration-200 hover:scale-105`}>
                       {deal.source}
                     </Badge>
                   </div>
-                  <span className="font-semibold text-sm text-primary">{deal.value}</span>
+                  <div className="text-right">
+                    <span className="font-display font-bold text-base text-primary group-hover/deal:text-primary-deep transition-colors">
+                      {deal.value}
+                    </span>
+                  </div>
                 </div>
               ))}
             </CardContent>

@@ -107,72 +107,103 @@ export function LeadsManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="glass-card">
+    <div className="space-y-8 animate-fade-in">
+      <div className="glass-card modern-card">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Leads Management</h1>
-            <p className="text-muted-foreground">
-              Total Leads: <span className="font-semibold text-primary">{leads.length}</span>
-            </p>
+          <div className="space-y-3">
+            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
+              Leads Management
+            </h1>
+            <div className="flex items-center gap-4">
+              <p className="text-base text-muted-foreground">
+                Total Leads: <span className="font-semibold text-primary text-lg">{leads.length}</span>
+              </p>
+              <div className="h-4 w-px bg-border/60"></div>
+              <p className="text-sm text-muted-foreground">
+                Last updated: {new Date().toLocaleDateString()}
+              </p>
+            </div>
           </div>
           <Button 
             onClick={() => setIsAddDialogOpen(true)}
-            className="bg-primary hover:bg-primary-hover text-primary-foreground"
+            className="modern-button h-12 px-6 text-base font-medium shadow-lg"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Lead
+            <Plus className="w-5 h-5 mr-2" />
+            Add New Lead
           </Button>
         </div>
       </div>
 
-      <Card className="glass-card border-0">
-        <CardHeader>
-          <div className="flex items-center gap-4">
+      <Card className="glass-card modern-card border-0 overflow-hidden">
+        <CardHeader className="pb-6">
+          <div className="flex items-center gap-6">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search leads..."
+                placeholder="Search leads by name, company, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-input/50 border-glass-border"
+                className="modern-input pl-12 h-12 text-base rounded-xl"
               />
             </div>
-            <Button variant="outline" size="sm" className="border-glass-border">
-              <Filter className="w-4 h-4 mr-2" />
-              Filter
+            <Button variant="outline" size="lg" className="glass-subtle border-glass-border h-12 px-6">
+              <Filter className="w-5 h-5 mr-2" />
+              Advanced Filter
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredLeads.map((lead) => (
-              <div key={lead.id} className="p-4 rounded-lg bg-muted/20 border border-glass-border hover:bg-muted/30 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-2">
-                      <h3 className="font-semibold text-foreground">{lead.name}</h3>
-                      <Badge className={`${getStatusBadgeClass(lead.status)} px-2 py-1 text-xs font-medium rounded-md border`}>
+        <CardContent className="space-y-4">
+          {filteredLeads.map((lead, index) => (
+            <div 
+              key={lead.id} 
+              className="group p-6 rounded-xl bg-gradient-to-r from-glass/40 to-glass-accent/40 border border-glass-border/60 hover:border-primary/30 transition-all duration-300 hover:shadow-lg backdrop-blur-sm"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <h3 className="font-display font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+                      {lead.name}
+                    </h3>
+                    <div className="flex items-center gap-3">
+                      <Badge className={`${getStatusBadgeClass(lead.status)} px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 hover:scale-105`}>
                         {lead.status}
                       </Badge>
-                      <Badge className={`${getSourceBadgeClass(lead.source)} px-2 py-1 text-xs font-medium rounded-md border`}>
+                      <Badge className={`${getSourceBadgeClass(lead.source)} px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 hover:scale-105`}>
                         {lead.source}
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                      <span>{lead.company}</span>
-                      <span>{lead.email}</span>
-                      <span>{lead.phone}</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Company</span>
+                      <span className="text-sm font-medium text-foreground">{lead.company}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Email</span>
+                      <span className="text-sm text-foreground">{lead.email}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Phone</span>
+                      <span className="text-sm text-foreground">{lead.phone}</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-primary text-lg">{lead.value}</div>
-                    <div className="text-xs text-muted-foreground">{lead.createdAt}</div>
+                </div>
+                <div className="text-right space-y-2 ml-6">
+                  <div className="font-display font-bold text-2xl text-primary group-hover:text-primary-deep transition-colors">
+                    {lead.value}
+                  </div>
+                  <div className="text-xs text-muted-foreground font-medium">
+                    {new Date(lead.createdAt).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 

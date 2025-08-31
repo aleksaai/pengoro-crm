@@ -22,42 +22,56 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar className="glass-strong border-r border-glass-border">
-      <SidebarHeader className="p-6 border-b border-glass-border">
-        <div className="flex items-center gap-3">
-          <img 
-            src={pengoroLogo} 
-            alt="Pengoro" 
-            className="w-10 h-10 rounded-lg"
-          />
-          <div>
-            <h2 className="font-semibold text-lg text-foreground">Pengoro</h2>
-            <p className="text-sm text-muted-foreground">CRM System</p>
+    <Sidebar className="glass-strong border-r border-glass-border/80 backdrop-blur-xl">
+      <SidebarHeader className="p-8 border-b border-glass-border/60">
+        <div className="flex items-center gap-4 group">
+          <div className="relative">
+            <img 
+              src={pengoroLogo} 
+              alt="Pengoro" 
+              className="w-12 h-12 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110"
+            />
+            <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-primary/20 to-primary-glow/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-display font-bold text-xl text-foreground group-hover:text-primary transition-colors">
+              Pengoro
+            </h2>
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              CRM System
+            </p>
           </div>
         </div>
       </SidebarHeader>
       
-      <SidebarContent>
+      <SidebarContent className="px-4 py-6">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
-              {navItems.map((item) => {
+            <SidebarMenu className="space-y-3">
+              {navItems.map((item, index) => {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
                       asChild 
                       className={`
-                        h-12 rounded-lg transition-all duration-200
+                        h-14 rounded-xl transition-all duration-300 relative overflow-hidden group
                         ${isActive 
-                          ? 'bg-primary text-primary-foreground font-medium shadow-sm' 
-                          : 'hover:bg-accent hover:text-accent-foreground'
+                          ? 'bg-gradient-to-r from-primary to-primary-deep text-primary-foreground font-semibold shadow-lg' 
+                          : 'hover:bg-accent/80 hover:text-accent-foreground hover:shadow-md'
                         }
                       `}
+                      style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                      <NavLink to={item.url} className="flex items-center gap-3 px-4">
-                        <item.icon className="w-5 h-5" />
-                        <span>{item.title}</span>
+                      <NavLink to={item.url} className="flex items-center gap-4 px-5">
+                        {isActive && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-primary-glow/20 to-transparent opacity-50"></div>
+                        )}
+                        <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'drop-shadow-sm' : 'group-hover:scale-110'}`} />
+                        <span className="font-display font-medium text-base tracking-wide">{item.title}</span>
+                        {isActive && (
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-foreground/30 rounded-l-full"></div>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
