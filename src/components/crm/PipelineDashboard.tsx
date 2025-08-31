@@ -1,175 +1,221 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, TrendingUp } from "lucide-react";
+import { User, Mail, Phone, Tag, Calendar } from "lucide-react";
 
 const dealStages = [
   { 
     name: "Discovery Call Booked", 
-    count: 15, 
-    value: "€18,400", 
-    color: "bg-blue-500/20 text-blue-600 border-blue-500/30",
+    count: 15,
     deals: [
-      { name: "Tech Solutions GmbH", value: "€5,200", contact: "John Miller" },
-      { name: "Marketing Plus", value: "€3,400", contact: "Sarah Johnson" },
-      { name: "Digital Corp", value: "€2,100", contact: "Mike Davis" },
-      { name: "StartUp Inc", value: "€4,200", contact: "Anna Wilson" },
-      { name: "Global Systems", value: "€3,500", contact: "Tom Brown" }
+      { 
+        name: "Tech Solutions GmbH", 
+        contact: "John Miller", 
+        email: "john@techsolutions.de",
+        interested_products: ["PKV", "PAV"],
+        date: "2024-01-15"
+      },
+      { 
+        name: "Marketing Plus", 
+        contact: "Sarah Johnson", 
+        email: "sarah@marketingplus.com",
+        interested_products: ["Investments"],
+        date: "2024-01-14"
+      },
+      { 
+        name: "Digital Corp", 
+        contact: "Mike Davis", 
+        email: "mike@digitalcorp.eu",
+        interested_products: ["PKV", "Insurances"],
+        date: "2024-01-13"
+      },
+      { 
+        name: "StartUp Inc", 
+        contact: "Anna Wilson", 
+        email: "anna@startup.com",
+        interested_products: ["PAV"],
+        date: "2024-01-12"
+      },
+      { 
+        name: "Global Systems", 
+        contact: "Tom Brown", 
+        email: "tom@globalsystems.net",
+        interested_products: ["Real Estate", "Investments"],
+        date: "2024-01-11"
+      }
     ]
   },
   { 
-    name: "Second Meeting Booked", 
-    count: 12, 
-    value: "€24,600", 
-    color: "bg-purple-500/20 text-purple-600 border-purple-500/30",
+    name: "Second Meeting Booked",
+    count: 12,
     deals: [
-      { name: "Enterprise Solutions", value: "€8,900", contact: "Lisa Chen" },
-      { name: "Innovation Hub", value: "€6,200", contact: "David Park" },
-      { name: "Future Tech", value: "€5,800", contact: "Emma Smith" },
-      { name: "Big Corp Ltd", value: "€3,700", contact: "James Wilson" }
+      { 
+        name: "Enterprise Solutions", 
+        contact: "Lisa Chen", 
+        email: "lisa@enterprise.com",
+        interested_products: ["PKV", "PAV", "Investments"],
+        date: "2024-01-10"
+      },
+      { 
+        name: "Innovation Hub", 
+        contact: "David Park", 
+        email: "david@innovation.co",
+        interested_products: ["Insurances"],
+        date: "2024-01-09"
+      },
+      { 
+        name: "Future Tech", 
+        contact: "Emma Smith", 
+        email: "emma@futuretech.io",
+        interested_products: ["PKV"],
+        date: "2024-01-08"
+      },
+      { 
+        name: "Big Corp Ltd", 
+        contact: "James Wilson", 
+        email: "james@bigcorp.com",
+        interested_products: ["PAV", "Real Estate"],
+        date: "2024-01-07"
+      }
     ]
   },
   { 
-    name: "Follow-Up Scheduled", 
-    count: 8, 
-    value: "€32,800", 
-    color: "bg-orange-500/20 text-orange-600 border-orange-500/30",
+    name: "Follow-Up Scheduled",
+    count: 8,
     deals: [
-      { name: "Mega Enterprise", value: "€15,400", contact: "Robert Taylor" },
-      { name: "Tech Giants", value: "€9,200", contact: "Maria Garcia" },
-      { name: "Digital Leaders", value: "€8,200", contact: "Alex Johnson" }
+      { 
+        name: "Mega Enterprise", 
+        contact: "Robert Taylor", 
+        email: "robert@mega.com",
+        interested_products: ["PKV", "PAV"],
+        date: "2024-01-06"
+      },
+      { 
+        name: "Tech Giants", 
+        contact: "Maria Garcia", 
+        email: "maria@techgiants.com",
+        interested_products: ["Investments", "Real Estate"],
+        date: "2024-01-05"
+      },
+      { 
+        name: "Digital Leaders", 
+        contact: "Alex Johnson", 
+        email: "alex@digitalleaders.net",
+        interested_products: ["Insurances"],
+        date: "2024-01-04"
+      }
     ]
   },
   { 
-    name: "Closing Call Scheduled", 
-    count: 5, 
-    value: "€45,200", 
-    color: "bg-green-500/20 text-green-600 border-green-500/30",
+    name: "Closing Call Scheduled",
+    count: 5,
     deals: [
-      { name: "Premium Corp", value: "€22,100", contact: "Jennifer Lee" },
-      { name: "Elite Systems", value: "€12,800", contact: "Michael Brown" },
-      { name: "Success Ltd", value: "€10,300", contact: "Sophie White" }
+      { 
+        name: "Premium Corp", 
+        contact: "Jennifer Lee", 
+        email: "jennifer@premium.com",
+        interested_products: ["PKV", "PAV", "Investments"],
+        date: "2024-01-03"
+      },
+      { 
+        name: "Elite Systems", 
+        contact: "Michael Brown", 
+        email: "michael@elite.com",
+        interested_products: ["Real Estate"],
+        date: "2024-01-02"
+      },
+      { 
+        name: "Success Ltd", 
+        contact: "Sophie White", 
+        email: "sophie@success.co.uk",
+        interested_products: ["PKV", "Insurances"],
+        date: "2024-01-01"
+      }
     ]
   }
 ];
 
 export function PipelineDashboard() {
-  const totalValue = dealStages.reduce((acc, stage) => 
-    acc + parseInt(stage.value.replace(/[€,]/g, '')), 0
-  );
-
   const totalDeals = dealStages.reduce((acc, stage) => acc + stage.count, 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Compact Header */}
+      {/* Header */}
       <div className="glass-card">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-display font-bold text-foreground tracking-tight">
+            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
               Sales Pipeline
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Track your deals through the sales process
+              Track deals through the sales process
             </p>
           </div>
-          <div className="flex items-center gap-8">
-            <div className="text-right">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <TrendingUp className="w-4 h-4" />
-                Pipeline Value
-              </div>
-              <div className="text-2xl font-display font-bold text-primary">
-                €{totalValue.toLocaleString()}
-              </div>
-            </div>
-            <div className="w-px h-8 bg-border/60"></div>
-            <div className="text-right">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="w-4 h-4" />
-                Active Deals
-              </div>
-              <div className="text-2xl font-display font-bold text-foreground">
-                {totalDeals}
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Total Active Deals:</span>
+            <span className="text-lg font-semibold text-foreground">{totalDeals}</span>
           </div>
         </div>
       </div>
 
-      {/* Compact Pipeline Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      {/* Pipeline Stages */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {dealStages.map((stage, index) => (
-          <Card 
-            key={stage.name} 
-            className="glass-card border-0 overflow-hidden hover:scale-105 transition-transform duration-200"
-            style={{ animationDelay: `${index * 0.05}s` }}
-          >
-            <CardHeader className="pb-3">
+          <div key={stage.name} className="space-y-4">
+            {/* Stage Header */}
+            <div className="glass-card">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider leading-tight">
-                  {stage.name}
-                </CardTitle>
-                <Badge className={`${stage.color} px-2 py-1 text-xs font-semibold rounded-full`}>
-                  {stage.count}
+                <h3 className="text-lg font-semibold text-foreground">{stage.name}</h3>
+                <Badge className="bg-muted text-muted-foreground px-3 py-1">
+                  {stage.deals.length}
                 </Badge>
               </div>
-              <div className="text-xl font-display font-bold text-foreground">
-                {stage.value}
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-2 pt-0">
-              {stage.deals.slice(0, 3).map((deal, dealIndex) => (
+            </div>
+
+            {/* Deals */}
+            <div className="space-y-3">
+              {stage.deals.map((deal, dealIndex) => (
                 <div 
                   key={dealIndex} 
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                  className="glass-card hover:bg-glass/30 transition-colors cursor-pointer"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-xs text-foreground truncate">
-                      {deal.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {deal.contact}
-                    </p>
-                  </div>
-                  <div className="text-xs font-semibold text-primary ml-2">
-                    {deal.value}
+                  <div className="space-y-3">
+                    {/* Deal Name & Contact */}
+                    <div className="space-y-1">
+                      <h4 className="font-medium text-foreground text-sm">{deal.name}</h4>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <User className="w-3 h-3" />
+                        <span>{deal.contact}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Mail className="w-3 h-3" />
+                        <span>{deal.email}</span>
+                      </div>
+                    </div>
+
+                    {/* Products */}
+                    {deal.interested_products && deal.interested_products.length > 0 && (
+                      <div className="flex gap-1 flex-wrap">
+                        {deal.interested_products.map(product => (
+                          <Badge key={product} variant="outline" className="text-xs px-1 py-0">
+                            <Tag className="w-2 h-2 mr-1" />
+                            {product}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Date */}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="w-3 h-3" />
+                      <span>{new Date(deal.date).toLocaleDateString('de-DE')}</span>
+                    </div>
                   </div>
                 </div>
               ))}
-              
-              {stage.deals.length > 3 && (
-                <div className="text-center pt-1">
-                  <span className="text-xs text-muted-foreground">
-                    +{stage.deals.length - 3} more deals
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
-      </div>
-
-      {/* Quick Stats */}
-      <div className="glass-card">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{dealStages[0].count}</div>
-            <div className="text-xs text-muted-foreground">Discovery Calls</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{dealStages[1].count}</div>
-            <div className="text-xs text-muted-foreground">Second Meetings</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">{dealStages[2].count}</div>
-            <div className="text-xs text-muted-foreground">Follow-ups</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{dealStages[3].count}</div>
-            <div className="text-xs text-muted-foreground">Closing Calls</div>
-          </div>
-        </div>
       </div>
     </div>
   );
