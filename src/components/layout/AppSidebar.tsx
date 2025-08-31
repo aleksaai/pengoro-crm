@@ -24,17 +24,17 @@ export function AppSidebar() {
   return (
     <Sidebar className="glass-strong border-r border-glass-border/80 backdrop-blur-xl">
       <SidebarHeader className="p-8 border-b border-glass-border/60">
-        <div className="flex items-center gap-4 group">
+        <div className="flex items-center gap-4">
           <div className="relative">
             <img 
               src={pengoroLogo} 
               alt="Pengoro" 
-              className="w-12 h-12 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110"
+              className="w-12 h-12 rounded-xl shadow-lg"
             />
             
           </div>
           <div className="space-y-1">
-            <h2 className="font-display font-bold text-xl text-foreground group-hover:text-primary transition-colors">
+            <h2 className="font-display font-bold text-xl text-foreground">
               Pengoro
             </h2>
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
