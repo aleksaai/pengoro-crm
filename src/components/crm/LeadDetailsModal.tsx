@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CopyableText } from "@/components/ui/copyable-text";
 import { Calendar, User, Phone, Mail, Tag, Clock, MessageSquare, Save, Upload, FileText, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -207,10 +208,10 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
                         className="modern-input"
                       />
                     ) : (
-                      <div className="flex items-center gap-2">
+                      <CopyableText text={currentLead.name}>
                         <User className="w-4 h-4 text-muted-foreground" />
                         <span className="text-foreground">{currentLead.name}</span>
-                      </div>
+                      </CopyableText>
                     )}
                   </div>
 
@@ -248,10 +249,10 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
                         className="modern-input"
                       />
                     ) : (
-                      <div className="flex items-center gap-2">
+                      <CopyableText text={currentLead.email}>
                         <Mail className="w-4 h-4 text-muted-foreground" />
                         <span className="text-foreground">{currentLead.email}</span>
-                      </div>
+                      </CopyableText>
                     )}
                   </div>
 
@@ -264,10 +265,10 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
                         className="modern-input"
                       />
                     ) : (
-                      <div className="flex items-center gap-2">
+                      <CopyableText text={currentLead.phone}>
                         <Phone className="w-4 h-4 text-muted-foreground" />
                         <span className="text-foreground">{currentLead.phone}</span>
-                      </div>
+                      </CopyableText>
                     )}
                   </div>
                 </div>
