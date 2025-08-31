@@ -221,16 +221,39 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
-              <div className="glass-subtle rounded-lg p-4 min-h-32">
-                {currentLead.notes ? (
+            {/* Notes Section - Combined display and add */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+              </div>
+              
+              {/* Existing Notes Display */}
+              {currentLead.notes && (
+                <div className="glass-subtle rounded-lg p-4">
                   <pre className="text-sm text-foreground whitespace-pre-wrap font-sans">
                     {currentLead.notes}
                   </pre>
-                ) : (
-                  <span className="text-muted-foreground text-sm">No notes yet</span>
-                )}
+                </div>
+              )}
+
+              {/* Add New Note */}
+              <div className="space-y-3">
+                <Textarea
+                  placeholder="Add notes about your conversation..."
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  className="modern-input min-h-24 resize-none"
+                />
+                <Button 
+                  onClick={handleAddNote} 
+                  disabled={!newNote.trim()}
+                  className="modern-button"
+                  size="sm"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Add Note
+                </Button>
               </div>
             </div>
 
@@ -255,70 +278,44 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
 
           <Separator orientation="vertical" className="bg-glass-border" />
 
-          {/* Right Side - Interactive Elements */}
-          <div className="w-80 space-y-6">
-            {/* Add Note Section */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Add Note
-              </h3>
-              <Textarea
-                placeholder="Add notes about your conversation..."
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                className="modern-input min-h-24 resize-none"
-              />
-              <Button 
-                onClick={handleAddNote} 
-                disabled={!newNote.trim()}
-                className="w-full modern-button"
-                size="sm"
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Add Note
-              </Button>
-            </div>
-
-            <Separator className="bg-glass-border" />
-
-            {/* Lead History */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Lead History
-              </h3>
-              <ScrollArea className="h-64 glass-subtle rounded-lg p-4">
-                {currentLead.history?.length ? (
-                  <div className="space-y-3">
-                    {[...currentLead.history].reverse().map((entry) => (
-                      <div key={entry.id} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-primary">{entry.action}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(entry.timestamp).toLocaleDateString('de-DE', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{entry.details}</p>
-                        <div className="text-xs text-muted-foreground/70">by {entry.user}</div>
-                        {entry !== currentLead.history?.[0] && (
-                          <Separator className="bg-glass-border/50 my-2" />
-                        )}
+          {/* Right Side - Lead History */}
+          <div className="w-80 space-y-4">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Lead History
+            </h3>
+            <ScrollArea className="h-96 glass-subtle rounded-lg p-4">
+              {currentLead.history?.length ? (
+                <div className="space-y-4">
+                  {[...currentLead.history].reverse().map((entry, index) => (
+                    <div key={entry.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-primary">{entry.action}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(entry.timestamp).toLocaleDateString('de-DE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground text-sm py-8">
-                    No history yet
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{entry.details}</p>
+                      <div className="text-xs text-muted-foreground/70">by {entry.user}</div>
+                      {index < currentLead.history!.length - 1 && (
+                        <Separator className="bg-glass-border/50 my-3" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground text-sm py-12">
+                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>No history yet</p>
+                  <p className="text-xs mt-1">Actions and notes will appear here</p>
+                </div>
+              )}
+            </ScrollArea>
           </div>
         </div>
       </DialogContent>
