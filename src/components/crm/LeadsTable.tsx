@@ -35,6 +35,7 @@ export interface Lead {
   assignedTo?: string;
   interestedProducts?: string[];
   history?: LeadHistoryEntry[];
+  transcripts?: Array<{id: string, name: string, url: string}>;
 }
 
 const sampleLeads: Lead[] = [
