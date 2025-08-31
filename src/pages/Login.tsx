@@ -14,6 +14,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [setupMsg, setSetupMsg] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
@@ -67,6 +69,20 @@ export default function Login() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    try {
+      setCreating(true);
+      setSetupMsg("");
+      const { data, error } = await supabase.functions.invoke('create-user', { body: {} });
+      if (error) throw error;
+      setSetupMsg(data?.message || 'User created. You can now log in.');
+    } catch (e: any) {
+      setError(e.message || 'Failed to create user');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -153,6 +169,15 @@ export default function Login() {
                 )}
               </Button>
             </form>
+
+            <div className="space-y-2">
+              <Button type="button" variant="outline" onClick={handleCreateUser} disabled={creating} className="w-full">
+                {creating ? 'Creating user…' : 'Create initial user'}
+              </Button>
+              {setupMsg && (
+                <p className="text-sm text-muted-foreground text-center">{setupMsg}</p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
