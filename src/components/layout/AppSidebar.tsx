@@ -26,13 +26,13 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-      <SidebarHeader className={`border-b border-glass-border/60 ${isCollapsed ? 'p-4' : 'p-8'}`}>
-        <div className="flex items-center gap-4">
+      <SidebarHeader className={`border-b border-glass-border/60 ${isCollapsed ? 'p-2' : 'p-8'}`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
           <div className="relative flex-shrink-0">
             <img 
               src={pengoroLogo} 
-              alt="Pengoro" 
-              className="w-12 h-12 rounded-xl shadow-lg"
+              alt="Pengoro logo" 
+              className={`${isCollapsed ? 'w-8 h-8' : 'w-12 h-12'} rounded-xl shadow-lg`}
             />
           </div>
           {!isCollapsed && (
@@ -68,7 +68,7 @@ export function AppSidebar() {
                       `}
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                      <NavLink to={item.url} className="flex items-center gap-4 px-5">
+                      <NavLink to={item.url} className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'}`}>
                         <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'drop-shadow-sm' : 'group-hover:scale-110'}`} />
                         {!isCollapsed && <span className="font-display font-medium text-base tracking-wide">{item.title}</span>}
                         {isActive && !isCollapsed && (

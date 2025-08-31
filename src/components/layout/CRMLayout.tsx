@@ -8,7 +8,7 @@ interface CRMLayoutProps {
 
 export function CRMLayout({ children }: CRMLayoutProps) {
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={true} style={{ ["--sidebar-width-icon" as any]: "72px" } as any}>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <main className="flex-1">
