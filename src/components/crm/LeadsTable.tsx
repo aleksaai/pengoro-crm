@@ -128,27 +128,26 @@ export function LeadsTable() {
         </div>
       </div>
 
-      {/* Search and Filter */}
-      <div className="glass-card">
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search leads by name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="modern-input pl-10 h-10 text-sm"
-            />
-          </div>
-          <Button variant="outline" size="sm" className="glass-subtle border-glass-border h-10 px-4">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-        </div>
-      </div>
-
       {/* Leads Table */}
       <div className="glass-card overflow-hidden">
+        {/* Search and Filter Header */}
+        <div className="p-4 border-b border-glass-border/40">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search leads by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="modern-input pl-10 h-10 text-sm"
+              />
+            </div>
+            <Button variant="outline" size="sm" className="glass-subtle border-glass-border h-10 px-4">
+              <Filter className="w-4 h-4 mr-2" />
+              Filter
+            </Button>
+          </div>
+        </div>
         <Table>
           <TableHeader>
             <TableRow className="border-glass-border/40 hover:bg-transparent">
