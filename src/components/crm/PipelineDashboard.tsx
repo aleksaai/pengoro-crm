@@ -375,7 +375,7 @@ export function PipelineDashboard() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const deal = stages.flatMap(stage => stage.deals).find(deal => deal.id === active.id);
+    const deal = filteredStages.flatMap(stage => stage.deals).find(d => d.id === active.id);
     setActiveDeal(deal || null);
   };
 
@@ -389,31 +389,36 @@ export function PipelineDashboard() {
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Find the deal and stages
-    const sourceDeal = stages.flatMap(stage => stage.deals).find(deal => deal.id === activeId);
+    // Use filteredStages to find the dragged deal (includes DB + mock)
+    const sourceDeal = filteredStages.flatMap(stage => stage.deals).find(d => d.id === activeId);
     if (!sourceDeal) return;
 
-    const sourceStage = stages.find(stage => stage.deals.some(deal => deal.id === activeId));
-    let targetStage = stages.find(stage => stage.id === overId);
-    
-    // If dropping on another deal, find its stage
-    if (!targetStage) {
-      targetStage = stages.find(stage => stage.deals.some(deal => deal.id === overId));
-    }
+    // Determine target stage from filtered view (by column id or by hovering over a deal)
+    const targetStageFiltered =
+      filteredStages.find(stage => stage.id === overId) ||
+      filteredStages.find(stage => stage.deals.some(d => d.id === overId));
 
-    if (!sourceStage || !targetStage) return;
+    if (!targetStageFiltered) return;
 
-    // Same stage reordering
-    if (sourceStage.id === targetStage.id) {
-      const oldIndex = sourceStage.deals.findIndex(d => d.id === activeId);
-      let newIndex = sourceStage.deals.findIndex(d => d.id === overId);
-      
+    // Locate stages in base state (mock data). May be undefined for DB-only deals.
+    const sourceStageInStages = stages.find(stage => stage.deals.some(d => d.id === activeId));
+    const targetStageInStages = stages.find(stage => stage.id === targetStageFiltered.id);
+
+    // Same stage reordering (only for items present in base stages)
+    if (
+      sourceStageInStages &&
+      targetStageInStages &&
+      sourceStageInStages.id === targetStageInStages.id
+    ) {
+      const oldIndex = sourceStageInStages.deals.findIndex(d => d.id === activeId);
+      let newIndex = sourceStageInStages.deals.findIndex(d => d.id === overId);
+
       // If dropping on the container itself, place at end
-      if (newIndex === -1) newIndex = sourceStage.deals.length;
-      
-      if (oldIndex !== newIndex) {
+      if (newIndex === -1) newIndex = sourceStageInStages.deals.length;
+
+      if (oldIndex !== newIndex && oldIndex !== -1) {
         setStages(prev => prev.map(stage =>
-          stage.id === sourceStage.id
+          stage.id === sourceStageInStages.id
             ? { ...stage, deals: arrayMove(stage.deals, oldIndex, newIndex) }
             : stage
         ));
@@ -421,28 +426,37 @@ export function PipelineDashboard() {
       return;
     }
 
-    // Cross-stage movement
-    const updatedDeal = { ...sourceDeal, status: getStatusFromStage(targetStage.id) };
+    // Build updated deal ensuring required fields for stage state
+    const updatedDeal = {
+      ...sourceDeal,
+      status: getStatusFromStage(targetStageFiltered.id),
+      assigned_to: sourceDeal.assigned_to ?? "",
+      interested_products: sourceDeal.interested_products ?? [],
+      created_by: sourceDeal.created_by ?? "",
+    };
 
-    setStages(prev => prev.map(stage => {
-      if (stage.id === sourceStage.id) {
-        return { ...stage, deals: stage.deals.filter(deal => deal.id !== activeId) };
-      }
-      if (stage.id === targetStage!.id) {
-        return { ...stage, deals: [...stage.deals, updatedDeal] };
-      }
-      return stage;
-    }));
+    // Optimistic UI update only for items stored in base stages (mock deals)
+    if (sourceStageInStages && targetStageInStages) {
+      setStages(prev => prev.map(stage => {
+        if (stage.id === sourceStageInStages.id) {
+          return { ...stage, deals: stage.deals.filter(deal => deal.id !== activeId) };
+        }
+        if (stage.id === targetStageInStages.id) {
+          return { ...stage, deals: [...stage.deals, updatedDeal] };
+        }
+        return stage;
+      }));
+    }
 
     // Update backend only for real leads (not mock deals)
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(activeId);
     
     if (isUUID) {
       try {
-        await updateLead(activeId, { status: getStatusFromStage(targetStage.id) });
+        await updateLead(activeId, { status: getStatusFromStage(targetStageFiltered.id) });
         toast({
           title: "Deal moved",
-          description: `${sourceDeal.name} moved to ${targetStage.name}`,
+          description: `${sourceDeal.name} moved to ${targetStageFiltered.name}`,
         });
       } catch (error) {
         console.error("Failed to update deal:", error);
@@ -458,7 +472,7 @@ export function PipelineDashboard() {
       // Just show toast for mock deals
       toast({
         title: "Deal moved",
-        description: `${sourceDeal.name} moved to ${targetStage.name}`,
+        description: `${sourceDeal.name} moved to ${targetStageFiltered.name}`,
       });
     }
   };
