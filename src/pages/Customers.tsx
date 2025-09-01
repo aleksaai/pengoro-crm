@@ -16,6 +16,7 @@ export default function Customers() {
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [selectedCustomer, setSelectedCustomer] = useState<Lead | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
+  const [customerTimelines, setCustomerTimelines] = useState<Map<string, {createdAt: string, closedAt: string, cycleDuration: string}>>(new Map());
   const { leads, updateLead } = useLeads();
   const { 
     products, 
@@ -26,6 +27,94 @@ export default function Customers() {
     deleteProduct,
     refetch: refetchProducts 
   } = useCustomerProducts();
+
+  // Filter customers (leads with status "Won")
+  const customers = leads.filter(lead => lead.status === "Won");
+
+  // Fetch customer timeline data
+  useEffect(() => {
+    const fetchCustomerTimelines = async () => {
+      if (customers.length === 0) return;
+
+      const timelineMap = new Map();
+
+      for (const customer of customers) {
+        try {
+          // Get the history entry where the lead was marked as "Won"
+          const { data: winHistory } = await supabase
+            .from('lead_history')
+            .select('created_at, new_values')
+            .eq('lead_id', customer.id)
+            .or('action.eq.Lead updated,action.eq.Lead status changed')
+            .order('created_at', { ascending: true });
+
+          // Find when the status changed to "Won"
+          let closedAt = customer.updated_at; // fallback to updated_at if we can't find exact history
+          
+          if (winHistory) {
+            const wonEntry = winHistory.find(entry => {
+              if (entry.new_values && typeof entry.new_values === 'object') {
+                const newValues = entry.new_values as Record<string, any>;
+                return newValues.status === 'Won';
+              }
+              return false;
+            });
+            
+            if (wonEntry) {
+              closedAt = wonEntry.created_at;
+            }
+          }
+
+          const createdDate = new Date(customer.created_at);
+          const closedDate = new Date(closedAt);
+          const diffTime = Math.abs(closedDate.getTime() - createdDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          let cycleDuration: string;
+          if (diffDays === 0) {
+            cycleDuration = "Same day";
+          } else if (diffDays === 1) {
+            cycleDuration = "1 day";
+          } else if (diffDays < 7) {
+            cycleDuration = `${diffDays} days`;
+          } else if (diffDays < 30) {
+            const weeks = Math.floor(diffDays / 7);
+            const remainingDays = diffDays % 7;
+            if (weeks === 1 && remainingDays === 0) {
+              cycleDuration = "1 week";
+            } else if (remainingDays === 0) {
+              cycleDuration = `${weeks} weeks`;
+            } else {
+              cycleDuration = `${weeks}w ${remainingDays}d`;
+            }
+          } else {
+            const months = Math.floor(diffDays / 30);
+            const remainingDays = diffDays % 30;
+            if (months === 1 && remainingDays === 0) {
+              cycleDuration = "1 month";
+            } else if (remainingDays === 0) {
+              cycleDuration = `${months} months`;
+            } else {
+              cycleDuration = `${months}m ${Math.floor(remainingDays / 7)}w`;
+            }
+          }
+
+          timelineMap.set(customer.id, {
+            createdAt: customer.created_at,
+            closedAt: closedAt,
+            cycleDuration: cycleDuration
+          });
+
+        } catch (error) {
+          console.error(`Error fetching timeline for customer ${customer.id}:`, error);
+        }
+      }
+
+      setCustomerTimelines(timelineMap);
+    };
+
+    fetchCustomerTimelines();
+  }, [customers]);
 
   // Fetch registered users
   useEffect(() => {
@@ -55,9 +144,6 @@ export default function Customers() {
 
   // Get unique agents from registered users
   const uniqueAgents = registeredUsers.map(user => user.full_name).filter(Boolean);
-
-  // Filter customers (leads with status "Won")
-  const customers = leads.filter(lead => lead.status === "Won");
 
   // Apply search and agent filters
   const filteredCustomers = customers.filter(customer => {
@@ -129,6 +215,9 @@ export default function Customers() {
               <TableHead className="font-semibold">Contact</TableHead>
               <TableHead className="font-semibold">Agent</TableHead>
               <TableHead className="font-semibold">Products</TableHead>
+              <TableHead className="font-semibold">Created</TableHead>
+              <TableHead className="font-semibold">Closed</TableHead>
+              <TableHead className="font-semibold">Cycle</TableHead>
               <TableHead className="font-semibold text-right">Monthly</TableHead>
               <TableHead className="font-semibold text-right">Commission</TableHead>
               <TableHead className="font-semibold text-center">Actions</TableHead>
@@ -140,6 +229,7 @@ export default function Customers() {
                 const customerProducts = getProductsByCustomerId(customer.id);
                 const totalCommission = getTotalCommissionByCustomerId(customer.id);
                 const totalMonthly = getTotalMonthlyContributionByCustomerId(customer.id);
+                const timeline = customerTimelines.get(customer.id);
                 
                 return (
                   <TableRow 
@@ -213,6 +303,27 @@ export default function Customers() {
                       </div>
                     </TableCell>
                     
+                    <TableCell>
+                      <div className="text-sm">
+                        {timeline ? new Date(timeline.createdAt).toLocaleDateString('de-DE') : new Date(customer.created_at).toLocaleDateString('de-DE')}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Lead created</div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <div className="text-sm">
+                        {timeline ? new Date(timeline.closedAt).toLocaleDateString('de-DE') : new Date(customer.updated_at).toLocaleDateString('de-DE')}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Converted</div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <div className="text-sm font-medium text-primary">
+                        {timeline?.cycleDuration || 'Unknown'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Sales cycle</div>
+                    </TableCell>
+                    
                     <TableCell className="text-right">
                       <div className="font-medium">€{totalMonthly.toLocaleString()}</div>
                       <div className="text-xs text-muted-foreground">per month</div>
@@ -244,7 +355,7 @@ export default function Customers() {
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={10} className="text-center py-12">
                   <div className="flex flex-col items-center gap-3">
                     <UserCheck className="w-12 h-12 text-muted-foreground/50" />
                     <div className="text-muted-foreground">
