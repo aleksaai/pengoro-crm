@@ -16,11 +16,13 @@ import { TrendingUp, Users, DollarSign, Target, User, Calendar } from "lucide-re
 import { useAnalytics } from "@/hooks/useAnalytics";
 
 const Analytics = () => {
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const { revenueData, personalAnalytics, companyAnalytics, loading } = useAnalytics(selectedMonth);
+  const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  const { revenueData, personalAnalytics, companyAnalytics, loading } = useAnalytics(
+    selectedMonth === "all" ? undefined : selectedMonth
+  );
 
   const months = [
-    { value: "", label: "All Time" },
+    { value: "all", label: "All Time" },
     { value: "2024-01", label: "Januar 2024" },
     { value: "2024-02", label: "Februar 2024" },
     { value: "2024-03", label: "März 2024" },
