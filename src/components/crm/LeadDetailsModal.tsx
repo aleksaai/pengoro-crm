@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CopyableText } from "@/components/ui/copyable-text";
-import { Calendar, User, Phone, Mail, Tag, Clock, MessageSquare, Save, Upload, FileText, Trash2 } from "lucide-react";
+import { Calendar, User, Phone, Mail, Tag, Clock, MessageSquare, Save, Upload, FileText, Trash2, Euro, CreditCard, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLeadDetails, type Lead } from "@/hooks/useLeads";
@@ -31,6 +31,7 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
   const [viewingTranscript, setViewingTranscript] = useState<{content: string, name: string} | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const idDocumentInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(lead?.id || null);
@@ -183,6 +184,110 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
       toast({
         title: "View failed",
         description: "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleIdDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload PDF or image files only.",
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
+    const fileName = `${Date.now()}-${file.name}`;
+    const filePath = `${lead.id}/${fileName}`;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('lead-documents')
+        .upload(filePath, file, {
+          cacheControl: '3600'
+        });
+
+      if (error) throw error;
+
+      // Update lead with document path
+      await onUpdateLead(lead.id, { id_document_path: filePath });
+
+      toast({
+        title: "ID document uploaded",
+        description: `${file.name} has been uploaded successfully.`,
+      });
+
+      event.target.value = '';
+    } catch (error) {
+      console.error('ID upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+      event.target.value = '';
+    }
+  };
+
+  const handleViewIdDocument = async () => {
+    if (!currentLead.id_document_path) return;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('lead-documents')
+        .download(currentLead.id_document_path);
+
+      if (error) throw error;
+
+      // Create blob URL and open in new tab
+      const url = URL.createObjectURL(data);
+      window.open(url, '_blank');
+      
+      // Clean up the blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    } catch (error) {
+      console.error('View ID document error:', error);
+      toast({
+        title: "View failed",
+        description: "Could not open the document.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteIdDocument = async () => {
+    if (!currentLead.id_document_path) return;
+
+    try {
+      // Delete from storage
+      const { error } = await supabase.storage
+        .from('lead-documents')
+        .remove([currentLead.id_document_path]);
+
+      if (error) throw error;
+
+      // Update lead to remove document path
+      await onUpdateLead(lead.id, { id_document_path: null });
+
+      toast({
+        title: "ID document deleted",
+        description: "The document has been removed.",
+      });
+
+    } catch (error) {
+      console.error('Delete ID document error:', error);
+      toast({
+        title: "Delete failed",
+        description: "Could not delete the document.",
         variant: "destructive",
       });
     }
@@ -356,6 +461,44 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
                       </CopyableText>
                     )}
                   </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Age</Label>
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={editedLead?.age || ""}
+                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, age: e.target.value ? parseInt(e.target.value) : undefined } : null)}
+                        className="modern-input"
+                        placeholder="Enter age"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-foreground">{currentLead.age || "Not specified"}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Net Salary</Label>
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={editedLead?.net_salary || ""}
+                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, net_salary: e.target.value ? parseFloat(e.target.value) : undefined } : null)}
+                        className="modern-input"
+                        placeholder="Enter net salary"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Euro className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-foreground">
+                          {currentLead.net_salary ? `€${currentLead.net_salary.toLocaleString()}` : "Not specified"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -390,6 +533,63 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
                       ) : (
                         <span className="text-muted-foreground text-sm">No products selected</span>
                       )}
+                    </div>
+                  )}
+                </div>
+
+                {/* ID Document Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">ID Document</h4>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={idDocumentInputRef}
+                        onChange={handleIdDocumentUpload}
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        multiple={false}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => idDocumentInputRef.current?.click()}
+                        className="h-8"
+                      >
+                        <Upload className="h-3 w-3 mr-1" />
+                        Upload ID
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {currentLead.id_document_path ? (
+                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                         onClick={() => handleViewIdDocument()}>
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">ID Document</p>
+                          <p className="text-xs text-muted-foreground">
+                            Click to view
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteIdDocument();
+                        }}
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 glass-subtle rounded-lg">
+                      <CreditCard className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">No ID document uploaded yet</p>
                     </div>
                   )}
                 </div>

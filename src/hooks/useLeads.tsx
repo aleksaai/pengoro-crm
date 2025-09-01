@@ -14,6 +14,9 @@ export interface Lead {
   created_at: string;
   updated_at: string;
   created_by?: string;
+  age?: number;
+  net_salary?: number;
+  id_document_path?: string;
 }
 
 export interface LeadNote {
@@ -188,6 +191,9 @@ export function useLeads() {
             status: "status",
             interested_products: "interested products",
             source: "lead source",
+            age: "age",
+            net_salary: "net salary",
+            id_document_path: "ID document",
           };
           return fieldMap[field] || field;
         });

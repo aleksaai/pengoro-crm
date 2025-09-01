@@ -178,39 +178,48 @@ export type Database = {
       }
       leads: {
         Row: {
+          age: number | null
           assigned_to: string | null
           created_at: string
           created_by: string | null
           email: string
           id: string
+          id_document_path: string | null
           interested_products: string[] | null
           name: string
+          net_salary: number | null
           phone: string | null
           source: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          age?: number | null
           assigned_to?: string | null
           created_at?: string
           created_by?: string | null
           email: string
           id?: string
+          id_document_path?: string | null
           interested_products?: string[] | null
           name: string
+          net_salary?: number | null
           phone?: string | null
           source?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          age?: number | null
           assigned_to?: string | null
           created_at?: string
           created_by?: string | null
           email?: string
           id?: string
+          id_document_path?: string | null
           interested_products?: string[] | null
           name?: string
+          net_salary?: number | null
           phone?: string | null
           source?: string | null
           status?: string

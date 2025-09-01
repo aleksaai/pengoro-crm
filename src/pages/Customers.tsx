@@ -10,6 +10,7 @@ import { useCustomerProducts } from "@/hooks/useCustomerProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { AddCustomerProductDialog } from "@/components/crm/AddCustomerProductDialog";
 import { LeadDetailsModal } from "@/components/crm/LeadDetailsModal";
+import { CustomerProductsBreakdown } from "@/components/crm/CustomerProductsBreakdown";
 
 export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -268,39 +269,10 @@ export default function Customers() {
                     </TableCell>
                     
                     <TableCell>
-                      <div className="space-y-1 max-w-[250px]">
-                        {customerProducts.length > 0 ? (
-                          <>
-                            {customerProducts.slice(0, 2).map((product) => (
-                              <div key={product.id} className="flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-1">
-                                  <Badge variant="outline" className="text-[10px] px-1 py-0">
-                                    {product.product_name}
-                                  </Badge>
-                                  <span className="text-muted-foreground truncate">
-                                    {product.provider_company}
-                                  </span>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleDeleteProduct(product.id)}
-                                  className="h-4 w-4 p-0 text-muted-foreground hover:text-destructive"
-                                >
-                                  <Trash2 className="w-2 h-2" />
-                                </Button>
-                              </div>
-                            ))}
-                            {customerProducts.length > 2 && (
-                              <div className="text-xs text-muted-foreground">
-                                +{customerProducts.length - 2} more
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="text-xs text-muted-foreground">No products</div>
-                        )}
-                      </div>
+                      <CustomerProductsBreakdown 
+                        customer={customer}
+                        onDeleteProduct={handleDeleteProduct}
+                      />
                     </TableCell>
                     
                     <TableCell>
