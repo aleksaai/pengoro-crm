@@ -238,12 +238,7 @@ export default function Customers() {
                     className="hover:bg-muted/30 transition-colors"
                   >
                     <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium">{customer.name}</div>
-                        <Badge variant="secondary" className="text-xs">
-                          Customer
-                        </Badge>
-                      </div>
+                      <div className="font-medium">{customer.name}</div>
                     </TableCell>
                     
                     <TableCell>
