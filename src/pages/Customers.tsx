@@ -337,7 +337,10 @@ export default function Customers() {
                             customer={customer} 
                             onProductAdded={() => refetchProducts()}
                             trigger={
-                              <DropdownMenuItem className="cursor-pointer">
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onSelect={(e) => e.preventDefault()}
+                              >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Product
                               </DropdownMenuItem>
