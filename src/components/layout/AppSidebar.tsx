@@ -1,4 +1,4 @@
-import { BarChart3, Users, CheckSquare, RotateCcw } from "lucide-react";
+import { BarChart3, Users, CheckSquare, RotateCcw, TrendingUp } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -17,6 +17,7 @@ const navItems = [
   { title: "Pipeline", url: "/", icon: BarChart3 },
   { title: "Leads", url: "/leads", icon: Users },
   { title: "Winbacks", url: "/winbacks", icon: RotateCcw },
+  { title: "Analytics", url: "/analytics", icon: TrendingUp },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
 ];
 
@@ -83,6 +84,21 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* AI Update Info */}
+        <div className="mt-auto p-4">
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20">
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse mt-1.5"></div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-foreground">Coming Soon</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Major AI Update wird bald verfügbar sein
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </SidebarContent>
     </Sidebar>
   );

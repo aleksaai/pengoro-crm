@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Winbacks from "./pages/Winbacks";
+import Analytics from "./pages/Analytics";
 import Tasks from "./pages/Tasks";
 import Login from "./pages/Login";
 import Setup from "./pages/Setup";
@@ -43,6 +44,13 @@ const App = () => (
               <ProtectedRoute>
                 <CRMLayout>
                   <Winbacks />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <Analytics />
                 </CRMLayout>
               </ProtectedRoute>
             } />
