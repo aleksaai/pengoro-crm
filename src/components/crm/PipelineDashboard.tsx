@@ -16,166 +16,31 @@ const dealStages = [
     id: "discovery",
     name: "Discovery Call", 
     color: "bg-blue-50 border-blue-200",
-    deals: [
-      { 
-        id: "deal-1",
-        name: "Tech Solutions GmbH", 
-        email: "john@techsolutions.de",
-        phone: "+49 30 12345678",
-        source: "Meta Ads",
-        status: "Discovery Call Booked",
-        assigned_to: "John Miller",
-        interested_products: ["PKV", "PAV"],
-        created_at: "2024-01-15T10:00:00Z",
-        updated_at: "2024-01-15T10:00:00Z",
-        created_by: "user-1"
-      },
-      { 
-        id: "deal-2",
-        name: "Marketing Plus", 
-        email: "sarah@marketingplus.com",
-        phone: "+49 40 87654321",
-        source: "Website",
-        status: "Discovery Call Booked",
-        assigned_to: "Sarah Johnson",
-        interested_products: ["Investments"],
-        created_at: "2024-01-14T09:00:00Z",
-        updated_at: "2024-01-14T09:00:00Z",
-        created_by: "user-2"
-      },
-      { 
-        id: "deal-3",
-        name: "Digital Corp", 
-        email: "mike@digitalcorp.eu",
-        phone: "+49 89 11223344",
-        source: "Referral",
-        status: "Discovery Call Booked",
-        assigned_to: "Mike Davis",
-        interested_products: ["PKV", "Insurances"],
-        created_at: "2024-01-13T14:00:00Z",
-        updated_at: "2024-01-13T14:00:00Z",
-        created_by: "user-3"
-      }
-    ]
+    deals: []
   },
   { 
     id: "second-meeting",
     name: "Second Meeting",
     color: "bg-purple-50 border-purple-200",
-    deals: [
-      { 
-        id: "deal-4",
-        name: "Enterprise Solutions", 
-        email: "lisa@enterprise.com",
-        phone: "+49 69 55566677",
-        source: "LinkedIn",
-        status: "Second Meeting Booked",
-        assigned_to: "Lisa Chen",
-        interested_products: ["PKV", "PAV", "Investments"],
-        created_at: "2024-01-10T11:00:00Z",
-        updated_at: "2024-01-10T11:00:00Z",
-        created_by: "user-4"
-      },
-      { 
-        id: "deal-5",
-        name: "Innovation Hub", 
-        email: "david@innovation.co",
-        phone: "+49 221 99887766",
-        source: "Website",
-        status: "Second Meeting Booked",
-        assigned_to: "David Park",
-        interested_products: ["Insurances"],
-        created_at: "2024-01-09T16:00:00Z",
-        updated_at: "2024-01-09T16:00:00Z",
-        created_by: "user-5"
-      }
-    ]
+    deals: []
   },
   { 
     id: "follow-up",
     name: "Follow-Up",
     color: "bg-orange-50 border-orange-200",
-    deals: [
-      { 
-        id: "deal-6",
-        name: "Mega Enterprise", 
-        email: "robert@mega.com",
-        phone: "+49 711 44332211",
-        source: "Meta Ads",
-        status: "Follow-Up Scheduled",
-        assigned_to: "Robert Taylor",
-        interested_products: ["PKV", "PAV"],
-        created_at: "2024-01-06T13:00:00Z",
-        updated_at: "2024-01-06T13:00:00Z",
-        created_by: "user-6"
-      },
-      { 
-        id: "deal-7",
-        name: "Tech Giants", 
-        email: "maria@techgiants.com",
-        phone: "+49 511 66778899",
-        source: "Referral",
-        status: "Follow-Up Scheduled",
-        assigned_to: "Maria Garcia",
-        interested_products: ["Investments", "Real Estate"],
-        created_at: "2024-01-05T12:00:00Z",
-        updated_at: "2024-01-05T12:00:00Z",
-        created_by: "user-7"
-      }
-    ]
+    deals: []
   },
   { 
     id: "closing",
     name: "Closing Call",
     color: "bg-green-50 border-green-200",
-    deals: [
-      { 
-        id: "deal-8",
-        name: "Premium Corp", 
-        email: "jennifer@premium.com",
-        phone: "+49 201 33445566",
-        source: "Website",
-        status: "Closing Call Scheduled",
-        assigned_to: "Jennifer Lee",
-        interested_products: ["PKV", "PAV", "Investments"],
-        created_at: "2024-01-03T15:00:00Z",
-        updated_at: "2024-01-03T15:00:00Z",
-        created_by: "user-8"
-      },
-      { 
-        id: "deal-9",
-        name: "Elite Systems", 
-        email: "michael@elite.com",
-        phone: "+49 341 77889900",
-        source: "LinkedIn",
-        status: "Closing Call Scheduled",
-        assigned_to: "Michael Brown",
-        interested_products: ["Real Estate"],
-        created_at: "2024-01-02T10:00:00Z",
-        updated_at: "2024-01-02T10:00:00Z",
-        created_by: "user-9"
-      }
-    ]
+    deals: []
   },
   { 
     id: "stuck",
     name: "Stuck",
     color: "bg-red-50 border-red-200",
-    deals: [
-      { 
-        id: "deal-10",
-        name: "Difficult Client Ltd", 
-        email: "peter@difficult.com",
-        phone: "+49 521 12121212",
-        source: "Website",
-        status: "Stuck",
-        assigned_to: "Peter Wilson",
-        interested_products: ["PKV"],
-        created_at: "2023-12-15T09:00:00Z",
-        updated_at: "2023-12-15T09:00:00Z",
-        created_by: "user-10"
-      }
-    ]
+    deals: []
   }
 ];
 
@@ -346,24 +211,17 @@ export function PipelineDashboard() {
     return stageMap[stageId] || "New";
   };
 
-  // Filter stages based on selected agent and merge DB leads
+  // Filter stages based on selected agent and show only real leads from DB
   const filteredStages = stages.map(stage => {
     const stageStatus = getStatusFromStage(stage.id);
     const dbDeals = leads
       .filter(l => l.status === stageStatus)
       .filter(l => selectedAgent === "all" || l.assigned_to === selectedAgent);
 
-    const stageDeals = selectedAgent === "all" 
-      ? stage.deals 
-      : stage.deals.filter(deal => deal.assigned_to === selectedAgent);
-
-    // merge by id to avoid duplicates
-    const merged = [...stageDeals, ...dbDeals.filter(d => !stageDeals.some(s => s.id === d.id))];
-    return { ...stage, deals: merged };
+    return { ...stage, deals: dbDeals };
   });
 
   const totalDeals = filteredStages.reduce((acc, stage) => acc + stage.deals.length, 0);
-  const totalAllDeals = stages.reduce((acc, stage) => acc + stage.deals.length, 0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { 
@@ -389,44 +247,18 @@ export function PipelineDashboard() {
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Use filteredStages to find the dragged deal (includes DB + mock)
+    // Find the dragged deal from real leads only
     const sourceDeal = filteredStages.flatMap(stage => stage.deals).find(d => d.id === activeId);
     if (!sourceDeal) return;
 
-    // Determine target stage from filtered view (by column id or by hovering over a deal)
+    // Determine target stage
     const targetStageFiltered =
       filteredStages.find(stage => stage.id === overId) ||
       filteredStages.find(stage => stage.deals.some(d => d.id === overId));
 
     if (!targetStageFiltered) return;
 
-    // Locate stages in base state (mock data). May be undefined for DB-only deals.
-    const sourceStageInStages = stages.find(stage => stage.deals.some(d => d.id === activeId));
-    const targetStageInStages = stages.find(stage => stage.id === targetStageFiltered.id);
-
-    // Same stage reordering (only for items present in base stages)
-    if (
-      sourceStageInStages &&
-      targetStageInStages &&
-      sourceStageInStages.id === targetStageInStages.id
-    ) {
-      const oldIndex = sourceStageInStages.deals.findIndex(d => d.id === activeId);
-      let newIndex = sourceStageInStages.deals.findIndex(d => d.id === overId);
-
-      // If dropping on the container itself, place at end
-      if (newIndex === -1) newIndex = sourceStageInStages.deals.length;
-
-      if (oldIndex !== newIndex && oldIndex !== -1) {
-        setStages(prev => prev.map(stage =>
-          stage.id === sourceStageInStages.id
-            ? { ...stage, deals: arrayMove(stage.deals, oldIndex, newIndex) }
-            : stage
-        ));
-      }
-      return;
-    }
-
-    // Build updated deal ensuring required fields for stage state
+    // Build updated deal
     const updatedDeal = {
       ...sourceDeal,
       status: getStatusFromStage(targetStageFiltered.id),
@@ -435,20 +267,7 @@ export function PipelineDashboard() {
       created_by: sourceDeal.created_by ?? "",
     };
 
-    // Optimistic UI update only for items stored in base stages (mock deals)
-    if (sourceStageInStages && targetStageInStages) {
-      setStages(prev => prev.map(stage => {
-        if (stage.id === sourceStageInStages.id) {
-          return { ...stage, deals: stage.deals.filter(deal => deal.id !== activeId) };
-        }
-        if (stage.id === targetStageInStages.id) {
-          return { ...stage, deals: [...stage.deals, updatedDeal] };
-        }
-        return stage;
-      }));
-    }
-
-    // Update backend only for real leads (not mock deals)
+    // Update backend for real leads
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(activeId);
     
     if (isUUID) {
@@ -465,15 +284,7 @@ export function PipelineDashboard() {
           description: "Failed to move deal. Please try again.",
           variant: "destructive",
         });
-        // Revert on error
-        setStages(dealStages);
       }
-    } else {
-      // Just show toast for mock deals
-      toast({
-        title: "Deal moved",
-        description: `${sourceDeal.name} moved to ${targetStageFiltered.name}`,
-      });
     }
   };
 
