@@ -17,13 +17,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AbandonLeadDialog } from "./AbandonLeadDialog";
 import { MoreVertical, Phone, CheckCircle, X, TrendingUp, PhoneOff, Video, Clock } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 
 interface LeadRowActionsProps {
   lead: Lead;
   onConvertToDeal: (leadId: string) => void;
-  onAbandonLead: (leadId: string) => void;
+  onAbandonLead: (leadId: string, reason: string) => void;
   onUpdateStatus: (leadId: string, status: string) => void;
 }
 
@@ -53,8 +54,8 @@ export function LeadRowActions({
     onUpdateStatus(lead.id, "Call-Back");
   };
 
-  const handleAbandonLead = () => {
-    onAbandonLead(lead.id);
+  const handleAbandonLead = (reason: string) => {
+    onAbandonLead(lead.id, reason);
     setShowAbandonDialog(false);
   };
 
@@ -142,30 +143,13 @@ export function LeadRowActions({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Abandon Lead Confirmation */}
-      <AlertDialog open={showAbandonDialog} onOpenChange={setShowAbandonDialog}>
-        <AlertDialogContent className="glass-strong border-glass-border/60">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <X className="h-5 w-5 text-destructive" />
-              Abandon Lead
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to abandon <strong>{lead.name}</strong>? 
-              This action cannot be undone and the lead will be permanently removed from your pipeline.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="glass-subtle border-glass-border">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleAbandonLead}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              Abandon Lead
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Abandon Lead with Reason */}
+      <AbandonLeadDialog
+        open={showAbandonDialog}
+        onOpenChange={setShowAbandonDialog}
+        leadName={lead.name}
+        onConfirm={handleAbandonLead}
+      />
     </>
   );
 }

@@ -128,8 +128,40 @@ export function LeadsTable() {
     console.log(`Converting lead ${leadId} to deal`);
   };
 
-  const handleAbandonLead = (leadId: string) => {
-    console.log(`Abandoning lead ${leadId}`);
+  const handleAbandonLead = async (leadId: string, reason: string) => {
+    try {
+      await updateLead(leadId, { status: "Abandoned" });
+      
+      // Add history entry for abandonment reason
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', userData.user?.id)
+        .single();
+
+      await supabase
+        .from('lead_history')
+        .insert({
+          lead_id: leadId,
+          action: 'Lead Abandoned',
+          details: `Reason: ${reason}`,
+          created_by: userData.user?.id,
+          user_name: userProfile?.full_name || 'Unknown User'
+        });
+
+      toast({
+        title: "Lead Abandoned",
+        description: `Lead has been abandoned. Reason: ${reason}`,
+      });
+    } catch (error) {
+      console.error('Error abandoning lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to abandon lead",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUpdateStatus = async (leadId: string, newStatus: string) => {
