@@ -1,19 +1,35 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, Users, DollarSign, Target, User, Calendar, ArrowUpRight, ArrowDownRight, BarChart3, PieChart } from "lucide-react";
+import { 
+  TrendingUp, 
+  Users, 
+  DollarSign, 
+  Target, 
+  Calendar, 
+  BarChart3, 
+  PieChart,
+  Activity,
+} from "lucide-react";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+} from 'recharts';
 
 const Analytics = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
@@ -37,30 +53,89 @@ const Analytics = () => {
     { value: "2024-12", label: "Dezember 2024" },
   ];
 
-  const groupedRevenueData = revenueData.reduce((acc, item) => {
-    const key = `${item.month}-${item.company}`;
-    if (!acc[key]) {
-      acc[key] = {
+  // Transform data for charts
+  const revenueChartData = revenueData.reduce((acc, item) => {
+    const existing = acc.find(d => d.month === item.month);
+    if (existing) {
+      existing.revenue += item.revenue;
+      existing.commission += item.commission;
+    } else {
+      acc.push({
         month: item.month,
-        company: item.company,
-        agents: [],
-        totalRevenue: 0,
-      };
+        revenue: item.revenue,
+        commission: item.commission,
+      });
     }
-    acc[key].agents.push({ agent: item.agent, commission: item.commission });
-    acc[key].totalRevenue += item.revenue;
     return acc;
-  }, {} as Record<string, { month: string; company: string; agents: { agent: string; commission: number }[]; totalRevenue: number }>);
+  }, [] as Array<{ month: string; revenue: number; commission: number }>);
+
+  // Company distribution data
+  const companyData = revenueData.reduce((acc, item) => {
+    const existing = acc.find(d => d.company === item.company);
+    if (existing) {
+      existing.revenue += item.revenue;
+    } else {
+      acc.push({
+        company: item.company,
+        revenue: item.revenue,
+      });
+    }
+    return acc;
+  }, [] as Array<{ company: string; revenue: number }>);
+
+  // Agent performance data
+  const agentData = revenueData.reduce((acc, item) => {
+    const existing = acc.find(d => d.agent === item.agent);
+    if (existing) {
+      existing.commission += item.commission;
+      existing.deals += 1;
+    } else {
+      acc.push({
+        agent: item.agent,
+        commission: item.commission,
+        deals: 1,
+      });
+    }
+    return acc;
+  }, [] as Array<{ agent: string; commission: number; deals: number }>);
+
+  // Mock trend data for demonstration
+  const trendData = [
+    { month: 'Jan', leads: 45, conversions: 12, revenue: 15000 },
+    { month: 'Feb', leads: 52, conversions: 15, revenue: 18500 },
+    { month: 'Mar', leads: 48, conversions: 13, revenue: 16200 },
+    { month: 'Apr', leads: 61, conversions: 18, revenue: 22100 },
+    { month: 'May', leads: 55, conversions: 16, revenue: 19800 },
+    { month: 'Jun', leads: 67, conversions: 21, revenue: 25400 },
+  ];
+
+  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff88'];
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium">{`${label}`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {`${entry.dataKey}: €${entry.value.toLocaleString()}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header with gradient background */}
+      {/* Header */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary/80 to-accent p-8 text-white">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative z-10 flex justify-between items-center">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">Analytics Dashboard</h1>
-            <p className="text-white/80 text-lg">Monitor your CRM performance with advanced insights</p>
+            <h1 className="text-4xl font-bold tracking-tight">Interactive Analytics</h1>
+            <p className="text-white/80 text-lg">Real-time performance insights with interactive charts</p>
           </div>
           <div className="flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/20">
             <Calendar className="h-5 w-5" />
@@ -78,231 +153,282 @@ const Analytics = () => {
             </Select>
           </div>
         </div>
-        {/* Decorative elements */}
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl"></div>
       </div>
 
-      {/* Company Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20 hover-scale">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <DollarSign className="h-5 w-5 text-white" />
-            </div>
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-24 mb-2" />
-            ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">
-                €{companyAnalytics?.totalRevenue.toLocaleString()}
-              </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <ArrowUpRight className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">+12.5% from last period</p>
+            <div className="text-2xl font-bold">
+              €{loading ? "..." : companyAnalytics?.totalRevenue.toLocaleString()}
             </div>
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              +12.5% from last period
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20 hover-scale">
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Deal Commission</CardTitle>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Target className="h-5 w-5 text-white" />
-            </div>
+            <CardTitle className="text-sm font-medium">Avg. Commission</CardTitle>
+            <Target className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-24 mb-2" />
-            ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">
-                €{companyAnalytics?.averageCommission.toLocaleString()}
-              </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <ArrowUpRight className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">+8.3% from last period</p>
+            <div className="text-2xl font-bold">
+              €{loading ? "..." : companyAnalytics?.averageCommission.toLocaleString()}
             </div>
+            <p className="text-xs text-blue-600 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              +8.3% from last period
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20 hover-scale">
+        <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Users className="h-5 w-5 text-white" />
-            </div>
+            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+            <Users className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-24 mb-2" />
-            ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">
-                {companyAnalytics?.totalLeads}
-              </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <ArrowUpRight className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">+15.2% from last period</p>
+            <div className="text-2xl font-bold">
+              {loading ? "..." : companyAnalytics?.totalLeads}
             </div>
+            <p className="text-xs text-purple-600 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              +15.2% from last period
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20 hover-scale">
+        <Card className="border-l-4 border-l-orange-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Conversion Rate</CardTitle>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <TrendingUp className="h-5 w-5 text-white" />
-            </div>
+            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+            <Activity className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-24 mb-2" />
-            ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">
-                {companyAnalytics?.conversionRate}%
-              </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <ArrowUpRight className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">+3.1% from last period</p>
+            <div className="text-2xl font-bold">
+              {loading ? "..." : companyAnalytics?.conversionRate}%
             </div>
+            <p className="text-xs text-orange-600 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              +3.1% from last period
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Personal Analytics */}
-      <Card className="overflow-hidden border-2 hover:border-primary/20 transition-all duration-300">
-        <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <User className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-xl">Personal Analytics</CardTitle>
-              <p className="text-sm text-muted-foreground">Your individual performance metrics</p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center group">
-              <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Users className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-primary mb-1">
-                {loading ? <Skeleton className="h-8 w-16 mx-auto" /> : personalAnalytics?.leadsAssigned || 0}
-              </div>
-              <p className="text-sm text-muted-foreground font-medium">Leads Assigned</p>
-            </div>
-            <div className="text-center group">
-              <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Target className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-primary mb-1">
-                {loading ? <Skeleton className="h-8 w-16 mx-auto" /> : `${personalAnalytics?.conversionRate || 0}%`}
-              </div>
-              <p className="text-sm text-muted-foreground font-medium">Conversion Rate</p>
-            </div>
-            <div className="text-center group">
-              <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <DollarSign className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-primary mb-1">
-                {loading ? <Skeleton className="h-8 w-20 mx-auto" /> : `€${personalAnalytics?.averageDealAmount || 0}`}
-              </div>
-              <p className="text-sm text-muted-foreground font-medium">Avg. Deal Amount</p>
-            </div>
-            <div className="text-center group">
-              <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <BarChart3 className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-lg font-bold text-primary mb-1">
-                {loading ? <Skeleton className="h-6 w-24 mx-auto" /> : personalAnalytics?.mostSoldProduct || 'N/A'}
-              </div>
-              <p className="text-sm text-muted-foreground font-medium">Most Sold Product</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue Trend Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Revenue & Commission Trends
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-80 w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={revenueChartData.length > 0 ? revenueChartData : trendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Area 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stackId="1" 
+                    stroke="#8884d8" 
+                    fill="#8884d8" 
+                    fillOpacity={0.6}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="commission" 
+                    stackId="2" 
+                    stroke="#82ca9d" 
+                    fill="#82ca9d" 
+                    fillOpacity={0.6}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Revenue Table */}
-      <Card className="overflow-hidden border-2 hover:border-primary/20 transition-all duration-300">
-        <CardHeader className="bg-gradient-to-r from-accent/10 to-primary/10 border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
-                <PieChart className="h-5 w-5 text-white" />
+        {/* Company Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PieChart className="h-5 w-5 text-primary" />
+              Revenue by Company
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-80 w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <RechartsPieChart>
+                  <Tooltip />
+                  <Legend />
+                  <Pie 
+                    data={companyData.length > 0 ? companyData : [
+                      { company: 'Allianz', revenue: 45000 },
+                      { company: 'AXA', revenue: 32000 },
+                      { company: 'Munich Re', revenue: 28000 },
+                      { company: 'Generali', revenue: 15000 },
+                    ]}
+                    cx="50%" 
+                    cy="50%" 
+                    outerRadius={80} 
+                    dataKey="revenue"
+                    nameKey="company"
+                  >
+                    {(companyData.length > 0 ? companyData : [
+                      { company: 'Allianz', revenue: 45000 },
+                      { company: 'AXA', revenue: 32000 },
+                      { company: 'Munich Re', revenue: 28000 },
+                      { company: 'Generali', revenue: 15000 },
+                    ]).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Agent Performance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Agent Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-80 w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={agentData.length > 0 ? agentData : [
+                  { agent: 'Alex Mueller', commission: 5200, deals: 12 },
+                  { agent: 'Sarah Schmidt', commission: 4800, deals: 10 },
+                  { agent: 'Michael Weber', commission: 4200, deals: 9 },
+                  { agent: 'Anna Fischer', commission: 3900, deals: 8 },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="agent" />
+                  <YAxis />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Bar dataKey="commission" fill="#8884d8" />
+                  <Bar dataKey="deals" fill="#82ca9d" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Personal Performance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Personal Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-6 h-80">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {loading ? "..." : personalAnalytics?.leadsAssigned || 0}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Leads Assigned</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {loading ? "..." : `${personalAnalytics?.conversionRate || 0}%`}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-xl">Revenue by Company & Agent</CardTitle>
-                <p className="text-sm text-muted-foreground">Monthly contributions and agent commissions breakdown</p>
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    €{loading ? "..." : personalAnalytics?.averageDealAmount || 0}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Avg. Deal Amount</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-purple-600 mb-2">
+                    {loading ? "..." : personalAnalytics?.mostSoldProduct || 'N/A'}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Top Product</p>
+                </div>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Full Width Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Lead Performance Timeline
+          </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent>
           {loading ? (
-            <div className="p-6 space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
+            <Skeleton className="h-96 w-full" />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-muted/50">
-                    <TableHead className="font-semibold">Month</TableHead>
-                    <TableHead className="font-semibold">Company</TableHead>
-                    <TableHead className="font-semibold">Revenue</TableHead>
-                    <TableHead className="font-semibold">Agents & Commissions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.values(groupedRevenueData).map((row, index) => (
-                    <TableRow key={index} className="hover:bg-muted/50 transition-colors">
-                      <TableCell className="font-medium">{row.month}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-primary"></div>
-                          {row.company}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-semibold text-lg text-green-600">
-                          €{row.totalRevenue.toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-2">
-                          {row.agents.map((agent, i) => (
-                            <Badge key={i} variant="outline" className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20 hover:from-primary/20 hover:to-accent/20 transition-all">
-                              {agent.agent}: €{agent.commission}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {Object.keys(groupedRevenueData).length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
-                            <BarChart3 className="h-8 w-8 text-muted-foreground" />
-                          </div>
-                          <p className="text-muted-foreground text-lg">No revenue data available for the selected period</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="leads" 
+                  stroke="#8884d8" 
+                  strokeWidth={3}
+                  dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="conversions" 
+                  stroke="#82ca9d" 
+                  strokeWidth={3}
+                  dot={{ fill: '#82ca9d', strokeWidth: 2, r: 6 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="#ffc658" 
+                  strokeWidth={3}
+                  dot={{ fill: '#ffc658', strokeWidth: 2, r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
