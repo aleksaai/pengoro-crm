@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Plus, Upload, Mail, ArrowRight } from "lucide-react";
+import { Search, Plus, Upload, Mail, Phone, User, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "./AddLeadDialog";
 import { MassUploadDialog } from "./MassUploadDialog";
@@ -25,7 +25,6 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  arrayMove,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import {
@@ -98,58 +97,75 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-foreground text-sm truncate">{lead.name}</h4>
             <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-              <Mail className="w-3 h-3" />
-              <span className="truncate">{lead.email}</span>
+              {lead.email && (
+                <>
+                  <Mail className="w-3 h-3" />
+                  <span className="truncate">{lead.email}</span>
+                </>
+              )}
             </div>
+            {lead.phone && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                <Phone className="w-3 h-3" />
+                <span>{lead.phone}</span>
+              </div>
+            )}
+            {lead.assigned_to && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                <User className="w-3 h-3" />
+                <span className="truncate">{lead.assigned_to}</span>
+              </div>
+            )}
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={(e) => { e.stopPropagation(); onConvert(lead); }}
-            aria-label="Convert lead to deal"
-            title="Convert to Discovery Call"
-          >
-            Convert
-          </Button>
         </div>
 
-        <Badge className={`${getSourceBadgeClass(lead.source)} text-[10px] px-2 py-0.5 rounded-md w-fit`}>
-          {lead.source}
-        </Badge>
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center gap-1">
+            {lead.source && (
+              <Badge variant="outline" className={`text-xs px-2 py-0.5 ${getSourceBadgeClass(lead.source)}`}>
+                {lead.source}
+              </Badge>
+            )}
+          </div>
+          {lead.status !== "Abandoned" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onConvert(lead);
+              }}
+              className="text-xs h-6 px-2"
+            >
+              <ArrowRight className="w-3 h-3 mr-1" />
+              Convert
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-interface DropZoneProps {
-  stage: typeof leadStages[0];
+interface LeadStageProps {
+  stage: typeof leadStages[0] & { leads: Lead[]; count: number };
   leads: Lead[];
   onLeadClick: (lead: Lead) => void;
   onConvert: (lead: Lead) => void;
 }
 
-function DropZone({ stage, leads, onLeadClick, onConvert }: DropZoneProps) {
+function LeadStage({ stage, leads, onLeadClick, onConvert }: LeadStageProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
   });
 
   return (
-    <div 
-      ref={setNodeRef}
-      className={`flex flex-col h-full min-h-[600px] transition-colors duration-200 ${isOver ? 'bg-accent/10' : ''}`}
-    >
-      {/* Column Header */}
-      <div className="glass-card p-4 mb-4 border-l-4" style={{ borderLeftColor: `hsl(var(--${stage.color.replace('bg-', '')}))` }}>
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-foreground text-sm">{stage.title}</h3>
-          <Badge variant="secondary" className="text-xs">
-            {leads.length}
-          </Badge>
-        </div>
+    <div ref={setNodeRef} className="bg-glass/20 rounded-xl border border-glass-border/30 p-4 min-h-[600px]">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-foreground">{stage.title}</h3>
+        <Badge className={`${stage.color} text-white`}>{leads.length}</Badge>
       </div>
 
-      {/* Lead Cards */}
       <div className="flex-1 space-y-3">
         <SortableContext items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
           {leads.map((lead) => (
@@ -283,175 +299,138 @@ export function LeadsPipeline() {
     setActiveId(event.active.id as string);
   };
 
-const handleDragEnd = (event: DragEndEvent) => {
-  const { active, over } = event;
-  
-  if (!over) return;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
 
-  const activeId = active.id as string;
-  const overId = over.id as string;
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
-  const activeLead = leads.find(lead => lead.id === activeId);
-  if (!activeLead) return;
+    const activeLead = leads.find(lead => lead.id === activeId);
+    if (!activeLead) return;
 
-  // Determine target status (stage or another lead's status)
-  let newStatus = activeLead.status;
+    // Determine target status (stage or another lead's status)
+    let newStatus = activeLead.status;
 
-  const targetStage = leadStages.find(stage => stage.id === overId);
-  if (targetStage) {
-    newStatus = targetStage.id;
-  } else {
-    const targetLead = leads.find(lead => lead.id === overId);
-    if (targetLead) {
-      newStatus = targetLead.status;
+    const targetStage = leadStages.find(stage => stage.id === overId);
+    if (targetStage) {
+      newStatus = targetStage.id;
+    } else {
+      const targetLead = leads.find(lead => lead.id === overId);
+      if (targetLead) {
+        newStatus = targetLead.status;
+      }
     }
-  }
 
-  // If dropped to Abandoned, open reason modal instead of immediate update
-  if (newStatus === "Abandoned" && newStatus !== activeLead.status) {
-    setPendingAbandonLead(activeLead);
-    setShowAbandonDialog(true);
+    // If dropped to Abandoned, open reason modal instead of immediate update
+    if (newStatus === "Abandoned" && newStatus !== activeLead.status) {
+      setPendingAbandonLead(activeLead);
+      setShowAbandonDialog(true);
+      setActiveId(null);
+      return;
+    }
+
+    if (newStatus !== activeLead.status) {
+      handleUpdateLead(activeId, { status: newStatus });
+      toast({
+        title: "Lead Updated",
+        description: `Lead moved to ${newStatus}`,
+      });
+    }
+
     setActiveId(null);
-    return;
-  }
-
-  if (newStatus !== activeLead.status) {
-    handleUpdateLead(activeId, { status: newStatus });
-    toast({
-      title: "Lead Updated",
-      description: `Lead moved to ${newStatus}`,
-    });
-  }
-
-  setActiveId(null);
-};
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-muted-foreground">Loading leads...</div>
       </div>
     );
   }
 
-  const activeLead = activeId ? leads.find(lead => lead.id === activeId) : null;
-
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="glass-card">
-        <div className="flex items-center justify-between">
-          <div className="space-y-3">
-            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
-              Leads Pipeline
-            </h1>
-            <div className="flex items-center gap-6 flex-wrap">
-              {stagesWithLeads.slice(0, 4).map((stage, index) => (
-                <div key={stage.id} className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${stage.color}`}></div>
-                  <span className="text-sm text-muted-foreground">
-                    {stage.title}: <span className="font-medium text-foreground">{stage.count}</span>
-                  </span>
-                </div>
-              ))}
-              <div className="h-4 w-px bg-border/60"></div>
-              <p className="text-sm text-muted-foreground">
-                Total: <span className="font-semibold text-primary">{totalLeads}</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              onClick={() => setShowAddDialog(true)}
-              className="modern-button h-11 px-6 text-sm font-medium shadow-lg"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Lead
-            </Button>
-            <Button 
-              onClick={() => setShowMassUpload(true)}
-              variant="outline"
-              className="glass-subtle border-glass-border h-11 px-6 text-sm font-medium"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Mass Upload
-            </Button>
-          </div>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Leads</h1>
+          <p className="text-muted-foreground">Manage your lead pipeline and convert prospects to deals</p>
         </div>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="glass-card p-4">
+        
         <div className="flex items-center gap-4">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Search leads by name, email, or phone..."
+              placeholder="Search leads..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="modern-input pl-10 h-10 text-sm"
+              className="pl-10 w-64"
             />
           </div>
           
-          {/* Agent Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-              <SelectTrigger className="w-48 h-10 bg-background border-border">
-                <SelectValue placeholder="Filter by agent" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-border shadow-lg z-50">
-                <SelectItem value="all">All Agents ({totalLeads})</SelectItem>
-                {uniqueAgents.map(agent => {
-                  const agentLeads = leadsInBoard.filter(lead => lead.assigned_to === agent).length;
-                  return (
-                    <SelectItem key={agent} value={agent}>
-                      {agent} ({agentLeads})
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter by agent" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Agents ({totalLeads})</SelectItem>
+              {uniqueAgents.map((agent) => {
+                const agentLeadCount = leadsInBoard.filter(lead => lead.assigned_to === agent).length;
+                return (
+                  <SelectItem key={agent} value={agent}>
+                    {agent} ({agentLeadCount})
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          <Button 
+            onClick={() => setShowAddDialog(true)}
+            className="h-10 px-4"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Lead
+          </Button>
+          <Button 
+            onClick={() => setShowMassUpload(true)}
+            variant="outline"
+            className="h-10 px-4"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Mass Upload
+          </Button>
         </div>
       </div>
 
-      {/* Pipeline Board */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-5 gap-4 min-h-[600px]">
+        {/* Pipeline Stages */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {stagesWithLeads.map((stage) => (
-            <SortableContext key={stage.id} items={[stage.id]} strategy={verticalListSortingStrategy}>
-              <div
-                id={stage.id}
-                className="flex flex-col"
-              >
-                <DropZone
-                  stage={stage}
-                  leads={stage.leads}
-                  onLeadClick={handleLeadClick}
-                  onConvert={handleConvertToDeal}
-                />
-              </div>
-            </SortableContext>
+            <LeadStage
+              key={stage.id}
+              stage={stage}
+              leads={stage.leads}
+              onLeadClick={handleLeadClick}
+              onConvert={handleConvertToDeal}
+            />
           ))}
         </div>
 
         <DragOverlay>
-          {activeLead ? (
-            <div className="glass-card p-4 border border-glass-border/30 rotate-2 shadow-xl">
-              <div className="space-y-3">
-                <h4 className="font-medium text-foreground text-sm">{activeLead.name}</h4>
-                <div className="text-xs text-muted-foreground">{activeLead.email}</div>
-                <Badge className={`${getSourceBadgeClass(activeLead.source)} text-xs px-2 py-0.5 rounded-md`}>
-                  {activeLead.source}
-                </Badge>
-              </div>
-            </div>
+          {activeId ? (
+            <LeadCard
+              lead={leads.find(lead => lead.id === activeId)!}
+              onClick={() => {}}
+              onConvert={() => {}}
+            />
           ) : null}
         </DragOverlay>
       </DndContext>
