@@ -160,7 +160,7 @@ const Analytics = () => {
     { month: 'Jun', leads: 67, conversions: 21, revenue: 2540 },
   ];
 
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff88'];
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--muted-foreground))', 'hsl(var(--secondary-foreground))', 'hsl(var(--accent-foreground))', 'hsl(var(--ring))'];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -181,125 +181,82 @@ const Analytics = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl p-8 text-white glass-glow" style={{
-        background: 'var(--gradient-primary)',
-        boxShadow: '0 20px 40px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary-glow) / 0.2)'
-      }}>
-        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-        <div className="relative z-10 flex justify-between items-center">
-          <div className="space-y-3">
-            <h1 className="text-4xl font-bold tracking-tight">Interactive Analytics</h1>
-            <p className="text-white/90 text-lg font-medium">Real-time performance insights with interactive charts</p>
-          </div>
-          <div className="glass-subtle bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-white/90" />
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-48 bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all duration-200">
-                  <SelectValue placeholder="Filter by month" />
-                </SelectTrigger>
-                <SelectContent className="glass-strong backdrop-blur-lg border-border/50">
-                  {months.map((month) => (
-                    <SelectItem key={month.value} value={month.value} className="hover:bg-primary/20">
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Analytics</h1>
+          <p className="text-sm text-muted-foreground">Real-time performance insights</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-48 h-9">
+              <SelectValue placeholder="Filter by month" />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map((month) => (
+                <SelectItem key={month.value} value={month.value}>
+                  {month.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="modern-card relative overflow-hidden border-l-4 border-l-success">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium text-card-foreground">Commission Revenue</h3>
-            <div className="p-2 rounded-lg bg-success/10">
-              <DollarSign className="h-4 w-4 text-success" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Commission Revenue</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              €{loading ? "..." : (revenueData.reduce((sum, item) => sum + item.commission, 0)).toLocaleString()}
             </div>
-          </div>
-          <div className="pt-2">
-            <div className="text-3xl font-bold text-foreground mb-1">
-              €{loading ? "..." : companyAnalytics ? 
-                (revenueData.reduce((sum, item) => sum + item.commission, 0)).toLocaleString() : "0"}
-            </div>
-            <p className="text-xs text-success flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              +12.5% from last period
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="modern-card relative overflow-hidden border-l-4 border-l-info">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium text-card-foreground">Avg. Commission</h3>
-            <div className="p-2 rounded-lg bg-info/10">
-              <Target className="h-4 w-4 text-info" />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Avg. Commission</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              €{loading ? "..." : (companyAnalytics?.averageCommission || 0).toLocaleString()}
             </div>
-          </div>
-          <div className="pt-2">
-            <div className="text-3xl font-bold text-foreground mb-1">
-              €{loading ? "..." : companyAnalytics?.averageCommission.toLocaleString()}
-            </div>
-            <p className="text-xs text-success flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              +8.3% from last period
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="modern-card relative overflow-hidden border-l-4 border-l-primary">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium text-card-foreground">Total Leads</h3>
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Users className="h-4 w-4 text-primary" />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              {loading ? "..." : (companyAnalytics?.totalLeads || 0)}
             </div>
-          </div>
-          <div className="pt-2">
-            <div className="text-3xl font-bold text-foreground mb-1">
-              {loading ? "..." : companyAnalytics?.totalLeads}
-            </div>
-            <p className="text-xs text-primary flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              +15.2% from last period
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="modern-card relative overflow-hidden border-l-4 border-l-warning">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium text-card-foreground">Conversion Rate</h3>
-            <div className="p-2 rounded-lg bg-warning/10">
-              <Activity className="h-4 w-4 text-warning" />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              {loading ? "..." : `${companyAnalytics?.conversionRate || 0}%`}
             </div>
-          </div>
-          <div className="pt-2">
-            <div className="text-3xl font-bold text-foreground mb-1">
-              {loading ? "..." : companyAnalytics?.conversionRate}%
-            </div>
-            <p className="text-xs text-warning flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              +3.1% from last period
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Revenue Trend Chart */}
-        <div className="modern-card">
-          <div className="flex flex-col space-y-1.5 p-6 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground">Commission Revenue & Customer Contributions</h3>
-            </div>
-          </div>
-          <div className="p-6 pt-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Commission Revenue & Customer Contributions</CardTitle>
+          </CardHeader>
+          <CardContent>
             {loading ? (
               <Skeleton className="h-80 w-full" />
             ) : (
@@ -310,41 +267,19 @@ const Analytics = () => {
                   <YAxis />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Area 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stackId="1" 
-                    stroke="#8884d8" 
-                    fill="#8884d8" 
-                    fillOpacity={0.6}
-                    name="Commission Revenue"
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="customerContributions" 
-                    stackId="2" 
-                    stroke="#82ca9d" 
-                    fill="#82ca9d" 
-                    fillOpacity={0.6}
-                    name="Customer Contributions"
-                  />
+                  <Area type="monotone" dataKey="revenue" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} name="Commission Revenue" />
+                  <Area type="monotone" dataKey="customerContributions" stackId="2" stroke="hsl(var(--muted-foreground))" fill="hsl(var(--muted-foreground))" fillOpacity={0.2} name="Customer Contributions" />
                 </AreaChart>
               </ResponsiveContainer>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Company Distribution */}
-        <div className="modern-card">
-          <div className="flex flex-col space-y-1.5 p-6 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/10">
-                <PieChart className="h-5 w-5 text-accent-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground">Commission Revenue by Company</h3>
-            </div>
-          </div>
-          <div className="p-6 pt-0">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Commission Revenue by Company</CardTitle>
+          </CardHeader>
+          <CardContent>
             {loading ? (
               <Skeleton className="h-80 w-full" />
             ) : (
@@ -377,23 +312,17 @@ const Analytics = () => {
                 </RechartsPieChart>
               </ResponsiveContainer>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Agent Performance */}
-        <div className="modern-card">
-          <div className="flex flex-col space-y-1.5 p-6 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-info/10">
-                <BarChart3 className="h-5 w-5 text-info" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground">Agent Performance</h3>
-            </div>
-          </div>
-          <div className="p-6 pt-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Agent Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
             {loading ? (
               <Skeleton className="h-80 w-full" />
             ) : (
@@ -409,70 +338,47 @@ const Analytics = () => {
                   <YAxis />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="commission" fill="#8884d8" />
-                  <Bar dataKey="deals" fill="#82ca9d" />
+                  <Bar dataKey="commission" fill="hsl(var(--primary))" />
+                  <Bar dataKey="deals" fill="hsl(var(--muted-foreground))" />
                 </BarChart>
               </ResponsiveContainer>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Personal Performance */}
-        <div className="modern-card">
-          <div className="flex flex-col space-y-1.5 p-6 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
-                <Activity className="h-5 w-5 text-success" />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Personal Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <div className="text-3xl font-semibold">{loading ? "..." : personalAnalytics?.leadsAssigned || 0}</div>
+                <p className="text-sm text-muted-foreground">Leads Assigned</p>
               </div>
-              <h3 className="text-lg font-semibold text-foreground">Personal Performance</h3>
-            </div>
-          </div>
-          <div className="p-6 pt-0">
-            <div className="grid grid-cols-2 gap-8 h-80">
-              <div className="space-y-8">
-                <div className="text-center glass-subtle p-6 rounded-xl">
-                  <div className="text-4xl font-bold text-primary mb-2">
-                    {loading ? "..." : personalAnalytics?.leadsAssigned || 0}
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">Leads Assigned</p>
-                </div>
-                <div className="text-center glass-subtle p-6 rounded-xl">
-                  <div className="text-4xl font-bold text-success mb-2">
-                    {loading ? "..." : `${personalAnalytics?.conversionRate || 0}%`}
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">Conversion Rate</p>
-                </div>
+              <div>
+                <div className="text-3xl font-semibold">{loading ? "..." : `${personalAnalytics?.conversionRate || 0}%`}</div>
+                <p className="text-sm text-muted-foreground">Conversion Rate</p>
               </div>
-              <div className="space-y-8">
-                <div className="text-center glass-subtle p-6 rounded-xl">
-                  <div className="text-4xl font-bold text-info mb-2">
-                    €{loading ? "..." : personalAnalytics?.averageDealAmount || 0}
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">Avg. Deal Amount</p>
-                </div>
-                <div className="text-center glass-subtle p-6 rounded-xl">
-                  <div className="text-lg font-bold text-warning mb-2">
-                    {loading ? "..." : personalAnalytics?.mostSoldProduct || 'N/A'}
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">Top Product</p>
-                </div>
+              <div>
+                <div className="text-3xl font-semibold">€{loading ? "..." : personalAnalytics?.averageDealAmount || 0}</div>
+                <p className="text-sm text-muted-foreground">Avg. Deal Amount</p>
+              </div>
+              <div>
+                <div className="text-lg font-medium truncate">{loading ? "..." : personalAnalytics?.mostSoldProduct || 'N/A'}</div>
+                <p className="text-sm text-muted-foreground">Top Product</p>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Full Width Chart */}
-      <div className="modern-card">
-        <div className="flex flex-col space-y-1.5 p-6 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <TrendingUp className="h-5 w-5 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">Lead Performance Timeline</h3>
-          </div>
-        </div>
-        <div className="p-6 pt-0">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Lead Performance Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
           {loading ? (
             <Skeleton className="h-96 w-full" />
           ) : (
@@ -483,32 +389,14 @@ const Analytics = () => {
                 <YAxis />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="leads" 
-                  stroke="#8884d8" 
-                  strokeWidth={3}
-                  dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="conversions" 
-                  stroke="#82ca9d" 
-                  strokeWidth={3}
-                  dot={{ fill: '#82ca9d', strokeWidth: 2, r: 6 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#ffc658" 
-                  strokeWidth={3}
-                  dot={{ fill: '#ffc658', strokeWidth: 2, r: 6 }}
-                />
+                <Line type="monotone" dataKey="leads" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 6 }} />
+                <Line type="monotone" dataKey="conversions" stroke="hsl(var(--muted-foreground))" strokeWidth={3} dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 6 }} />
+                <Line type="monotone" dataKey="revenue" stroke="hsl(var(--accent-foreground))" strokeWidth={3} dot={{ fill: 'hsl(var(--accent-foreground))', strokeWidth: 2, r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
-            )}
-          </div>
-        </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
