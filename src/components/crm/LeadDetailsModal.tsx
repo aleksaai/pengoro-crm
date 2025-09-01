@@ -32,7 +32,6 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
-  const idDocumentBackInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(lead?.id || null);
@@ -190,53 +189,75 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
     }
   };
 
-  const handleIdDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>, isBackPage = false) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleIdDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-    // Check file type - only PNG and JPEG allowed
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    if (!allowedTypes.includes(file.type)) {
+    // Check if we already have both documents
+    const hasFirstDoc = !!currentLead.id_document_path;
+    const hasSecondDoc = !!currentLead.id_document_back_path;
+    
+    if (hasFirstDoc && hasSecondDoc) {
       toast({
-        title: "Invalid file type",
-        description: "Please upload PNG or JPEG images only.",
+        title: "Maximum files reached",
+        description: "You can only upload up to 2 ID documents. Please delete existing ones first.",
         variant: "destructive",
       });
       event.target.value = '';
       return;
     }
 
-    const fileName = `${Date.now()}-${isBackPage ? 'back-' : 'front-'}${file.name}`;
-    const filePath = `${lead.id}/${fileName}`;
+    // Limit to 2 files maximum
+    const filesToUpload = Array.from(files).slice(0, 2);
+    
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const file = filesToUpload[i];
+      
+      // Check file type - only PNG and JPEG allowed
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload PNG or JPEG images only.",
+          variant: "destructive",
+        });
+        continue;
+      }
 
-    try {
-      const { data, error } = await supabase.storage
-        .from('lead-documents')
-        .upload(filePath, file, {
-          cacheControl: '3600'
+      // Determine if this is the first or second document
+      const isSecondDocument = (i === 1) || (i === 0 && hasFirstDoc);
+      const fileName = `${Date.now()}-${i}-${file.name}`;
+      const filePath = `${lead.id}/${fileName}`;
+
+      try {
+        const { data, error } = await supabase.storage
+          .from('lead-documents')
+          .upload(filePath, file, {
+            cacheControl: '3600'
+          });
+
+        if (error) throw error;
+
+        // Update lead with document path
+        const updateField = isSecondDocument ? 'id_document_back_path' : 'id_document_path';
+        await onUpdateLead(lead.id, { [updateField]: filePath });
+
+        toast({
+          title: `ID document uploaded`,
+          description: `${file.name} has been uploaded successfully.`,
         });
 
-      if (error) throw error;
-
-      // Update lead with document path
-      const updateField = isBackPage ? 'id_document_back_path' : 'id_document_path';
-      await onUpdateLead(lead.id, { [updateField]: filePath });
-
-      toast({
-        title: `ID document ${isBackPage ? '(back)' : '(front)'} uploaded`,
-        description: `${file.name} has been uploaded successfully.`,
-      });
-
-      event.target.value = '';
-    } catch (error) {
-      console.error('ID upload error:', error);
-      toast({
-        title: "Upload failed",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-      event.target.value = '';
+      } catch (error) {
+        console.error('ID upload error:', error);
+        toast({
+          title: "Upload failed",
+          description: `Failed to upload ${file.name}. Please try again.`,
+          variant: "destructive",
+        });
+      }
     }
+
+    event.target.value = '';
   };
 
   const handleViewIdDocument = async (isBackPage = false) => {
@@ -567,41 +588,25 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
                   {/* ID Document Section */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">ID Document</h4>
+                      <h4 className="text-sm font-medium">ID Document (max. 2 images)</h4>
                       <div className="flex items-center gap-2">
                         <input
                           type="file"
                           ref={idDocumentInputRef}
-                          onChange={(e) => handleIdDocumentUpload(e, false)}
+                          onChange={handleIdDocumentUpload}
                           accept=".jpg,.jpeg,.png"
                           className="hidden"
-                          multiple={false}
-                        />
-                        <input
-                          type="file"
-                          ref={idDocumentBackInputRef}
-                          onChange={(e) => handleIdDocumentUpload(e, true)}
-                          accept=".jpg,.jpeg,.png"
-                          className="hidden"
-                          multiple={false}
+                          multiple={true}
                         />
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => idDocumentInputRef.current?.click()}
                           className="h-8"
+                          disabled={!!(currentLead.id_document_path && currentLead.id_document_back_path)}
                         >
                           <Upload className="h-3 w-3 mr-1" />
-                          Upload Front
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => idDocumentBackInputRef.current?.click()}
-                          className="h-8"
-                        >
-                          <Upload className="h-3 w-3 mr-1" />
-                          Upload Back
+                          {(currentLead.id_document_path || currentLead.id_document_back_path) ? 'Add More' : 'Upload Images'}
                         </Button>
                       </div>
                     </div>
