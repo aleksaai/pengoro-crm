@@ -9,6 +9,7 @@ import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useCustomerProducts } from "@/hooks/useCustomerProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { AddCustomerProductDialog } from "@/components/crm/AddCustomerProductDialog";
+import { LeadDetailsModal } from "@/components/crm/LeadDetailsModal";
 
 export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -263,6 +264,19 @@ export default function Customers() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Customer Details Modal */}
+      {selectedCustomer && (
+        <LeadDetailsModal 
+          lead={selectedCustomer} 
+          open={!!selectedCustomer}
+          onOpenChange={(open) => !open && setSelectedCustomer(null)}
+          onUpdateLead={async (leadId: string, updates: Partial<Lead>) => {
+            await updateLead(leadId, updates);
+          }}
+          pipelineType="leads"
+        />
+      )}
     </div>
   );
 }
