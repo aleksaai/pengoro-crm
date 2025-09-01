@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
-import { User, Calendar, GripVertical, Clock, Filter, ChevronDown } from "lucide-react";
+import { User, Calendar, GripVertical, Clock, Filter, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { LeadDetailsModal } from "./LeadDetailsModal";
+import { AbandonLeadDialog } from "./AbandonLeadDialog";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,10 +48,11 @@ const dealStages = [
 interface DealCardProps {
   deal: Lead;
   onDealClick: (deal: Lead) => void;
+  onLostClick: (deal: Lead) => void;
   isDragOverlay?: boolean;
 }
 
-function DealCard({ deal, onDealClick, isDragOverlay = false }: DealCardProps) {
+function DealCard({ deal, onDealClick, onLostClick, isDragOverlay = false }: DealCardProps) {
   const {
     attributes,
     listeners,
@@ -71,6 +73,11 @@ function DealCard({ deal, onDealClick, isDragOverlay = false }: DealCardProps) {
     if (isDragging) return;
     e.stopPropagation();
     onDealClick(deal);
+  };
+
+  const handleLostClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onLostClick(deal);
   };
 
   return (
@@ -123,9 +130,22 @@ function DealCard({ deal, onDealClick, isDragOverlay = false }: DealCardProps) {
           )}
 
           {/* Date */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Calendar className="w-3 h-3 flex-shrink-0" />
-            <span>{new Date(deal.created_at).toLocaleDateString('de-DE')}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Calendar className="w-3 h-3 flex-shrink-0" />
+              <span>{new Date(deal.created_at).toLocaleDateString('de-DE')}</span>
+            </div>
+            
+            {/* Lost Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLostClick}
+              className="h-6 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="w-3 h-3 mr-1" />
+              Lost
+            </Button>
           </div>
         </div>
       </div>
@@ -162,6 +182,8 @@ export function PipelineDashboard() {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
+  const [showLostDialog, setShowLostDialog] = useState(false);
+  const [pendingLostLead, setPendingLostLead] = useState<Lead | null>(null);
   const { updateLead, leads } = useLeads();
   const { toast } = useToast();
 
@@ -292,6 +314,36 @@ export function PipelineDashboard() {
     setSelectedLead(deal);
   };
 
+  const handleLostClick = (deal: Lead) => {
+    setPendingLostLead(deal);
+    setShowLostDialog(true);
+  };
+
+  const handleLostConfirm = async (reason: string, customReason?: string) => {
+    if (!pendingLostLead) return;
+
+    try {
+      await updateLead(pendingLostLead.id, { 
+        status: "Lost"
+      });
+
+      toast({
+        title: "Lead marked as lost",
+        description: `${pendingLostLead.name} has been moved to Winbacks`,
+      });
+
+      setShowLostDialog(false);
+      setPendingLostLead(null);
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update lead status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
     await updateLead(leadId, updates);
     setStages(prev => prev.map(stage => ({
@@ -389,6 +441,7 @@ export function PipelineDashboard() {
                         key={deal.id}
                         deal={deal}
                         onDealClick={handleDealClick}
+                        onLostClick={handleLostClick}
                       />
                     ))}
                   </div>
@@ -411,19 +464,35 @@ export function PipelineDashboard() {
             <DealCard 
               deal={activeDeal} 
               onDealClick={() => {}} 
+              onLostClick={() => {}}
               isDragOverlay 
             />
           )}
         </DragOverlay>
       </DndContext>
 
-      {/* Modal */}
+      {/* Modals */}
       <LeadDetailsModal 
         lead={selectedLead} 
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
         onUpdateLead={handleUpdateLead}
         pipelineType="sales"
+      />
+
+      <AbandonLeadDialog
+        open={showLostDialog}
+        onOpenChange={(open) => { 
+          if (!open) { 
+            setShowLostDialog(false); 
+            setPendingLostLead(null); 
+          } else { 
+            setShowLostDialog(true); 
+          } 
+        }}
+        leadName={pendingLostLead?.name || ""}
+        onConfirm={handleLostConfirm}
+        dialogType="lost"
       />
     </div>
   );

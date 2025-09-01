@@ -16,6 +16,7 @@ interface AbandonLeadDialogProps {
   onOpenChange: (open: boolean) => void;
   leadName: string;
   onConfirm: (reason: string, customReason?: string) => void;
+  dialogType?: 'abandon' | 'lost';
 }
 
 const abandonReasons = [
@@ -27,7 +28,7 @@ const abandonReasons = [
   { value: "other", label: "Other Reason", color: "text-muted-foreground" },
 ];
 
-export function AbandonLeadDialog({ open, onOpenChange, leadName, onConfirm }: AbandonLeadDialogProps) {
+export function AbandonLeadDialog({ open, onOpenChange, leadName, onConfirm, dialogType = 'abandon' }: AbandonLeadDialogProps) {
   const [selectedReason, setSelectedReason] = useState("");
   const [customReason, setCustomReason] = useState("");
 
@@ -56,13 +57,16 @@ export function AbandonLeadDialog({ open, onOpenChange, leadName, onConfirm }: A
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <X className="h-5 w-5 text-destructive" />
-            Abandon Lead - {leadName}
+            {dialogType === 'lost' ? 'Mark Lead as Lost' : 'Abandon Lead'} - {leadName}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Please select the reason for abandoning this lead:
+            {dialogType === 'lost' 
+              ? 'Please select the reason for marking this lead as lost:'
+              : 'Please select the reason for abandoning this lead:'
+            }
           </p>
 
           <RadioGroup
@@ -116,7 +120,7 @@ export function AbandonLeadDialog({ open, onOpenChange, leadName, onConfirm }: A
             disabled={!isFormValid}
             className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
           >
-            Abandon Lead
+            {dialogType === 'lost' ? 'Mark as Lost' : 'Abandon Lead'}
           </Button>
         </div>
       </DialogContent>
