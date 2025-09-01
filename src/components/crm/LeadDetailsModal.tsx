@@ -12,6 +12,7 @@ import { Calendar, User, Phone, Mail, Tag, Clock, MessageSquare, Save, Upload, F
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLeadDetails, type Lead } from "@/hooks/useLeads";
+import { LeadHistoryDetails } from "@/components/crm/LeadHistoryDetails";
 
 interface LeadDetailsModalProps {
   lead: Lead | null;
@@ -539,23 +540,30 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
                           <div className="absolute left-2 top-8 bottom-0 w-px bg-glass-border" />
                         )}
                         <div className="flex gap-3">
-                          <div className="w-4 h-4 rounded-full bg-primary/20 border-2 border-primary flex-shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium text-foreground">
-                              {entry.action}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {entry.details}
-                            </div>
-                            <div className="text-xs text-muted-foreground/70 mt-1">
-                              {new Date(entry.created_at).toLocaleDateString()} at {new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                            {entry.user_name && (
-                              <div className="text-xs text-muted-foreground/70">
-                                by {entry.user_name}
-                              </div>
-                            )}
-                          </div>
+                           <div className="w-4 h-4 rounded-full bg-primary/20 border-2 border-primary flex-shrink-0 mt-0.5" />
+                           <div className="flex items-center justify-between">
+                             <div className="flex-1 min-w-0">
+                               <div className="text-xs font-medium text-foreground">
+                                 {entry.action}
+                               </div>
+                               <div className="text-xs text-muted-foreground mt-1">
+                                 {entry.details}
+                               </div>
+                               <div className="text-xs text-muted-foreground/70 mt-1">
+                                 {new Date(entry.created_at).toLocaleDateString()} at {new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                               </div>
+                               {entry.user_name && (
+                                 <div className="text-xs text-muted-foreground/70">
+                                   by {entry.user_name}
+                                 </div>
+                               )}
+                             </div>
+                             <LeadHistoryDetails
+                               changedFields={entry.changed_fields}
+                               oldValues={entry.old_values}
+                               newValues={entry.new_values}
+                             />
+                           </div>
                         </div>
                       </div>
                     ))}

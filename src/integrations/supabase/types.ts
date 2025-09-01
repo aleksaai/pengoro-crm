@@ -59,29 +59,38 @@ export type Database = {
       lead_history: {
         Row: {
           action: string
+          changed_fields: Json | null
           created_at: string
           created_by: string | null
           details: string | null
           id: string
           lead_id: string
+          new_values: Json | null
+          old_values: Json | null
           user_name: string | null
         }
         Insert: {
           action: string
+          changed_fields?: Json | null
           created_at?: string
           created_by?: string | null
           details?: string | null
           id?: string
           lead_id: string
+          new_values?: Json | null
+          old_values?: Json | null
           user_name?: string | null
         }
         Update: {
           action?: string
+          changed_fields?: Json | null
           created_at?: string
           created_by?: string | null
           details?: string | null
           id?: string
           lead_id?: string
+          new_values?: Json | null
+          old_values?: Json | null
           user_name?: string | null
         }
         Relationships: [

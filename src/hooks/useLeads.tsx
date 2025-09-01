@@ -33,6 +33,9 @@ export interface LeadHistoryEntry {
   created_at: string;
   created_by?: string;
   user_name?: string;
+  changed_fields?: Record<string, any> | null;
+  old_values?: Record<string, any> | null;
+  new_values?: Record<string, any> | null;
 }
 
 export interface LeadTranscript {
@@ -121,11 +124,23 @@ export function useLeads() {
 
   const updateLead = async (leadId: string, updates: Partial<Lead>) => {
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const userData = await supabase.auth.getUser();
+      if (!userData.data.user) throw new Error('Not authenticated');
+
+      // Get current lead data before updating
+      const { data: currentLead, error: fetchError } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', leadId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Get user profile for history entry
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name')
-        .eq('user_id', userData.user?.id)
+        .select('full_name, email')
+        .eq('user_id', userData.data.user.id)
         .single();
 
       const { data, error } = await supabase
@@ -137,28 +152,80 @@ export function useLeads() {
 
       if (error) throw error;
 
-      // Add update history entry
+      // Track which fields changed
+      const changedFields: Record<string, any> = {};
+      const oldValues: Record<string, any> = {};
+      const newValues: Record<string, any> = {};
+
+      Object.keys(updates).forEach(key => {
+        const oldValue = currentLead[key as keyof Lead];
+        const newValue = updates[key as keyof Lead];
+        
+        // Compare values (handle arrays specially)
+        let isChanged = false;
+        if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+          isChanged = JSON.stringify(oldValue.sort()) !== JSON.stringify(newValue.sort());
+        } else {
+          isChanged = oldValue !== newValue;
+        }
+
+        if (isChanged) {
+          changedFields[key] = true;
+          oldValues[key] = oldValue;
+          newValues[key] = newValue;
+        }
+      });
+
+      // Create detailed description based on changed fields
+      let detailedDescription = "Lead information was modified";
+      if (Object.keys(changedFields).length > 0) {
+        const fieldNames = Object.keys(changedFields).map(field => {
+          const fieldMap: Record<string, string> = {
+            name: "name",
+            email: "email",
+            phone: "phone number",
+            assigned_to: "assigned agent",
+            status: "status",
+            interested_products: "interested products",
+            source: "lead source",
+          };
+          return fieldMap[field] || field;
+        });
+        
+        if (fieldNames.length === 1) {
+          detailedDescription = `Updated ${fieldNames[0]}`;
+        } else if (fieldNames.length === 2) {
+          detailedDescription = `Updated ${fieldNames[0]} and ${fieldNames[1]}`;
+        } else {
+          detailedDescription = `Updated ${fieldNames.length} fields: ${fieldNames.slice(0, 3).join(", ")}${fieldNames.length > 3 ? "..." : ""}`;
+        }
+      }
+
+      // Add update history entry with detailed change tracking
       await supabase.from('lead_history').insert([{
         lead_id: leadId,
         action: 'Lead updated',
-        details: 'Lead information was modified',
-        created_by: userData.user?.id,
-        user_name: profile?.full_name || userData.user?.email || 'Unknown User'
+        details: detailedDescription,
+        created_by: userData.data.user?.id,
+        user_name: profile?.full_name || userData.data.user?.email || 'Unknown User',
+        changed_fields: Object.keys(changedFields).length > 0 ? changedFields : null,
+        old_values: Object.keys(oldValues).length > 0 ? oldValues : null,
+        new_values: Object.keys(newValues).length > 0 ? newValues : null,
       }]);
 
       setLeads(prev => prev.map(lead => lead.id === leadId ? data : lead));
       
       toast({
-        title: "Lead updated",
-        description: "Changes have been saved successfully.",
+        title: "Success",
+        description: "Lead updated successfully",
       });
-
+      
       return data;
     } catch (error) {
       console.error('Error updating lead:', error);
       toast({
-        title: "Error updating lead",
-        description: "Please try again.",
+        title: "Error",
+        description: "Failed to update lead",
         variant: "destructive",
       });
       throw error;
@@ -232,7 +299,12 @@ export function useLeadDetails(leadId: string | null) {
       if (transcriptsRes.error) throw transcriptsRes.error;
 
       setNotes(notesRes.data || []);
-      setHistory(historyRes.data || []);
+      setHistory((historyRes.data || []).map(item => ({
+        ...item,
+        changed_fields: item.changed_fields as Record<string, any> | null,
+        old_values: item.old_values as Record<string, any> | null,
+        new_values: item.new_values as Record<string, any> | null,
+      })));
       setTranscripts(transcriptsRes.data || []);
     } catch (error) {
       console.error('Error fetching lead details:', error);
