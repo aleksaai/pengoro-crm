@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,7 @@ import {
   Activity,
 } from "lucide-react";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LineChart,
   Line,
@@ -32,8 +33,11 @@ import {
 } from 'recharts';
 
 const Analytics = () => {
-  const [selectedMonth, setSelectedMonth] = useState<string>("all");
-  const { revenueData, personalAnalytics, companyAnalytics, loading } = useAnalytics(
+  const currentDate = new Date();
+  const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonth);
+  const { revenueData, personalAnalytics, companyAnalytics, loading, refetch } = useAnalytics(
     selectedMonth === "all" ? undefined : selectedMonth
   );
 
@@ -51,33 +55,80 @@ const Analytics = () => {
     { value: "2024-10", label: "Oktober 2024" },
     { value: "2024-11", label: "November 2024" },
     { value: "2024-12", label: "Dezember 2024" },
+    { value: "2025-01", label: "Januar 2025" },
+    { value: "2025-02", label: "Februar 2025" },
+    { value: "2025-03", label: "März 2025" },
+    { value: "2025-04", label: "April 2025" },
+    { value: "2025-05", label: "Mai 2025" },
+    { value: "2025-06", label: "Juni 2025" },
+    { value: "2025-07", label: "Juli 2025" },
+    { value: "2025-08", label: "August 2025" },
+    { value: "2025-09", label: "September 2025" },
+    { value: "2025-10", label: "Oktober 2025" },
+    { value: "2025-11", label: "November 2025" },
+    { value: "2025-12", label: "Dezember 2025" },
   ];
 
-  // Transform data for charts
+  // Real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('analytics-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'customer_products'
+        },
+        () => {
+          console.log('Customer products updated, refreshing analytics...');
+          refetch();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads'
+        },
+        () => {
+          console.log('Leads updated, refreshing analytics...');
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    }
+  }, [refetch]);
+
+  // Transform data for charts - Commission is our actual revenue
   const revenueChartData = revenueData.reduce((acc, item) => {
     const existing = acc.find(d => d.month === item.month);
     if (existing) {
-      existing.revenue += item.revenue;
-      existing.commission += item.commission;
+      existing.revenue += item.commission; // Commission is our revenue
+      existing.customerContributions += item.revenue; // Customer contributions
     } else {
       acc.push({
         month: item.month,
-        revenue: item.revenue,
-        commission: item.commission,
+        revenue: item.commission, // Commission is our revenue
+        customerContributions: item.revenue, // Customer contributions
       });
     }
     return acc;
-  }, [] as Array<{ month: string; revenue: number; commission: number }>);
+  }, [] as Array<{ month: string; revenue: number; customerContributions: number }>);
 
-  // Company distribution data
+  // Company distribution data - based on commission earned
   const companyData = revenueData.reduce((acc, item) => {
     const existing = acc.find(d => d.company === item.company);
     if (existing) {
-      existing.revenue += item.revenue;
+      existing.revenue += item.commission; // Commission is our revenue
     } else {
       acc.push({
         company: item.company,
-        revenue: item.revenue,
+        revenue: item.commission, // Commission is our revenue
       });
     }
     return acc;
@@ -99,14 +150,14 @@ const Analytics = () => {
     return acc;
   }, [] as Array<{ agent: string; commission: number; deals: number }>);
 
-  // Mock trend data for demonstration
+  // Mock trend data for demonstration - adjusted to show commission revenue
   const trendData = [
-    { month: 'Jan', leads: 45, conversions: 12, revenue: 15000 },
-    { month: 'Feb', leads: 52, conversions: 15, revenue: 18500 },
-    { month: 'Mar', leads: 48, conversions: 13, revenue: 16200 },
-    { month: 'Apr', leads: 61, conversions: 18, revenue: 22100 },
-    { month: 'May', leads: 55, conversions: 16, revenue: 19800 },
-    { month: 'Jun', leads: 67, conversions: 21, revenue: 25400 },
+    { month: 'Jan', leads: 45, conversions: 12, revenue: 1500 },
+    { month: 'Feb', leads: 52, conversions: 15, revenue: 1850 },
+    { month: 'Mar', leads: 48, conversions: 13, revenue: 1620 },
+    { month: 'Apr', leads: 61, conversions: 18, revenue: 2210 },
+    { month: 'May', leads: 55, conversions: 16, revenue: 1980 },
+    { month: 'Jun', leads: 67, conversions: 21, revenue: 2540 },
   ];
 
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff88'];
@@ -159,12 +210,13 @@ const Analytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Commission Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              €{loading ? "..." : companyAnalytics?.totalRevenue.toLocaleString()}
+              €{loading ? "..." : companyAnalytics ? 
+                (revenueData.reduce((sum, item) => sum + item.commission, 0)).toLocaleString() : "0"}
             </div>
             <p className="text-xs text-green-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
@@ -182,7 +234,7 @@ const Analytics = () => {
             <div className="text-2xl font-bold">
               €{loading ? "..." : companyAnalytics?.averageCommission.toLocaleString()}
             </div>
-            <p className="text-xs text-blue-600 flex items-center gap-1">
+            <p className="text-xs text-green-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               +8.3% from last period
             </p>
@@ -229,7 +281,7 @@ const Analytics = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Revenue & Commission Trends
+              Commission Revenue & Customer Contributions
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -250,14 +302,16 @@ const Analytics = () => {
                     stroke="#8884d8" 
                     fill="#8884d8" 
                     fillOpacity={0.6}
+                    name="Commission Revenue"
                   />
                   <Area 
                     type="monotone" 
-                    dataKey="commission" 
+                    dataKey="customerContributions" 
                     stackId="2" 
                     stroke="#82ca9d" 
                     fill="#82ca9d" 
                     fillOpacity={0.6}
+                    name="Customer Contributions"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -270,7 +324,7 @@ const Analytics = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PieChart className="h-5 w-5 text-primary" />
-              Revenue by Company
+              Commission Revenue by Company
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -283,10 +337,10 @@ const Analytics = () => {
                   <Legend />
                   <Pie 
                     data={companyData.length > 0 ? companyData : [
-                      { company: 'Allianz', revenue: 45000 },
-                      { company: 'AXA', revenue: 32000 },
-                      { company: 'Munich Re', revenue: 28000 },
-                      { company: 'Generali', revenue: 15000 },
+                      { company: 'Allianz', revenue: 4500 },
+                      { company: 'AXA', revenue: 3200 },
+                      { company: 'Munich Re', revenue: 2800 },
+                      { company: 'Generali', revenue: 1500 },
                     ]}
                     cx="50%" 
                     cy="50%" 
@@ -295,10 +349,10 @@ const Analytics = () => {
                     nameKey="company"
                   >
                     {(companyData.length > 0 ? companyData : [
-                      { company: 'Allianz', revenue: 45000 },
-                      { company: 'AXA', revenue: 32000 },
-                      { company: 'Munich Re', revenue: 28000 },
-                      { company: 'Generali', revenue: 15000 },
+                      { company: 'Allianz', revenue: 4500 },
+                      { company: 'AXA', revenue: 3200 },
+                      { company: 'Munich Re', revenue: 2800 },
+                      { company: 'Generali', revenue: 1500 },
                     ]).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
