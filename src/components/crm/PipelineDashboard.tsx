@@ -434,22 +434,32 @@ export function PipelineDashboard() {
       return stage;
     }));
 
-    // Update backend
-    try {
-      await updateLead(activeId, { status: getStatusFromStage(targetStage.id) });
+    // Update backend only for real leads (not mock deals)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(activeId);
+    
+    if (isUUID) {
+      try {
+        await updateLead(activeId, { status: getStatusFromStage(targetStage.id) });
+        toast({
+          title: "Deal moved",
+          description: `${sourceDeal.name} moved to ${targetStage.name}`,
+        });
+      } catch (error) {
+        console.error("Failed to update deal:", error);
+        toast({
+          title: "Error",
+          description: "Failed to move deal. Please try again.",
+          variant: "destructive",
+        });
+        // Revert on error
+        setStages(dealStages);
+      }
+    } else {
+      // Just show toast for mock deals
       toast({
         title: "Deal moved",
         description: `${sourceDeal.name} moved to ${targetStage.name}`,
       });
-    } catch (error) {
-      console.error("Failed to update deal:", error);
-      toast({
-        title: "Error",
-        description: "Failed to move deal. Please try again.",
-        variant: "destructive",
-      });
-      // Revert on error
-      setStages(dealStages);
     }
   };
 
