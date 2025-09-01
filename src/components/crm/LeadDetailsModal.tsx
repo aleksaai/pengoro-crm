@@ -565,118 +565,103 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
                 {/* ID Document and Transcripts Section - Side by Side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* ID Document Section */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium">ID Document</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">ID Document</h4>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          ref={idDocumentInputRef}
+                          onChange={(e) => handleIdDocumentUpload(e, false)}
+                          accept=".jpg,.jpeg,.png"
+                          className="hidden"
+                          multiple={false}
+                        />
+                        <input
+                          type="file"
+                          ref={idDocumentBackInputRef}
+                          onChange={(e) => handleIdDocumentUpload(e, true)}
+                          accept=".jpg,.jpeg,.png"
+                          className="hidden"
+                          multiple={false}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => idDocumentInputRef.current?.click()}
+                          className="h-8"
+                        >
+                          <Upload className="h-3 w-3 mr-1" />
+                          Upload Front
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => idDocumentBackInputRef.current?.click()}
+                          className="h-8"
+                        >
+                          <Upload className="h-3 w-3 mr-1" />
+                          Upload Back
+                        </Button>
+                      </div>
+                    </div>
                     
-                    {/* Front Page */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium text-muted-foreground">Front Page</Label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="file"
-                            ref={idDocumentInputRef}
-                            onChange={(e) => handleIdDocumentUpload(e, false)}
-                            accept=".jpg,.jpeg,.png"
-                            className="hidden"
-                            multiple={false}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => idDocumentInputRef.current?.click()}
-                            className="h-7 text-xs"
-                          >
-                            <Upload className="h-3 w-3 mr-1" />
-                            Upload Front
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {currentLead.id_document_path ? (
-                        <div className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                             onClick={() => handleViewIdDocument(false)}>
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="h-3 w-3 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs font-medium">Front Page</p>
-                              <p className="text-xs text-muted-foreground">Click to view</p>
+                    {(currentLead.id_document_path || currentLead.id_document_back_path) ? (
+                      <div className="space-y-2">
+                        {currentLead.id_document_path && (
+                          <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                               onClick={() => handleViewIdDocument(false)}>
+                            <div className="flex items-center gap-3">
+                              <CreditCard className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">ID Document (Front)</p>
+                                <p className="text-xs text-muted-foreground">Click to view</p>
+                              </div>
                             </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteIdDocument(false);
+                              }}
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteIdDocument(false);
-                            }}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4 glass-subtle rounded-lg">
-                          <CreditCard className="w-6 h-6 mx-auto mb-1 text-muted-foreground/50" />
-                          <p className="text-xs text-muted-foreground">No front page uploaded</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Back Page */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium text-muted-foreground">Back Page</Label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="file"
-                            ref={idDocumentBackInputRef}
-                            onChange={(e) => handleIdDocumentUpload(e, true)}
-                            accept=".jpg,.jpeg,.png"
-                            className="hidden"
-                            multiple={false}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => idDocumentBackInputRef.current?.click()}
-                            className="h-7 text-xs"
-                          >
-                            <Upload className="h-3 w-3 mr-1" />
-                            Upload Back
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {currentLead.id_document_back_path ? (
-                        <div className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                             onClick={() => handleViewIdDocument(true)}>
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="h-3 w-3 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs font-medium">Back Page</p>
-                              <p className="text-xs text-muted-foreground">Click to view</p>
+                        )}
+                        
+                        {currentLead.id_document_back_path && (
+                          <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                               onClick={() => handleViewIdDocument(true)}>
+                            <div className="flex items-center gap-3">
+                              <CreditCard className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">ID Document (Back)</p>
+                                <p className="text-xs text-muted-foreground">Click to view</p>
+                              </div>
                             </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteIdDocument(true);
+                              }}
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteIdDocument(true);
-                            }}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4 glass-subtle rounded-lg">
-                          <CreditCard className="w-6 h-6 mx-auto mb-1 text-muted-foreground/50" />
-                          <p className="text-xs text-muted-foreground">No back page uploaded</p>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 glass-subtle rounded-lg">
+                        <CreditCard className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-sm text-muted-foreground">No ID documents uploaded yet</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Transcripts Section */}
