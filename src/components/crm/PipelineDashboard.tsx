@@ -334,6 +334,18 @@ export function PipelineDashboard() {
   // Get unique agents from registered users only
   const uniqueAgents = registeredUsers.map(user => user.full_name).filter(Boolean);
 
+  // Map stage id to status string (used before render)
+  const getStatusFromStage = (stageId: string): string => {
+    const stageMap: Record<string, string> = {
+      discovery: "Discovery Call Booked",
+      "second-meeting": "Second Meeting Booked",
+      "follow-up": "Follow-Up Scheduled",
+      closing: "Closing Call Scheduled",
+      stuck: "Stuck",
+    };
+    return stageMap[stageId] || "New";
+  };
+
   // Filter stages based on selected agent and merge DB leads
   const filteredStages = stages.map(stage => {
     const stageStatus = getStatusFromStage(stage.id);
@@ -439,17 +451,6 @@ export function PipelineDashboard() {
       // Revert on error
       setStages(dealStages);
     }
-  };
-
-  const getStatusFromStage = (stageId: string): string => {
-    const stageMap: Record<string, string> = {
-      discovery: "Discovery Call Booked",
-      "second-meeting": "Second Meeting Booked", 
-      "follow-up": "Follow-Up Scheduled",
-      closing: "Closing Call Scheduled",
-      stuck: "Stuck"
-    };
-    return stageMap[stageId] || "New";
   };
 
   const handleDealClick = (deal: Lead) => {
