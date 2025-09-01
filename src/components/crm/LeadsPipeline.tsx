@@ -10,6 +10,7 @@ import { LeadDetailsModal } from "./LeadDetailsModal";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AbandonLeadDialog } from "./AbandonLeadDialog";
 import {
   DndContext,
   DragEndEvent,
@@ -181,6 +182,8 @@ export function LeadsPipeline() {
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showAbandonDialog, setShowAbandonDialog] = useState(false);
+  const [pendingAbandonLead, setPendingAbandonLead] = useState<Lead | null>(null);
   const { leads, loading, createLead, updateLead } = useLeads();
   const { toast } = useToast();
 
@@ -280,42 +283,48 @@ export function LeadsPipeline() {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over) return;
+const handleDragEnd = (event: DragEndEvent) => {
+  const { active, over } = event;
+  
+  if (!over) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
+  const activeId = active.id as string;
+  const overId = over.id as string;
 
-    const activeLead = leads.find(lead => lead.id === activeId);
-    if (!activeLead) return;
+  const activeLead = leads.find(lead => lead.id === activeId);
+  if (!activeLead) return;
 
-    // Check if we're dropping over a stage or another lead
-    let newStatus = activeLead.status;
-    
-    // If dropping over a stage column, get the stage ID
-    const targetStage = leadStages.find(stage => stage.id === overId);
-    if (targetStage) {
-      newStatus = targetStage.id;
-    } else {
-      // If dropping over another lead, get that lead's status
-      const targetLead = leads.find(lead => lead.id === overId);
-      if (targetLead) {
-        newStatus = targetLead.status;
-      }
+  // Determine target status (stage or another lead's status)
+  let newStatus = activeLead.status;
+
+  const targetStage = leadStages.find(stage => stage.id === overId);
+  if (targetStage) {
+    newStatus = targetStage.id;
+  } else {
+    const targetLead = leads.find(lead => lead.id === overId);
+    if (targetLead) {
+      newStatus = targetLead.status;
     }
+  }
 
-    if (newStatus !== activeLead.status) {
-      handleUpdateLead(activeId, { status: newStatus });
-      toast({
-        title: "Lead Updated",
-        description: `Lead moved to ${newStatus}`,
-      });
-    }
-
+  // If dropped to Abandoned, open reason modal instead of immediate update
+  if (newStatus === "Abandoned" && newStatus !== activeLead.status) {
+    setPendingAbandonLead(activeLead);
+    setShowAbandonDialog(true);
     setActiveId(null);
-  };
+    return;
+  }
+
+  if (newStatus !== activeLead.status) {
+    handleUpdateLead(activeId, { status: newStatus });
+    toast({
+      title: "Lead Updated",
+      description: `Lead moved to ${newStatus}`,
+    });
+  }
+
+  setActiveId(null);
+};
 
   if (loading) {
     return (
@@ -464,6 +473,43 @@ export function LeadsPipeline() {
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
         onUpdateLead={handleUpdateLead}
+      />
+
+      <AbandonLeadDialog
+        open={showAbandonDialog}
+        onOpenChange={(open) => { if (!open) { setShowAbandonDialog(false); setPendingAbandonLead(null); } else { setShowAbandonDialog(true); } }}
+        leadName={pendingAbandonLead?.name || ""}
+        onConfirm={async (reason) => {
+          try {
+            if (!pendingAbandonLead) return;
+            await updateLead(pendingAbandonLead.id, { status: "Abandoned" });
+
+            const { data: userData } = await supabase.auth.getUser();
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('user_id', userData.user?.id)
+              .single();
+
+            await supabase
+              .from('lead_history')
+              .insert({
+                lead_id: pendingAbandonLead.id,
+                action: 'Lead Abandoned',
+                details: `Reason: ${reason}`,
+                created_by: userData.user?.id,
+                user_name: userProfile?.full_name || 'Unknown User'
+              });
+
+            toast({ title: 'Lead Abandoned', description: `Reason: ${reason}` });
+          } catch (e) {
+            console.error(e);
+            toast({ title: 'Error', description: 'Failed to abandon lead', variant: 'destructive' });
+          } finally {
+            setShowAbandonDialog(false);
+            setPendingAbandonLead(null);
+          }
+        }}
       />
     </div>
   );
