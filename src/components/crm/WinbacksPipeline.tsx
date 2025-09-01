@@ -250,7 +250,7 @@ export function WinbacksPipeline() {
               .from('lead_history')
               .select('details')
               .eq('lead_id', lead.id)
-              .eq('action', 'Lead Abandoned')
+              .in('action', ['Lead Abandoned', 'Abandon Reason Updated'])
               .order('created_at', { ascending: false })
               .limit(1);
 
@@ -269,6 +269,8 @@ export function WinbacksPipeline() {
                 abandonReason = 'Chose Competitor';
               } else if (details?.includes('Reason: ')) {
                 abandonReason = details.split('Reason: ')[1] || 'Other Reason';
+              } else if (details?.includes('Reason changed to: ')) {
+                abandonReason = details.split('Reason changed to: ')[1] || 'Other Reason';
               }
             }
 
@@ -415,6 +417,7 @@ export function WinbacksPipeline() {
         .eq('user_id', userData.user?.id)
         .single();
 
+      // Add new history entry with updated reason
       await supabase
         .from('lead_history')
         .insert({
@@ -425,15 +428,62 @@ export function WinbacksPipeline() {
           user_name: userProfile?.full_name || 'Unknown User'
         });
 
+      // Force refresh of winback leads to show the change immediately
+      const refreshedLeads = leads.filter(lead => 
+        lead.status === 'Abandoned' || lead.status === 'Lost'
+      );
+
+      const leadsWithUpdatedReasons: LeadWithReason[] = await Promise.all(
+        refreshedLeads.map(async (lead) => {
+          // For the lead we just updated, use the new reason
+          if (lead.id === leadId) {
+            return { ...lead, abandonReason: newReason };
+          }
+
+          // For other leads, fetch their reason from history
+          const { data: historyData } = await supabase
+            .from('lead_history')
+            .select('details')
+            .eq('lead_id', lead.id)
+            .in('action', ['Lead Abandoned', 'Abandon Reason Updated'])
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          let abandonReason = 'Other Reason';
+          if (historyData && historyData.length > 0) {
+            const details = historyData[0].details;
+            if (details?.includes('Never reached')) {
+              abandonReason = 'Never reached';
+            } else if (details?.includes('Future Call')) {
+              abandonReason = 'Future Call';
+            } else if (details?.includes('Bad Lead Quality')) {
+              abandonReason = 'Bad Lead Quality';
+            } else if (details?.includes('No Interest')) {
+              abandonReason = 'No Interest';
+            } else if (details?.includes('Chose Competitor')) {
+              abandonReason = 'Chose Competitor';
+            } else if (details?.includes('Reason: ')) {
+              abandonReason = details.split('Reason: ')[1] || 'Other Reason';
+            } else if (details?.includes('Reason changed to: ')) {
+              abandonReason = details.split('Reason changed to: ')[1] || 'Other Reason';
+            }
+          }
+
+          return { ...lead, abandonReason };
+        })
+      );
+
+      setWinbackLeads(leadsWithUpdatedReasons);
+
       toast({
-        title: "Reason Updated",
-        description: `Lead moved to ${newReason} category`,
+        title: "Lead Moved",
+        description: `Lead moved to ${newReason} stage`,
       });
     } catch (error) {
       console.error('Error updating abandon reason:', error);
       toast({
         title: "Error",
-        description: "Failed to update reason",
+        description: "Failed to move lead",
         variant: "destructive"
       });
     }
