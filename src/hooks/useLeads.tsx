@@ -108,7 +108,10 @@ export function useLeads() {
         user_name: profile?.full_name || userData.user?.email || 'Unknown User'
       }]);
 
-      setLeads(prev => [data, ...prev]);
+      setLeads(prev => {
+        const exists = prev.some(l => l.id === data.id);
+        return exists ? prev.map(l => (l.id === data.id ? data : l)) : [data, ...prev];
+      });
       
       toast({
         title: "Lead created",
@@ -256,7 +259,10 @@ export function useLeads() {
           const oldRow: any = (payload as any).old;
           switch (payload.eventType) {
             case 'INSERT':
-              setLeads(prev => [newRow, ...prev]);
+              setLeads(prev => {
+                const exists = prev.some(l => l.id === newRow.id);
+                return exists ? prev.map(l => (l.id === newRow.id ? newRow : l)) : [newRow, ...prev];
+              });
               break;
             case 'UPDATE':
               setLeads(prev => prev.map(l => l.id === newRow.id ? newRow : l));
