@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
+import Winbacks from "./pages/Winbacks";
 import Tasks from "./pages/Tasks";
 import Login from "./pages/Login";
 import Setup from "./pages/Setup";
@@ -35,6 +36,13 @@ const App = () => (
               <ProtectedRoute>
                 <CRMLayout>
                   <Leads />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/winbacks" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <Winbacks />
                 </CRMLayout>
               </ProtectedRoute>
             } />
