@@ -174,11 +174,11 @@ export default function Customers() {
     try {
       await updateLead(customer.id, { status: "Lost" });
       
-      // Log the storno action in history
+      // Log the storno action in history with proper abandon reason
       await supabase.from('lead_history').insert({
         lead_id: customer.id,
-        action: 'Customer cancelled',
-        details: 'Customer status changed from Won to Lost (Storno)',
+        action: 'Lead Abandoned',
+        details: 'Reason: Customer Storno - Customer cancelled after conversion',
         old_values: { status: 'Won' },
         new_values: { status: 'Lost' }
       });
