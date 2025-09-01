@@ -169,6 +169,37 @@ export function useLeads() {
     fetchLeads();
   }, []);
 
+  // Realtime sync for leads across pages (auto-updates counts on convert/move)
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-leads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
+        try {
+          const newRow: any = (payload as any).new;
+          const oldRow: any = (payload as any).old;
+          switch (payload.eventType) {
+            case 'INSERT':
+              setLeads(prev => [newRow, ...prev]);
+              break;
+            case 'UPDATE':
+              setLeads(prev => prev.map(l => l.id === newRow.id ? newRow : l));
+              break;
+            case 'DELETE':
+              setLeads(prev => prev.filter(l => l.id !== oldRow.id));
+              break;
+          }
+        } catch (e) {
+          // Fallback to full refetch if anything goes wrong
+          fetchLeads();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   return {
     leads,
     loading,

@@ -235,14 +235,16 @@ export function LeadsPipeline() {
     return matchesSearch && matchesAgent;
   });
 
-  // Group leads by stage
+  // Group leads by stage and compute totals only for lead board statuses
+  const leadStageIds = new Set(leadStages.map(s => s.id));
+  const leadsInBoard = leads.filter(l => leadStageIds.has(l.status));
   const stagesWithLeads = leadStages.map(stage => ({
     ...stage,
     leads: filteredLeads.filter(lead => lead.status === stage.id),
     count: filteredLeads.filter(lead => lead.status === stage.id).length
   }));
 
-  const totalLeads = leads.length;
+  const totalLeads = leadsInBoard.length;
 
   const handleAddLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     await createLead(leadData);
@@ -392,7 +394,7 @@ export function LeadsPipeline() {
               <SelectContent className="bg-background border-border shadow-lg z-50">
                 <SelectItem value="all">All Agents ({totalLeads})</SelectItem>
                 {uniqueAgents.map(agent => {
-                  const agentLeads = leads.filter(lead => lead.assigned_to === agent).length;
+                  const agentLeads = leadsInBoard.filter(lead => lead.assigned_to === agent).length;
                   return (
                     <SelectItem key={agent} value={agent}>
                       {agent} ({agentLeads})
