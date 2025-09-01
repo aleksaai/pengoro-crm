@@ -272,6 +272,27 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
                   </div>
 
                   <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Deal Stage</Label>
+                    <Select 
+                      value={currentLead.status} 
+                      onValueChange={async (value) => {
+                        await onUpdateLead(lead.id, { status: value });
+                      }}
+                    >
+                      <SelectTrigger className="modern-input">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="glass-card border-glass-border bg-background shadow-lg z-50">
+                        <SelectItem value="New">New Leads</SelectItem>
+                        <SelectItem value="Not Reached">Not Reached</SelectItem>
+                        <SelectItem value="Webinar Confirmed">Webinar Confirmed</SelectItem>
+                        <SelectItem value="Call-Back">Call-Back Scheduled</SelectItem>
+                        <SelectItem value="Abandoned">Abandoned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Email</Label>
                     {isEditing ? (
                       <Input
