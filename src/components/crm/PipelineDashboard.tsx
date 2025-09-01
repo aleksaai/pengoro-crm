@@ -323,9 +323,29 @@ export function PipelineDashboard() {
     if (!pendingLostLead) return;
 
     try {
+      // Update lead status to Lost
       await updateLead(pendingLostLead.id, { 
         status: "Lost"
       });
+
+      // Get current user info for history entry
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', userData.user?.id)
+        .single();
+
+      // Create lead history entry with the abandon reason
+      await supabase
+        .from('lead_history')
+        .insert({
+          lead_id: pendingLostLead.id,
+          action: 'Lead Abandoned',
+          details: `Lead marked as lost. Reason: ${reason}`,
+          created_by: userData.user?.id,
+          user_name: userProfile?.full_name || 'Unknown User'
+        });
 
       toast({
         title: "Lead marked as lost",
