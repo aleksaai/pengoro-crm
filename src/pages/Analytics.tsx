@@ -181,110 +181,125 @@ const Analytics = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary/80 to-accent p-8 text-white">
-        <div className="absolute inset-0 bg-black/10"></div>
+      <div className="relative overflow-hidden rounded-2xl p-8 text-white glass-glow" style={{
+        background: 'var(--gradient-primary)',
+        boxShadow: '0 20px 40px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary-glow) / 0.2)'
+      }}>
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
         <div className="relative z-10 flex justify-between items-center">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <h1 className="text-4xl font-bold tracking-tight">Interactive Analytics</h1>
-            <p className="text-white/80 text-lg">Real-time performance insights with interactive charts</p>
+            <p className="text-white/90 text-lg font-medium">Real-time performance insights with interactive charts</p>
           </div>
-          <div className="flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-            <Calendar className="h-5 w-5" />
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
-                <SelectValue placeholder="Filter by month" />
-              </SelectTrigger>
-              <SelectContent className="bg-card/95 backdrop-blur-sm border-border/50">
-                {months.map((month) => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="glass-subtle bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-white/90" />
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-48 bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all duration-200">
+                  <SelectValue placeholder="Filter by month" />
+                </SelectTrigger>
+                <SelectContent className="glass-strong backdrop-blur-lg border-border/50">
+                  {months.map((month) => (
+                    <SelectItem key={month.value} value={month.value} className="hover:bg-primary/20">
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Commission Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <div className="modern-card relative overflow-hidden border-l-4 border-l-success">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium text-card-foreground">Commission Revenue</h3>
+            <div className="p-2 rounded-lg bg-success/10">
+              <DollarSign className="h-4 w-4 text-success" />
+            </div>
+          </div>
+          <div className="pt-2">
+            <div className="text-3xl font-bold text-foreground mb-1">
               €{loading ? "..." : companyAnalytics ? 
                 (revenueData.reduce((sum, item) => sum + item.commission, 0)).toLocaleString() : "0"}
             </div>
-            <p className="text-xs text-green-600 flex items-center gap-1">
+            <p className="text-xs text-success flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               +12.5% from last period
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Commission</CardTitle>
-            <Target className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <div className="modern-card relative overflow-hidden border-l-4 border-l-info">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium text-card-foreground">Avg. Commission</h3>
+            <div className="p-2 rounded-lg bg-info/10">
+              <Target className="h-4 w-4 text-info" />
+            </div>
+          </div>
+          <div className="pt-2">
+            <div className="text-3xl font-bold text-foreground mb-1">
               €{loading ? "..." : companyAnalytics?.averageCommission.toLocaleString()}
             </div>
-            <p className="text-xs text-green-600 flex items-center gap-1">
+            <p className="text-xs text-success flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               +8.3% from last period
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-l-4 border-l-purple-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-            <Users className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <div className="modern-card relative overflow-hidden border-l-4 border-l-primary">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium text-card-foreground">Total Leads</h3>
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
+          </div>
+          <div className="pt-2">
+            <div className="text-3xl font-bold text-foreground mb-1">
               {loading ? "..." : companyAnalytics?.totalLeads}
             </div>
-            <p className="text-xs text-purple-600 flex items-center gap-1">
+            <p className="text-xs text-primary flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               +15.2% from last period
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-l-4 border-l-orange-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-            <Activity className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <div className="modern-card relative overflow-hidden border-l-4 border-l-warning">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium text-card-foreground">Conversion Rate</h3>
+            <div className="p-2 rounded-lg bg-warning/10">
+              <Activity className="h-4 w-4 text-warning" />
+            </div>
+          </div>
+          <div className="pt-2">
+            <div className="text-3xl font-bold text-foreground mb-1">
               {loading ? "..." : companyAnalytics?.conversionRate}%
             </div>
-            <p className="text-xs text-orange-600 flex items-center gap-1">
+            <p className="text-xs text-warning flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               +3.1% from last period
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Revenue Trend Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Commission Revenue & Customer Contributions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="modern-card">
+          <div className="flex flex-col space-y-1.5 p-6 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Commission Revenue & Customer Contributions</h3>
+            </div>
+          </div>
+          <div className="p-6 pt-0">
             {loading ? (
               <Skeleton className="h-80 w-full" />
             ) : (
@@ -316,18 +331,20 @@ const Analytics = () => {
                 </AreaChart>
               </ResponsiveContainer>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Company Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-primary" />
-              Commission Revenue by Company
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="modern-card">
+          <div className="flex flex-col space-y-1.5 p-6 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-accent/10">
+                <PieChart className="h-5 w-5 text-accent-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Commission Revenue by Company</h3>
+            </div>
+          </div>
+          <div className="p-6 pt-0">
             {loading ? (
               <Skeleton className="h-80 w-full" />
             ) : (
@@ -360,21 +377,23 @@ const Analytics = () => {
                 </RechartsPieChart>
               </ResponsiveContainer>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Agent Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              Agent Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="modern-card">
+          <div className="flex flex-col space-y-1.5 p-6 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-info/10">
+                <BarChart3 className="h-5 w-5 text-info" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Agent Performance</h3>
+            </div>
+          </div>
+          <div className="p-6 pt-0">
             {loading ? (
               <Skeleton className="h-80 w-full" />
             ) : (
@@ -395,61 +414,65 @@ const Analytics = () => {
                 </BarChart>
               </ResponsiveContainer>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Personal Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Personal Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-6 h-80">
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">
+        <div className="modern-card">
+          <div className="flex flex-col space-y-1.5 p-6 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-success/10">
+                <Activity className="h-5 w-5 text-success" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Personal Performance</h3>
+            </div>
+          </div>
+          <div className="p-6 pt-0">
+            <div className="grid grid-cols-2 gap-8 h-80">
+              <div className="space-y-8">
+                <div className="text-center glass-subtle p-6 rounded-xl">
+                  <div className="text-4xl font-bold text-primary mb-2">
                     {loading ? "..." : personalAnalytics?.leadsAssigned || 0}
                   </div>
-                  <p className="text-sm text-muted-foreground">Leads Assigned</p>
+                  <p className="text-sm font-medium text-muted-foreground">Leads Assigned</p>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
+                <div className="text-center glass-subtle p-6 rounded-xl">
+                  <div className="text-4xl font-bold text-success mb-2">
                     {loading ? "..." : `${personalAnalytics?.conversionRate || 0}%`}
                   </div>
-                  <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                  <p className="text-sm font-medium text-muted-foreground">Conversion Rate</p>
                 </div>
               </div>
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
+              <div className="space-y-8">
+                <div className="text-center glass-subtle p-6 rounded-xl">
+                  <div className="text-4xl font-bold text-info mb-2">
                     €{loading ? "..." : personalAnalytics?.averageDealAmount || 0}
                   </div>
-                  <p className="text-sm text-muted-foreground">Avg. Deal Amount</p>
+                  <p className="text-sm font-medium text-muted-foreground">Avg. Deal Amount</p>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-purple-600 mb-2">
+                <div className="text-center glass-subtle p-6 rounded-xl">
+                  <div className="text-lg font-bold text-warning mb-2">
                     {loading ? "..." : personalAnalytics?.mostSoldProduct || 'N/A'}
                   </div>
-                  <p className="text-sm text-muted-foreground">Top Product</p>
+                  <p className="text-sm font-medium text-muted-foreground">Top Product</p>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Full Width Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Lead Performance Timeline
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="modern-card">
+        <div className="flex flex-col space-y-1.5 p-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <TrendingUp className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground">Lead Performance Timeline</h3>
+          </div>
+        </div>
+        <div className="p-6 pt-0">
           {loading ? (
             <Skeleton className="h-96 w-full" />
           ) : (
@@ -483,9 +506,9 @@ const Analytics = () => {
                 />
               </LineChart>
             </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </div>
+        </div>
     </div>
   );
 };
