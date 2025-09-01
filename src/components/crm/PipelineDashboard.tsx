@@ -513,9 +513,11 @@ export function PipelineDashboard() {
                   <SelectValue placeholder="Filter by agent" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border-border shadow-lg z-50">
-                  <SelectItem value="all">All Agents ({totalAllDeals})</SelectItem>
+                  <SelectItem value="all">All Agents ({totalDeals})</SelectItem>
                   {uniqueAgents.map(agent => {
-                    const agentDeals = stages.flatMap(s => s.deals).filter(d => d.assigned_to === agent).length;
+                    const agentDeals = filteredStages
+                      .flatMap(s => s.deals)
+                      .filter(d => d.assigned_to === agent).length;
                     return (
                       <SelectItem key={agent} value={agent}>
                         {agent} ({agentDeals})
