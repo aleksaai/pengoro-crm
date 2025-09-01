@@ -297,7 +297,7 @@ export function PipelineDashboard() {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
-  const { updateLead, leads: allLeads } = useLeads();
+  const { updateLead, leads } = useLeads();
   const { toast } = useToast();
 
   // Fetch registered users on component mount
@@ -337,7 +337,7 @@ export function PipelineDashboard() {
   // Filter stages based on selected agent and merge DB leads
   const filteredStages = stages.map(stage => {
     const stageStatus = getStatusFromStage(stage.id);
-    const dbDeals = allLeads
+    const dbDeals = leads
       .filter(l => l.status === stageStatus)
       .filter(l => selectedAgent === "all" || l.assigned_to === selectedAgent);
 
