@@ -499,6 +499,26 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
                       </div>
                     )}
                   </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Gross Salary</Label>
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={editedLead?.gross_salary || ""}
+                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, gross_salary: e.target.value ? parseFloat(e.target.value) : undefined } : null)}
+                        className="modern-input"
+                        placeholder="Enter gross salary"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Euro className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-foreground">
+                          {currentLead.gross_salary ? `€${currentLead.gross_salary.toLocaleString()}` : "Not specified"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">

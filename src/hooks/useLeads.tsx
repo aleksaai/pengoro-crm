@@ -16,6 +16,7 @@ export interface Lead {
   created_by?: string;
   age?: number;
   net_salary?: number;
+  gross_salary?: number;
   id_document_path?: string;
 }
 
@@ -193,6 +194,7 @@ export function useLeads() {
             source: "lead source",
             age: "age",
             net_salary: "net salary",
+            gross_salary: "gross salary",
             id_document_path: "ID document",
           };
           return fieldMap[field] || field;

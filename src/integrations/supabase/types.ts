@@ -183,6 +183,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           email: string
+          gross_salary: number | null
           id: string
           id_document_path: string | null
           interested_products: string[] | null
@@ -199,6 +200,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email: string
+          gross_salary?: number | null
           id?: string
           id_document_path?: string | null
           interested_products?: string[] | null
@@ -215,6 +217,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string
+          gross_salary?: number | null
           id?: string
           id_document_path?: string | null
           interested_products?: string[] | null
