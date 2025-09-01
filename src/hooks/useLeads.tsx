@@ -18,6 +18,7 @@ export interface Lead {
   net_salary?: number;
   gross_salary?: number;
   id_document_path?: string;
+  id_document_back_path?: string;
 }
 
 export interface LeadNote {
@@ -195,7 +196,8 @@ export function useLeads() {
             age: "age",
             net_salary: "net salary",
             gross_salary: "gross salary",
-            id_document_path: "ID document",
+            id_document_path: "ID document (front)",
+            id_document_back_path: "ID document (back)",
           };
           return fieldMap[field] || field;
         });

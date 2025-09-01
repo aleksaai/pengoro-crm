@@ -32,6 +32,7 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
+  const idDocumentBackInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(lead?.id || null);
@@ -189,23 +190,23 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
     }
   };
 
-  const handleIdDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIdDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>, isBackPage = false) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    // Check file type - only PNG and JPEG allowed
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload PDF or image files only.",
+        description: "Please upload PNG or JPEG images only.",
         variant: "destructive",
       });
       event.target.value = '';
       return;
     }
 
-    const fileName = `${Date.now()}-${file.name}`;
+    const fileName = `${Date.now()}-${isBackPage ? 'back-' : 'front-'}${file.name}`;
     const filePath = `${lead.id}/${fileName}`;
 
     try {
@@ -218,10 +219,11 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
       if (error) throw error;
 
       // Update lead with document path
-      await onUpdateLead(lead.id, { id_document_path: filePath });
+      const updateField = isBackPage ? 'id_document_back_path' : 'id_document_path';
+      await onUpdateLead(lead.id, { [updateField]: filePath });
 
       toast({
-        title: "ID document uploaded",
+        title: `ID document ${isBackPage ? '(back)' : '(front)'} uploaded`,
         description: `${file.name} has been uploaded successfully.`,
       });
 
@@ -237,13 +239,14 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
     }
   };
 
-  const handleViewIdDocument = async () => {
-    if (!currentLead.id_document_path) return;
+  const handleViewIdDocument = async (isBackPage = false) => {
+    const documentPath = isBackPage ? currentLead.id_document_back_path : currentLead.id_document_path;
+    if (!documentPath) return;
 
     try {
       const { data, error } = await supabase.storage
         .from('lead-documents')
-        .download(currentLead.id_document_path);
+        .download(documentPath);
 
       if (error) throw error;
 
@@ -264,22 +267,24 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
     }
   };
 
-  const handleDeleteIdDocument = async () => {
-    if (!currentLead.id_document_path) return;
+  const handleDeleteIdDocument = async (isBackPage = false) => {
+    const documentPath = isBackPage ? currentLead.id_document_back_path : currentLead.id_document_path;
+    if (!documentPath) return;
 
     try {
       // Delete from storage
       const { error } = await supabase.storage
         .from('lead-documents')
-        .remove([currentLead.id_document_path]);
+        .remove([documentPath]);
 
       if (error) throw error;
 
       // Update lead to remove document path
-      await onUpdateLead(lead.id, { id_document_path: null });
+      const updateField = isBackPage ? 'id_document_back_path' : 'id_document_path';
+      await onUpdateLead(lead.id, { [updateField]: null });
 
       toast({
-        title: "ID document deleted",
+        title: `ID document ${isBackPage ? '(back)' : '(front)'} deleted`,
         description: "The document has been removed.",
       });
 
@@ -560,60 +565,118 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
                 {/* ID Document and Transcripts Section - Side by Side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* ID Document Section */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">ID Document</h4>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="file"
-                          ref={idDocumentInputRef}
-                          onChange={handleIdDocumentUpload}
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          className="hidden"
-                          multiple={false}
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => idDocumentInputRef.current?.click()}
-                          className="h-8"
-                        >
-                          <Upload className="h-3 w-3 mr-1" />
-                          Upload ID
-                        </Button>
-                      </div>
-                    </div>
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">ID Document</h4>
                     
-                    {currentLead.id_document_path ? (
-                      <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                           onClick={() => handleViewIdDocument()}>
-                        <div className="flex items-center gap-3">
-                          <CreditCard className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">ID Document</p>
-                            <p className="text-xs text-muted-foreground">
-                              Click to view
-                            </p>
-                          </div>
+                    {/* Front Page */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium text-muted-foreground">Front Page</Label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            ref={idDocumentInputRef}
+                            onChange={(e) => handleIdDocumentUpload(e, false)}
+                            accept=".jpg,.jpeg,.png"
+                            className="hidden"
+                            multiple={false}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => idDocumentInputRef.current?.click()}
+                            className="h-7 text-xs"
+                          >
+                            <Upload className="h-3 w-3 mr-1" />
+                            Upload Front
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteIdDocument();
-                          }}
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </div>
-                    ) : (
-                      <div className="text-center py-8 glass-subtle rounded-lg">
-                        <CreditCard className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-                        <p className="text-sm text-muted-foreground">No ID document uploaded yet</p>
+                      
+                      {currentLead.id_document_path ? (
+                        <div className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                             onClick={() => handleViewIdDocument(false)}>
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-3 w-3 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs font-medium">Front Page</p>
+                              <p className="text-xs text-muted-foreground">Click to view</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteIdDocument(false);
+                            }}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 glass-subtle rounded-lg">
+                          <CreditCard className="w-6 h-6 mx-auto mb-1 text-muted-foreground/50" />
+                          <p className="text-xs text-muted-foreground">No front page uploaded</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Back Page */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium text-muted-foreground">Back Page</Label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            ref={idDocumentBackInputRef}
+                            onChange={(e) => handleIdDocumentUpload(e, true)}
+                            accept=".jpg,.jpeg,.png"
+                            className="hidden"
+                            multiple={false}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => idDocumentBackInputRef.current?.click()}
+                            className="h-7 text-xs"
+                          >
+                            <Upload className="h-3 w-3 mr-1" />
+                            Upload Back
+                          </Button>
+                        </div>
                       </div>
-                    )}
+                      
+                      {currentLead.id_document_back_path ? (
+                        <div className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                             onClick={() => handleViewIdDocument(true)}>
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-3 w-3 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs font-medium">Back Page</p>
+                              <p className="text-xs text-muted-foreground">Click to view</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteIdDocument(true);
+                            }}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 glass-subtle rounded-lg">
+                          <CreditCard className="w-6 h-6 mx-auto mb-1 text-muted-foreground/50" />
+                          <p className="text-xs text-muted-foreground">No back page uploaded</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Transcripts Section */}

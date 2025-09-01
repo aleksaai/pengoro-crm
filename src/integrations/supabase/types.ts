@@ -185,6 +185,7 @@ export type Database = {
           email: string
           gross_salary: number | null
           id: string
+          id_document_back_path: string | null
           id_document_path: string | null
           interested_products: string[] | null
           name: string
@@ -202,6 +203,7 @@ export type Database = {
           email: string
           gross_salary?: number | null
           id?: string
+          id_document_back_path?: string | null
           id_document_path?: string | null
           interested_products?: string[] | null
           name: string
@@ -219,6 +221,7 @@ export type Database = {
           email?: string
           gross_salary?: number | null
           id?: string
+          id_document_back_path?: string | null
           id_document_path?: string | null
           interested_products?: string[] | null
           name?: string
