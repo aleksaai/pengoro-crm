@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      customer_products: {
+        Row: {
+          commission_earned: number
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          monthly_contribution: number
+          notes: string | null
+          product_name: string
+          provider_company: string
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          commission_earned?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          monthly_contribution?: number
+          notes?: string | null
+          product_name: string
+          provider_company: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          commission_earned?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          monthly_contribution?: number
+          notes?: string | null
+          product_name?: string
+          provider_company?: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lead_history: {
         Row: {
           action: string
