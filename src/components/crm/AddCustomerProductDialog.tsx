@@ -12,6 +12,7 @@ import { Lead } from "@/hooks/useLeads";
 interface AddCustomerProductDialogProps {
   customer: Lead;
   onProductAdded?: () => void;
+  trigger?: React.ReactNode;
 }
 
 const PRODUCT_OPTIONS = [
@@ -22,7 +23,7 @@ const PROVIDER_OPTIONS = [
   "Allianz", "AXA", "Munich Re", "Generali", "Zurich", "HDI", "R+V", "DEVK", "Other"
 ];
 
-export function AddCustomerProductDialog({ customer, onProductAdded }: AddCustomerProductDialogProps) {
+export function AddCustomerProductDialog({ customer, onProductAdded, trigger }: AddCustomerProductDialogProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     product_name: "",
@@ -71,10 +72,12 @@ export function AddCustomerProductDialog({ customer, onProductAdded }: AddCustom
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-2">
-          <Plus className="w-4 h-4" />
-          Add Product
-        </Button>
+        {trigger || (
+          <Button size="sm" className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Product
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

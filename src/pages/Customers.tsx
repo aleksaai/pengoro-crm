@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro } from "lucide-react";
+import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useCustomerProducts } from "@/hooks/useCustomerProducts";
 import { supabase } from "@/integrations/supabase/client";
@@ -302,20 +303,35 @@ export default function Customers() {
                     </TableCell>
                     
                     <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <AddCustomerProductDialog 
-                          customer={customer} 
-                          onProductAdded={() => refetchProducts()} 
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCustomerClick(customer)}
-                          className="h-8 px-2"
-                        >
-                          View
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-background border z-50">
+                          <AddCustomerProductDialog 
+                            customer={customer} 
+                            onProductAdded={() => refetchProducts()}
+                            trigger={
+                              <DropdownMenuItem className="cursor-pointer">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Product
+                              </DropdownMenuItem>
+                            }
+                          />
+                          <DropdownMenuItem 
+                            onClick={() => handleCustomerClick(customer)}
+                            className="cursor-pointer"
+                          >
+                            View Customer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
