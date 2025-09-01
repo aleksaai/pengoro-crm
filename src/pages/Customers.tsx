@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro, MoreHorizontal } from "lucide-react";
+import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro, MoreHorizontal, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useCustomerProducts } from "@/hooks/useCustomerProducts";
@@ -170,6 +170,25 @@ export default function Customers() {
     await deleteProduct(productId);
   };
 
+  const handleStorno = async (customer: Lead) => {
+    try {
+      await updateLead(customer.id, { status: "Lost" });
+      
+      // Log the storno action in history
+      await supabase.from('lead_history').insert({
+        lead_id: customer.id,
+        action: 'Customer cancelled',
+        details: 'Customer status changed from Won to Lost (Storno)',
+        old_values: { status: 'Won' },
+        new_values: { status: 'Lost' }
+      });
+      
+      console.log('Customer cancelled successfully');
+    } catch (error) {
+      console.error('Error cancelling customer:', error);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -329,6 +348,13 @@ export default function Customers() {
                             className="cursor-pointer"
                           >
                             View Customer
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleStorno(customer)}
+                            className="cursor-pointer text-destructive"
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Storno
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
