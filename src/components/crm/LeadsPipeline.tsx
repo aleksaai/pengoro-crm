@@ -452,6 +452,7 @@ export function LeadsPipeline() {
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
         onUpdateLead={handleUpdateLead}
+        pipelineType="leads"
       />
 
       <AbandonLeadDialog

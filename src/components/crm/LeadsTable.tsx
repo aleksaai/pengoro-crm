@@ -386,6 +386,7 @@ export function LeadsTable() {
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
         onUpdateLead={handleUpdateLead}
+        pipelineType="leads"
       />
     </div>
   );

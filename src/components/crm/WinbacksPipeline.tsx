@@ -516,11 +516,12 @@ export function WinbacksPipeline() {
         </DragOverlay>
       </DndContext>
 
-      <LeadDetailsModal
-        lead={selectedLead}
+      <LeadDetailsModal 
+        lead={selectedLead} 
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
         onUpdateLead={updateLead}
+        pipelineType="winbacks"
       />
     </div>
   );

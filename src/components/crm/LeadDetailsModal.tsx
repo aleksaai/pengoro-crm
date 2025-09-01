@@ -18,11 +18,12 @@ interface LeadDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
+  pipelineType?: 'leads' | 'sales' | 'winbacks';
 }
 
 const productOptions = ["PKV", "PAV", "Investments", "Insurances", "Real Estate"];
 
-export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: LeadDetailsModalProps) {
+export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipelineType = 'leads' }: LeadDetailsModalProps) {
   const [editedLead, setEditedLead] = useState<Lead | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -205,6 +206,36 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
     }
   };
 
+  const getStageOptions = () => {
+    switch (pipelineType) {
+      case 'leads':
+        return [
+          { value: "New", label: "New Leads" },
+          { value: "Not Reached", label: "Not Reached" },
+          { value: "Webinar Confirmed", label: "Webinar Confirmed" },
+          { value: "Call-Back", label: "Call-Back Scheduled" },
+          { value: "Abandoned", label: "Abandoned" },
+        ];
+      case 'sales':
+        return [
+          { value: "Discovery Call Booked", label: "Discovery Call" },
+          { value: "Second Meeting Booked", label: "Second Meeting" },
+          { value: "Follow-Up Scheduled", label: "Follow-Up" },
+          { value: "Closing Call Scheduled", label: "Closing Call" },
+          { value: "Stuck", label: "Stuck" },
+        ];
+      case 'winbacks':
+        return [
+          { value: "never-reached", label: "Never Reached" },
+          { value: "future-call", label: "Future Call" },
+          { value: "lost", label: "Lost" },
+          { value: "cold-leads", label: "Cold Leads" },
+        ];
+      default:
+        return [];
+    }
+  };
+
   // Combine all notes into a single string for display
   const allNotes = notes.map(note => `${note.author_name || 'Unknown'} (${new Date(note.created_at).toLocaleDateString()}): ${note.content}`).join('\n\n');
 
@@ -283,11 +314,11 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead }: Lea
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="glass-card border-glass-border bg-background shadow-lg z-50">
-                        <SelectItem value="New">New Leads</SelectItem>
-                        <SelectItem value="Not Reached">Not Reached</SelectItem>
-                        <SelectItem value="Webinar Confirmed">Webinar Confirmed</SelectItem>
-                        <SelectItem value="Call-Back">Call-Back Scheduled</SelectItem>
-                        <SelectItem value="Abandoned">Abandoned</SelectItem>
+                        {getStageOptions().map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

@@ -607,11 +607,12 @@ export function PipelineDashboard() {
       </DndContext>
 
       {/* Modal */}
-      <LeadDetailsModal
-        lead={selectedLead}
+      <LeadDetailsModal 
+        lead={selectedLead} 
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
         onUpdateLead={handleUpdateLead}
+        pipelineType="sales"
       />
     </div>
   );
