@@ -557,131 +557,134 @@ export function LeadDetailsModal({ lead, open, onOpenChange, onUpdateLead, pipel
                   )}
                 </div>
 
-                {/* ID Document Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">ID Document</h4>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="file"
-                        ref={idDocumentInputRef}
-                        onChange={handleIdDocumentUpload}
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="hidden"
-                        multiple={false}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => idDocumentInputRef.current?.click()}
-                        className="h-8"
-                      >
-                        <Upload className="h-3 w-3 mr-1" />
-                        Upload ID
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {currentLead.id_document_path ? (
-                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                         onClick={() => handleViewIdDocument()}>
-                      <div className="flex items-center gap-3">
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">ID Document</p>
-                          <p className="text-xs text-muted-foreground">
-                            Click to view
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteIdDocument();
-                        }}
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 glass-subtle rounded-lg">
-                      <CreditCard className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-                      <p className="text-sm text-muted-foreground">No ID document uploaded yet</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Transcripts Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">Transcripts</h4>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        accept=".txt"
-                        className="hidden"
-                        multiple={false}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="h-8"
-                      >
-                        <Upload className="h-3 w-3 mr-1" />
-                        Upload TXT
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {loading ? (
-                    <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-                    </div>
-                  ) : transcripts.length > 0 ? (
-                    <div className="space-y-2">
-                      {transcripts.map((file) => (
-                        <div 
-                          key={file.id} 
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                          onClick={() => handleViewFile(file.file_path, file.file_name)}
+                {/* ID Document and Transcripts Section - Side by Side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* ID Document Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">ID Document</h4>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          ref={idDocumentInputRef}
+                          onChange={handleIdDocumentUpload}
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="hidden"
+                          multiple={false}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => idDocumentInputRef.current?.click()}
+                          className="h-8"
                         >
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">{file.file_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(file.created_at).toLocaleDateString()} • {file.file_size ? Math.round(file.file_size / 1024) + ' KB' : 'Unknown size'}
-                              </p>
+                          <Upload className="h-3 w-3 mr-1" />
+                          Upload ID
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {currentLead.id_document_path ? (
+                      <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                           onClick={() => handleViewIdDocument()}>
+                        <div className="flex items-center gap-3">
+                          <CreditCard className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">ID Document</p>
+                            <p className="text-xs text-muted-foreground">
+                              Click to view
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteIdDocument();
+                          }}
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 glass-subtle rounded-lg">
+                        <CreditCard className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-sm text-muted-foreground">No ID document uploaded yet</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Transcripts Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">Transcripts</h4>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          accept=".txt"
+                          className="hidden"
+                          multiple={false}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="h-8"
+                        >
+                          <Upload className="h-3 w-3 mr-1" />
+                          Upload TXT
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {loading ? (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                      </div>
+                    ) : transcripts.length > 0 ? (
+                      <div className="space-y-2">
+                        {transcripts.map((file) => (
+                          <div 
+                            key={file.id} 
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                            onClick={() => handleViewFile(file.file_path, file.file_name)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">{file.file_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(file.created_at).toLocaleDateString()} • {file.file_size ? Math.round(file.file_size / 1024) + ' KB' : 'Unknown size'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteFile(file.id, file.file_name);
+                                }}
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteFile(file.id, file.file_name);
-                              }}
-                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 glass-subtle rounded-lg">
-                      <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-                      <p className="text-sm text-muted-foreground">No transcripts uploaded yet</p>
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 glass-subtle rounded-lg">
+                        <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-sm text-muted-foreground">No transcripts uploaded yet</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Notes Section - Combined display and add */}
