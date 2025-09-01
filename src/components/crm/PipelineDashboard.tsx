@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { User, Calendar, GripVertical, Clock, Filter, X } from "lucide-react";
+import { User, Calendar, GripVertical, Clock, Filter, X, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
@@ -49,10 +49,11 @@ interface DealCardProps {
   deal: Lead;
   onDealClick: (deal: Lead) => void;
   onLostClick: (deal: Lead) => void;
+  onWonClick: (deal: Lead) => void;
   isDragOverlay?: boolean;
 }
 
-function DealCard({ deal, onDealClick, onLostClick, isDragOverlay = false }: DealCardProps) {
+function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = false }: DealCardProps) {
   const {
     attributes,
     listeners,
@@ -78,6 +79,11 @@ function DealCard({ deal, onDealClick, onLostClick, isDragOverlay = false }: Dea
   const handleLostClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onLostClick(deal);
+  };
+
+  const handleWonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onWonClick(deal);
   };
 
   return (
@@ -129,23 +135,39 @@ function DealCard({ deal, onDealClick, onLostClick, isDragOverlay = false }: Dea
             </div>
           )}
 
-          {/* Date */}
+          {/* Date and Action Buttons */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Calendar className="w-3 h-3 flex-shrink-0" />
               <span>{new Date(deal.created_at).toLocaleDateString('de-DE')}</span>
             </div>
             
-            {/* Lost Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLostClick}
-              className="h-6 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X className="w-3 h-3 mr-1" />
-              Lost
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1">
+              {/* Won Button - only show for Closing Call stage */}
+              {deal.status === "Closing Call Scheduled" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleWonClick}
+                  className="h-6 px-2 text-xs text-green-600 hover:text-green-700 hover:bg-green-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Check className="w-3 h-3 mr-1" />
+                  Won
+                </Button>
+              )}
+              
+              {/* Lost Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLostClick}
+                className="h-6 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Lost
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -314,9 +336,53 @@ export function PipelineDashboard() {
     setSelectedLead(deal);
   };
 
+  const handleWonClick = (deal: Lead) => {
+    handleWonConfirm(deal);
+  };
+
   const handleLostClick = (deal: Lead) => {
     setPendingLostLead(deal);
     setShowLostDialog(true);
+  };
+
+  const handleWonConfirm = async (deal: Lead) => {
+    try {
+      // Update lead status to Won
+      await updateLead(deal.id, { 
+        status: "Won"
+      });
+
+      // Get current user info for history entry
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', userData.user?.id)
+        .single();
+
+      // Create lead history entry
+      await supabase
+        .from('lead_history')
+        .insert({
+          lead_id: deal.id,
+          action: 'Lead Won',
+          details: 'Lead successfully converted to customer',
+          created_by: userData.user?.id,
+          user_name: userProfile?.full_name || 'Unknown User'
+        });
+
+      toast({
+        title: "Deal Won! 🎉",
+        description: `${deal.name} has been converted to a customer`,
+      });
+    } catch (error) {
+      console.error('Error marking lead as won:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark lead as won",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLostConfirm = async (reason: string, customReason?: string) => {
@@ -462,6 +528,7 @@ export function PipelineDashboard() {
                         deal={deal}
                         onDealClick={handleDealClick}
                         onLostClick={handleLostClick}
+                        onWonClick={handleWonClick}
                       />
                     ))}
                   </div>
@@ -485,6 +552,7 @@ export function PipelineDashboard() {
               deal={activeDeal} 
               onDealClick={() => {}} 
               onLostClick={() => {}}
+              onWonClick={() => {}}
               isDragOverlay 
             />
           )}
