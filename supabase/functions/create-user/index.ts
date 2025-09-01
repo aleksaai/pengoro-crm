@@ -12,7 +12,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Creating user account...');
+    const { email, password, full_name } = await req.json();
+    
+    if (!email || !password || !full_name) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: email, password, full_name' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('Creating user account for:', email);
     
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -31,11 +43,11 @@ Deno.serve(async (req) => {
 
     // Create the user
     const { data: user, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'aleksa@pengoro.com',
-      password: 'Tijana_2011',
+      email,
+      password,
       email_confirm: true, // Skip email confirmation
       user_metadata: {
-        full_name: 'Aleksa Spalevic'
+        full_name
       }
     });
 
@@ -52,15 +64,13 @@ Deno.serve(async (req) => {
 
     console.log('User created successfully:', user.user?.email);
 
-    // Ensure profile exists with both id and user_id
-    const profileId = crypto.randomUUID();
+    // Create profile with user_id as the primary key (matching auth.users id)
     const { error: insertError } = await supabaseAdmin
       .from('profiles')
       .insert({
-        id: profileId,
         user_id: user.user!.id,
         email: user.user!.email,
-        full_name: 'Aleksa Spalevic'
+        full_name
       });
 
     if (insertError) {

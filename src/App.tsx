@@ -14,6 +14,7 @@ import Analytics from "./pages/Analytics";
 import Tasks from "./pages/Tasks";
 import Login from "./pages/Login";
 import Setup from "./pages/Setup";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/setup" element={<Setup />} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/" element={
               <ProtectedRoute>
                 <CRMLayout>
