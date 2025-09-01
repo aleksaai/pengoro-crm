@@ -1,4 +1,4 @@
-import { BarChart3, Users, CheckSquare, RotateCcw, TrendingUp } from "lucide-react";
+import { BarChart3, Users, CheckSquare, RotateCcw, TrendingUp, UserCheck } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -16,6 +16,7 @@ import pengoroLogo from "@/assets/pengoro-logo.png";
 const navItems = [
   { title: "Pipeline", url: "/", icon: BarChart3 },
   { title: "Leads", url: "/leads", icon: Users },
+  { title: "Customers", url: "/customers", icon: UserCheck },
   { title: "Winbacks", url: "/winbacks", icon: RotateCcw },
   { title: "Analytics", url: "/analytics", icon: TrendingUp },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
