@@ -324,7 +324,7 @@ export function WinbacksPipeline() {
 
   const handleReactivate = async (leadId: string) => {
     try {
-      await updateLead(leadId, { status: "Discovery Call" });
+      await updateLead(leadId, { status: "Discovery Call Booked" });
       
       const { data: userData } = await supabase.auth.getUser();
       const { data: userProfile } = await supabase
