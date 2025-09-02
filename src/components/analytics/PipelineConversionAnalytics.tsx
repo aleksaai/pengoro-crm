@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ConversionData {
@@ -15,6 +16,7 @@ interface ConversionData {
 export function PipelineConversionAnalytics() {
   const [conversionData, setConversionData] = useState<ConversionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     fetchConversionData();
@@ -124,14 +126,26 @@ export function PipelineConversionAnalytics() {
     return (
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            Pipeline Conversion Rates
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Pipeline Conversion Rates
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-8 w-8 p-0"
+            >
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <Skeleton className="h-32 w-full" />
-        </CardContent>
+        {isExpanded && (
+          <CardContent>
+            <Skeleton className="h-32 w-full" />
+          </CardContent>
+        )}
       </Card>
     );
   }
@@ -139,48 +153,62 @@ export function PipelineConversionAnalytics() {
   return (
     <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          Pipeline Conversion Rates
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Track how leads progress through each sales pipeline stage
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Pipeline Conversion Rates
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track how leads progress through each sales pipeline stage
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="h-8 w-8 p-0"
+          >
+            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {conversionData.map((conversion, index) => (
-            <div key={index} className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="text-sm font-medium text-foreground truncate">
-                    {formatStageName(conversion.stage)}
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span className="text-sm text-muted-foreground truncate">
-                    {formatStageName(conversion.nextStage)}
-                  </span>
+      {isExpanded && (
+        <CardContent>
+          <div className="space-y-4">
+            {conversionData.map((conversion, index) => (
+              <div key={index} className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {formatStageName(conversion.stage)}
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground truncate">
+                      {formatStageName(conversion.nextStage)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>{conversion.conversionsCount}/{conversion.entriesCount} leads</span>
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>{conversion.conversionsCount}/{conversion.entriesCount} leads</span>
+                <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getStageColor(conversion.conversionRate)}`}>
+                  {conversion.conversionRate}%
                 </div>
               </div>
-              
-              <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getStageColor(conversion.conversionRate)}`}>
-                {conversion.conversionRate}%
+            ))}
+            
+            {conversionData.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No conversion data available yet.</p>
+                <p className="text-xs mt-1">Conversions will appear as leads progress through the pipeline.</p>
               </div>
-            </div>
-          ))}
-          
-          {conversionData.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No conversion data available yet.</p>
-              <p className="text-xs mt-1">Conversions will appear as leads progress through the pipeline.</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
+            )}
+          </div>
+        </CardContent>
+      )}
     </Card>
   );
 }
