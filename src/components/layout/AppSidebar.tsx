@@ -1,4 +1,4 @@
-import { BarChart3, Users, CheckSquare, RotateCcw, TrendingUp, UserCheck } from "lucide-react";
+import { BarChart3, Users, CheckSquare, RotateCcw, TrendingUp, UserCheck, Info } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -11,6 +11,12 @@ import {
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import pengoroLogo from "@/assets/pengoro-logo.png";
 
 const navItems = [
@@ -88,17 +94,39 @@ export function AppSidebar() {
 
         {/* AI Update Info */}
         <div className="mt-auto p-4">
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20">
-            <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse mt-1.5"></div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-foreground">Coming Soon</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Major AI Update wird bald verfügbar sein
-                </p>
+          <TooltipProvider>
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-center">
+                    <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20 cursor-pointer hover:from-primary/20 hover:to-accent/20 transition-all duration-300">
+                      <Info className="w-4 h-4 text-primary" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium">Coming Soon</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Major AI Update will be available soon
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20">
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse mt-1.5"></div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Coming Soon</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Major AI Update will be available soon
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+          </TooltipProvider>
         </div>
       </SidebarContent>
     </Sidebar>
