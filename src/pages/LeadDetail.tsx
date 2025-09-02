@@ -361,7 +361,7 @@ export default function LeadDetail() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border bg-card/80 backdrop-blur-sm">
+      <div className="p-6">
         <div className="flex items-center justify-between p-6 mx-4 my-3 bg-card rounded-xl shadow-sm border border-border/50">
           <div className="flex items-center gap-4">
             <Button 
