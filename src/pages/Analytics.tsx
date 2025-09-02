@@ -1,3 +1,4 @@
+import { PipelineConversionAnalytics } from "@/components/analytics/PipelineConversionAnalytics";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -202,6 +203,9 @@ const Analytics = () => {
           </Select>
         </div>
       </div>
+
+      {/* Pipeline Conversion Analytics */}
+      <PipelineConversionAnalytics />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
