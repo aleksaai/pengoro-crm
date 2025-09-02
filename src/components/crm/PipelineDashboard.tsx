@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,6 @@ import { GripVertical, Search, Calendar, Check, X, Clock, Filter } from "lucide-
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LeadDetailsModal } from "./LeadDetailsModal";
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
 
 const dealStages = [
@@ -57,6 +57,7 @@ interface DealCardProps {
 }
 
 function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = false }: DealCardProps) {
+  const navigate = useNavigate();
   const {
     attributes,
     listeners,
@@ -76,7 +77,7 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = 
     // Don't trigger click if we're dragging
     if (isDragging) return;
     e.stopPropagation();
-    onDealClick(deal);
+    navigate(`/leads/${deal.id}`);
   };
 
   const handleLostClick = (e: React.MouseEvent) => {
@@ -596,15 +597,6 @@ export function PipelineDashboard() {
           )}
         </DragOverlay>
       </DndContext>
-
-      {/* Modals */}
-      <LeadDetailsModal 
-        lead={selectedLead} 
-        open={!!selectedLead}
-        onOpenChange={(open) => !open && setSelectedLead(null)}
-        onUpdateLead={handleUpdateLead}
-        pipelineType="sales"
-      />
 
       <AbandonLeadDialog
         open={showLostDialog}

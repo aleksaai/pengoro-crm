@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { AddLeadDialog } from "./AddLeadDialog";
 import { MassUploadDialog } from "./MassUploadDialog";
-import { LeadDetailsModal } from "./LeadDetailsModal";
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
 
 export interface LeadHistoryEntry {
@@ -71,6 +71,7 @@ interface LeadCardProps {
 }
 
 function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
+  const navigate = useNavigate();
   const {
     attributes,
     listeners,
@@ -101,6 +102,10 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
     return "bg-blue-600 hover:bg-blue-700";
   };
 
+  const handleCardClick = () => {
+    navigate(`/leads/${lead.id}`);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -108,7 +113,7 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
       {...attributes}
       {...listeners}
       className="glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30"
-      onClick={() => onClick(lead)}
+      onClick={handleCardClick}
     >
       <div className="space-y-3">
         <div className="flex items-start justify-between">
@@ -473,14 +478,6 @@ export function LeadsPipeline() {
         open={showMassUpload}
         onOpenChange={setShowMassUpload}
         onUploadLeads={handleMassUpload}
-      />
-
-      <LeadDetailsModal
-        lead={selectedLead}
-        open={!!selectedLead}
-        onOpenChange={(open) => !open && setSelectedLead(null)}
-        onUpdateLead={handleUpdateLead}
-        pipelineType="leads"
       />
 
       <AbandonLeadDialog
