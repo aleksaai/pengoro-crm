@@ -86,14 +86,20 @@ export function TaskManagement() {
     }
 
     try {
+      const assignedProfile = profiles.find(p => p.user_id === newTask.assignedTo);
+      
       await createTask({
         lead_id: selectedLead,
         lead_name: leadData.name,
         email_address: leadData.email,
-        phone_number: leadData.phone || "",
+        phone_number: leadData.phone || null,
+        title: `Follow up with ${leadData.name}`,
+        description: null,
         due_date: newTask.dueDate,
         assigned_to: newTask.assignedTo,
-        done: false
+        assigned_to_name: assignedProfile?.full_name || null,
+        done: false,
+        created_by: newTask.assignedTo,
       });
 
       setSelectedLead("");

@@ -14,12 +14,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Calendar, User, Phone, Mail, Tag, Clock, MessageSquare, Save, Upload, FileText, 
   Trash2, Euro, CreditCard, Users, ArrowLeft, Edit3, X, Check, Eye, Download,
-  Activity, NotebookPen, FileAudio, Image as ImageIcon, Calendar as CalendarIcon
+  Activity, NotebookPen, FileAudio, Image as ImageIcon, Calendar as CalendarIcon, CheckSquare, Plus
 } from "lucide-react";
 import { LeadHistoryDetails } from "@/components/crm/LeadHistoryDetails";
+import { TaskCreateModal } from "@/components/crm/TaskCreateModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLeadDetails, useLeads, type Lead } from "@/hooks/useLeads";
+import { useLeadTasks } from "@/hooks/useLeadTasks";
+import { useAuth } from "@/hooks/useAuth";
 
 const productOptions = ["PKV", "PAV", "Investments", "Insurances", "Real Estate"];
 
@@ -32,13 +35,16 @@ export default function LeadDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [viewingTranscript, setViewingTranscript] = useState<{content: string, name: string} | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const { user } = useAuth();
   const { leads, updateLead } = useLeads();
   const lead = leads.find(l => l.id === id);
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(id || null);
+  const { tasks: leadTasks, loading: tasksLoading, updateTask } = useLeadTasks(id || "");
 
   // Fetch registered users
   useEffect(() => {
@@ -750,10 +756,14 @@ export default function LeadDetail() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="notes" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="notes" className="text-xs">
                     <NotebookPen className="w-3 h-3 mr-1" />
                     Notes
+                  </TabsTrigger>
+                  <TabsTrigger value="tasks" className="text-xs">
+                    <CheckSquare className="w-3 h-3 mr-1" />
+                    Tasks
                   </TabsTrigger>
                   <TabsTrigger value="history" className="text-xs">
                     <Clock className="w-3 h-3 mr-1" />
@@ -793,6 +803,57 @@ export default function LeadDetail() {
                       ))}
                       {notes.length === 0 && (
                         <p className="text-center text-muted-foreground text-sm">No notes yet</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+                
+                <TabsContent value="tasks" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsTaskModalOpen(true)}
+                      className="w-full flex items-center gap-2"
+                      disabled={!user}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Task
+                    </Button>
+                  </div>
+                  
+                  <ScrollArea className="h-64">
+                    <div className="space-y-3">
+                      {tasksLoading ? (
+                        <p className="text-center text-muted-foreground text-sm">Loading tasks...</p>
+                      ) : leadTasks.length > 0 ? (
+                        leadTasks.map((task) => (
+                          <div key={task.id} className="border-l-2 border-primary/20 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={task.done}
+                                    onChange={() => updateTask(task.id, { done: !task.done })}
+                                    className="rounded border-border"
+                                  />
+                                  <h4 className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                                    {task.title}
+                                  </h4>
+                                </div>
+                                {task.description && (
+                                  <p className="text-xs text-muted-foreground mt-1 ml-6">{task.description}</p>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground text-right">
+                                <p>Due: {new Date(task.due_date).toLocaleDateString()}</p>
+                                <p>{task.assigned_to_name}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-center text-muted-foreground text-sm">No tasks yet</p>
                       )}
                     </div>
                   </ScrollArea>
@@ -913,6 +974,20 @@ export default function LeadDetail() {
             </ScrollArea>
           </div>
         </div>
+      )}
+
+      {/* Task Create Modal */}
+      {user && (
+        <TaskCreateModal
+          open={isTaskModalOpen}
+          onOpenChange={setIsTaskModalOpen}
+          leadId={lead.id}
+          leadName={lead.name}
+          leadEmail={lead.email}
+          leadPhone={lead.phone}
+          currentUserId={user.id}
+          currentUserName={registeredUsers.find(u => u.id === user.id)?.full_name || user.email || "Unknown User"}
+        />
       )}
     </div>
   );

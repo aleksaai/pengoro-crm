@@ -1,42 +1,29 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Task } from '@/hooks/useTasks';
 
-export interface Task {
-  id: string;
-  lead_id: string;
-  lead_name: string;
-  email_address: string | null;
-  phone_number: string | null;
-  title: string;
-  description: string | null;
-  due_date: string;
-  assigned_to: string;
-  assigned_to_name: string | null;
-  done: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-}
-
-export function useTasks() {
+export function useLeadTasks(leadId: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (leadId) {
+      fetchLeadTasks();
+    }
+  }, [leadId]);
 
-  const fetchTasks = async () => {
+  const fetchLeadTasks = async () => {
     try {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
+        .eq('lead_id', leadId)
         .order('due_date', { ascending: true });
 
       if (error) throw error;
       setTasks(data || []);
     } catch (error) {
-      console.error('Error fetching tasks:', error);
+      console.error('Error fetching lead tasks:', error);
     } finally {
       setLoading(false);
     }
@@ -85,6 +72,6 @@ export function useTasks() {
     loading,
     createTask,
     updateTask,
-    refetch: fetchTasks
+    refetch: fetchLeadTasks
   };
 }

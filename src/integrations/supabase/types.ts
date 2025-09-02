@@ -260,6 +260,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assigned_to: string
+          assigned_to_name: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          done: boolean
+          due_date: string
+          email_address: string | null
+          id: string
+          lead_id: string
+          lead_name: string
+          phone_number: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to: string
+          assigned_to_name?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          done?: boolean
+          due_date: string
+          email_address?: string | null
+          id?: string
+          lead_id: string
+          lead_name: string
+          phone_number?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string
+          assigned_to_name?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          done?: boolean
+          due_date?: string
+          email_address?: string | null
+          id?: string
+          lead_id?: string
+          lead_name?: string
+          phone_number?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
