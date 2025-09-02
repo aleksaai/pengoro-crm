@@ -14,9 +14,9 @@ import {
 import pengoroLogo from "@/assets/pengoro-logo.png";
 
 const navItems = [
+  { title: "Customers", url: "/customers", icon: UserCheck },
   { title: "Pipeline", url: "/", icon: BarChart3 },
   { title: "Leads", url: "/leads", icon: Users },
-  { title: "Customers", url: "/customers", icon: UserCheck },
   { title: "Winbacks", url: "/winbacks", icon: RotateCcw },
   { title: "Analytics", url: "/analytics", icon: TrendingUp },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
