@@ -78,13 +78,18 @@ export const CommissionAnalyticsByAgent = ({ selectedMonth }: CommissionAnalytic
   };
 
   return (
-    <Card>
+    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <DollarSign className="w-5 h-5 text-primary" />
-            Commission Analytics by Agent
-          </CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <DollarSign className="w-5 h-5 text-primary" />
+              Commission Analytics by Agent
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track commission earned by each sales agent over time
+            </p>
+          </div>
           <Button
             variant="ghost"
             size="sm"

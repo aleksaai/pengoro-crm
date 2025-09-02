@@ -24,13 +24,18 @@ export const AverageDealValueCard = ({ selectedMonth }: AverageDealValueCardProp
   const changePercentage = previousAverageDealValue > 0 ? (change / previousAverageDealValue) * 100 : 0;
 
   return (
-    <Card className="h-fit">
+    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm h-fit">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <Target className="w-5 h-5 text-primary" />
-            Average Value of Won Deals
-          </CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Target className="w-5 h-5 text-primary" />
+              Average Value of Won Deals
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track the average value of successfully closed deals
+            </p>
+          </div>
           <Button
             variant="ghost"
             size="sm"
