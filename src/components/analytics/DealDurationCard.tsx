@@ -33,18 +33,13 @@ export const DealDurationCard = ({ selectedMonth }: DealDurationCardProps) => {
   };
 
   return (
-    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm h-fit">
+    <Card className="h-fit">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Clock className="w-5 h-5 text-primary" />
-              Deal Duration
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Monitor the time it takes to close deals
-            </p>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <Clock className="w-5 h-5 text-primary" />
+            Deal Duration
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -57,15 +52,6 @@ export const DealDurationCard = ({ selectedMonth }: DealDurationCardProps) => {
               <ChevronDown className="h-4 w-4" />
             )}
           </Button>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">
-            PAST 12 MONTHS
-          </span>
-          <span>•</span>
-          <span>FINANCIAL AND INSURANCE</span>
-          <span>•</span>
-          <span>WON, LOST</span>
         </div>
       </CardHeader>
       
