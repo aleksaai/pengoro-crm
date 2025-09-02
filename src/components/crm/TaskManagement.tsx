@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Calendar, User, Clock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,297 +13,229 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Task {
   id: string;
-  title: string;
-  description: string;
-  priority: "Low" | "Medium" | "High";
-  status: "To Do" | "In Progress" | "Completed";
-  assignedTo: string;
+  leadName: string;
+  emailAddress: string;
+  phoneNumber: string;
   dueDate: string;
-  relatedLead?: string;
+  assignedTo: string;
+  done: boolean;
 }
 
 const sampleTasks: Task[] = [
   {
     id: "1",
-    title: "Follow up with Tech Solutions GmbH",
-    description: "Send proposal and schedule demo call",
-    priority: "High",
-    status: "To Do",
-    assignedTo: "You",
+    leadName: "John Smith",
+    emailAddress: "john.smith@techsolutions.com",
+    phoneNumber: "+1 (555) 123-4567",
     dueDate: "2024-01-16",
-    relatedLead: "John Smith"
+    assignedTo: "Sarah Johnson",
+    done: false
   },
   {
     id: "2",
-    title: "Prepare presentation for Digital Corp",
-    description: "Create custom demo showcasing their use case",
-    priority: "Medium",
-    status: "In Progress",
-    assignedTo: "You",
+    leadName: "Michael Brown",
+    emailAddress: "m.brown@digitalcorp.com",
+    phoneNumber: "+1 (555) 234-5678",
     dueDate: "2024-01-17",
-    relatedLead: "Michael Brown"
+    assignedTo: "David Wilson",
+    done: false
   },
   {
     id: "3",
-    title: "Contract review with StartUp Inc",
-    description: "Review terms and conditions before final approval",
-    priority: "High",
-    status: "To Do",
-    assignedTo: "You",
+    leadName: "Emma Wilson",
+    emailAddress: "emma.wilson@startupinc.com",
+    phoneNumber: "+1 (555) 345-6789",
     dueDate: "2024-01-15",
-    relatedLead: "Emma Wilson"
+    assignedTo: "Sarah Johnson",
+    done: true
+  },
+  {
+    id: "4",
+    leadName: "Robert Davis",
+    emailAddress: "robert.davis@enterprise.com",
+    phoneNumber: "+1 (555) 456-7890",
+    dueDate: "2024-01-18",
+    assignedTo: "David Wilson",
+    done: false
   }
 ];
 
-const getPriorityColor = (priority: string) => {
-  switch (priority) {
-    case "High": return "bg-red-100 text-red-800 border-red-200";
-    case "Medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "Low": return "bg-green-100 text-green-800 border-green-200";
-    default: return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Completed": return "bg-green-100 text-green-800 border-green-200";
-    case "In Progress": return "bg-blue-100 text-blue-800 border-blue-200";
-    case "To Do": return "bg-gray-100 text-gray-800 border-gray-200";
-    default: return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
 
 export function TaskManagement() {
   const [tasks, setTasks] = useState<Task[]>(sampleTasks);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState({
-    title: "",
-    description: "",
-    priority: "Medium" as Task["priority"],
-    assignedTo: "You",
+    leadName: "",
+    emailAddress: "",
+    phoneNumber: "",
     dueDate: "",
-    relatedLead: ""
+    assignedTo: ""
   });
 
   const handleAddTask = () => {
-    if (newTask.title && newTask.dueDate) {
+    if (newTask.leadName && newTask.emailAddress && newTask.dueDate) {
       const task: Task = {
         ...newTask,
         id: Date.now().toString(),
-        status: "To Do"
+        done: false
       };
       setTasks([task, ...tasks]);
       setNewTask({
-        title: "",
-        description: "",
-        priority: "Medium",
-        assignedTo: "You",
+        leadName: "",
+        emailAddress: "",
+        phoneNumber: "",
         dueDate: "",
-        relatedLead: ""
+        assignedTo: ""
       });
       setIsDialogOpen(false);
     }
   };
 
-  const toggleTaskStatus = (taskId: string) => {
-    setTasks(tasks.map(task => {
-      if (task.id === taskId) {
-        const statusOrder = ["To Do", "In Progress", "Completed"];
-        const currentIndex = statusOrder.indexOf(task.status);
-        const nextIndex = (currentIndex + 1) % statusOrder.length;
-        return { ...task, status: statusOrder[nextIndex] as Task["status"] };
-      }
-      return task;
-    }));
-  };
-
-  const taskStats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === "Completed").length,
-    inProgress: tasks.filter(t => t.status === "In Progress").length,
-    toDo: tasks.filter(t => t.status === "To Do").length
+  const toggleTaskDone = (taskId: string) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, done: !task.done } : task
+    ));
   };
 
   return (
     <div className="space-y-6">
-      <div className="glass-card">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Task Management</h1>
-            <p className="text-muted-foreground">
-              {taskStats.completed}/{taskStats.total} tasks completed
-            </p>
-          </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary-hover text-primary-foreground">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Task
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="glass-strong border-glass-border">
-              <DialogHeader>
-                <DialogTitle>Add New Task</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="task-title">Task Title *</Label>
-                  <Input
-                    id="task-title"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    className="bg-input/50 border-glass-border"
-                    placeholder="Enter task title"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="task-description">Description</Label>
-                  <Textarea
-                    id="task-description"
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    className="bg-input/50 border-glass-border"
-                    placeholder="Task description..."
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="task-priority">Priority</Label>
-                    <Select value={newTask.priority} onValueChange={(value: Task["priority"]) => setNewTask({ ...newTask, priority: value })}>
-                      <SelectTrigger className="bg-input/50 border-glass-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="glass-strong border-glass-border">
-                        <SelectItem value="Low">Low</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="task-due">Due Date *</Label>
-                    <Input
-                      id="task-due"
-                      type="date"
-                      value={newTask.dueDate}
-                      onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                      className="bg-input/50 border-glass-border"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="task-lead">Related Lead</Label>
-                  <Input
-                    id="task-lead"
-                    value={newTask.relatedLead}
-                    onChange={(e) => setNewTask({ ...newTask, relatedLead: e.target.value })}
-                    className="bg-input/50 border-glass-border"
-                    placeholder="Optional: Lead name"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddTask} className="flex-1 bg-primary hover:bg-primary-hover">
-                    Add Task
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Tasks</h1>
+          <p className="text-muted-foreground">
+            {tasks.filter(t => t.done).length}/{tasks.length} tasks completed
+          </p>
         </div>
-      </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Task
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Task</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="lead-name">Lead Name *</Label>
+                <Input
+                  id="lead-name"
+                  value={newTask.leadName}
+                  onChange={(e) => setNewTask({ ...newTask, leadName: e.target.value })}
+                  placeholder="Enter lead name"
+                />
+              </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="glass-card border-0">
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-foreground">{taskStats.total}</div>
-            <p className="text-xs text-muted-foreground">Total Tasks</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-0">
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-green-600">{taskStats.completed}</div>
-            <p className="text-xs text-muted-foreground">Completed</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-0">
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-blue-600">{taskStats.inProgress}</div>
-            <p className="text-xs text-muted-foreground">In Progress</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-0">
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-gray-600">{taskStats.toDo}</div>
-            <p className="text-xs text-muted-foreground">To Do</p>
-          </CardContent>
-        </Card>
-      </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newTask.emailAddress}
+                  onChange={(e) => setNewTask({ ...newTask, emailAddress: e.target.value })}
+                  placeholder="Enter email address"
+                />
+              </div>
 
-      {/* Tasks List */}
-      <Card className="glass-card border-0">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {tasks.map((task) => (
-              <div 
-                key={task.id} 
-                className="p-4 rounded-lg bg-muted/20 border border-glass-border cursor-pointer"
-                onClick={() => toggleTaskStatus(task.id)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className={`font-medium ${task.status === 'Completed' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                        {task.title}
-                      </h3>
-                      <Badge className={`${getStatusColor(task.status)} px-2 py-1 text-xs rounded-md border`}>
-                        {task.status}
-                      </Badge>
-                      <Badge className={`${getPriorityColor(task.priority)} px-2 py-1 text-xs rounded-md border`}>
-                        {task.priority}
-                      </Badge>
-                    </div>
-                    {task.description && (
-                      <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {task.assignedTo}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {task.dueDate}
-                      </div>
-                      {task.relatedLead && (
-                        <div className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {task.relatedLead}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  value={newTask.phoneNumber}
+                  onChange={(e) => setNewTask({ ...newTask, phoneNumber: e.target.value })}
+                  placeholder="Enter phone number"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="due-date">Due Date *</Label>
+                  <Input
+                    id="due-date"
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="assigned-to">Assigned To</Label>
+                  <Input
+                    id="assigned-to"
+                    value={newTask.assignedTo}
+                    onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
+                    placeholder="Assign to agent"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleAddTask} className="flex-1">
+                  Add Task
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Tasks Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Lead Name</TableHead>
+                <TableHead>Email Address</TableHead>
+                <TableHead>Phone Number</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Assigned To</TableHead>
+                <TableHead className="w-[100px]">Done</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tasks.map((task) => (
+                <TableRow key={task.id} className={task.done ? "opacity-60" : ""}>
+                  <TableCell className={`font-medium ${task.done ? "line-through" : ""}`}>
+                    {task.leadName}
+                  </TableCell>
+                  <TableCell className={task.done ? "line-through" : ""}>
+                    {task.emailAddress}
+                  </TableCell>
+                  <TableCell className={task.done ? "line-through" : ""}>
+                    {task.phoneNumber}
+                  </TableCell>
+                  <TableCell className={task.done ? "line-through" : ""}>
+                    {new Date(task.dueDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className={task.done ? "line-through" : ""}>
+                    {task.assignedTo}
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={task.done}
+                      onCheckedChange={() => toggleTaskDone(task.id)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
