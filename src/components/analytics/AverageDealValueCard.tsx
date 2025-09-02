@@ -56,18 +56,20 @@ export const AverageDealValueCard = ({ selectedMonth }: AverageDealValueCardProp
           {loading ? (
             <Skeleton className="h-24 w-full" />
           ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className={`h-4 w-4 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {change >= 0 ? '+' : ''}{change.toLocaleString()} € ({changePercentage.toFixed(2)}%)
-                </span>
-              </div>
-              <div className="text-3xl font-bold">
-                {averageDealValue.toLocaleString()} €
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Average deal value (EUR)
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className={`${change >= 0 ? 'text-green-600' : 'text-red-600'} h-4 w-4`} />
+                  <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {change >= 0 ? '+' : ''}{change.toLocaleString()} € ({changePercentage.toFixed(2)}%)
+                  </span>
+                </div>
+                <div className="text-3xl font-bold">
+                  {averageDealValue.toLocaleString()} €
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Average deal value (EUR)
+                </div>
               </div>
             </div>
           )}

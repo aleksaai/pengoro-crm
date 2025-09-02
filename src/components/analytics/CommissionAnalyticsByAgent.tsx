@@ -110,30 +110,32 @@ export const CommissionAnalyticsByAgent = ({ selectedMonth }: CommissionAnalytic
           {loading ? (
             <Skeleton className="h-80 w-full" />
           ) : chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fontSize: 12 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                {agents.map((agent, index) => (
-                  <Bar
-                    key={agent}
-                    dataKey={agent}
-                    stackId="commission"
-                    fill={agentColors[index % agentColors.length]}
-                    radius={index === agents.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
                   />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  {agents.map((agent, index) => (
+                    <Bar
+                      key={agent}
+                      dataKey={agent}
+                      stackId="commission"
+                      fill={agentColors[index % agentColors.length]}
+                      radius={index === agents.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <div className="flex items-center justify-center h-80 text-muted-foreground">
               <div className="text-center">
