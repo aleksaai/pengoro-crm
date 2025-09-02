@@ -77,7 +77,7 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = 
     // Don't trigger click if we're dragging
     if (isDragging) return;
     e.stopPropagation();
-    navigate(`/leads/${deal.id}`);
+    navigate(`/leads/${deal.id}`, { state: { from: 'pipeline' } });
   };
 
   const handleLostClick = (e: React.MouseEvent) => {

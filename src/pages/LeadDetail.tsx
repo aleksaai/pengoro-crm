@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ const productOptions = ["PKV", "PAV", "Investments", "Insurances", "Real Estate"
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [editedLead, setEditedLead] = useState<Lead | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -81,6 +82,13 @@ export default function LeadDetail() {
   }
 
   const currentLead = editedLead || lead;
+
+  // Determine if user came from pipeline based on referrer or state
+  const isFromPipeline = location.state?.from === 'pipeline' || 
+    (typeof window !== 'undefined' && document.referrer.includes('/pipeline'));
+  
+  const backButtonText = isFromPipeline ? 'Back to Sales Pipeline' : 'Back to Leads';
+  const backRoute = isFromPipeline ? '/pipeline' : '/leads';
 
   const handleEdit = () => {
     setEditedLead({ ...lead });
@@ -367,11 +375,11 @@ export default function LeadDetail() {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => navigate('/leads')}
+              onClick={() => navigate(backRoute)}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Leads
+              {backButtonText}
             </Button>
             
             <div className="flex items-center gap-6">

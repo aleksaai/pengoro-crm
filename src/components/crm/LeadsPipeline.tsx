@@ -103,7 +103,7 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
   };
 
   const handleCardClick = () => {
-    navigate(`/leads/${lead.id}`);
+    navigate(`/leads/${lead.id}`, { state: { from: 'pipeline' } });
   };
 
   return (
