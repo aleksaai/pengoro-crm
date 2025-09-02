@@ -361,8 +361,8 @@ export default function LeadDetail() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="flex items-center justify-between p-6">
+      <div className="border-b border-border bg-card/80 backdrop-blur-sm">
+        <div className="flex items-center justify-between p-6 mx-4 my-3 bg-card rounded-xl shadow-sm border border-border/50">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -374,24 +374,27 @@ export default function LeadDetail() {
               Back to Leads
             </Button>
             
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
+            <div className="flex items-center gap-6">
+              <Avatar className="h-14 w-14 ring-2 ring-primary/20">
                 <AvatarImage src="" alt={currentLead.name} />
-                <AvatarFallback className="text-lg font-semibold">
+                <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
                   {getInitials(currentLead.name)}
                 </AvatarFallback>
               </Avatar>
               
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{currentLead.name}</h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge className={`${getStatusBadgeClass(currentLead.status)} px-2 py-1 text-xs`}>
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold text-foreground leading-tight">{currentLead.name}</h1>
+                <div className="flex items-center gap-4">
+                  <Badge className={`${getStatusBadgeClass(currentLead.status)} px-3 py-1 text-xs font-medium`}>
                     {currentLead.status}
                   </Badge>
                   {currentLead.assigned_to && (
-                    <span className="text-sm text-muted-foreground">
-                      Assigned to {currentLead.assigned_to}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-primary/60"></div>
+                      <span className="text-sm text-muted-foreground font-medium">
+                        Assigned to {currentLead.assigned_to}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
