@@ -88,7 +88,7 @@ export default function LeadDetail() {
     (typeof window !== 'undefined' && document.referrer.includes('/pipeline'));
   
   const backButtonText = isFromPipeline ? 'Back to Sales Pipeline' : 'Back to Leads';
-  const backRoute = isFromPipeline ? '/pipeline' : '/leads';
+  const backRoute = isFromPipeline ? '/' : '/leads';
 
   const handleEdit = () => {
     setEditedLead({ ...lead });
