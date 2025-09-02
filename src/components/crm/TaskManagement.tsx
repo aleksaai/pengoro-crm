@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
+import { Plus, Check, ChevronsUpDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,91 +19,108 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { useLeads } from "@/hooks/useLeads";
+import { useProfiles } from "@/hooks/useProfiles";
+import { useTasks } from "@/hooks/useTasks";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
-interface Task {
-  id: string;
-  leadName: string;
-  emailAddress: string;
-  phoneNumber: string;
-  dueDate: string;
-  assignedTo: string;
-  done: boolean;
-}
-
-const sampleTasks: Task[] = [
-  {
-    id: "1",
-    leadName: "John Smith",
-    emailAddress: "john.smith@techsolutions.com",
-    phoneNumber: "+1 (555) 123-4567",
-    dueDate: "2024-01-16",
-    assignedTo: "Sarah Johnson",
-    done: false
-  },
-  {
-    id: "2",
-    leadName: "Michael Brown",
-    emailAddress: "m.brown@digitalcorp.com",
-    phoneNumber: "+1 (555) 234-5678",
-    dueDate: "2024-01-17",
-    assignedTo: "David Wilson",
-    done: false
-  },
-  {
-    id: "3",
-    leadName: "Emma Wilson",
-    emailAddress: "emma.wilson@startupinc.com",
-    phoneNumber: "+1 (555) 345-6789",
-    dueDate: "2024-01-15",
-    assignedTo: "Sarah Johnson",
-    done: true
-  },
-  {
-    id: "4",
-    leadName: "Robert Davis",
-    emailAddress: "robert.davis@enterprise.com",
-    phoneNumber: "+1 (555) 456-7890",
-    dueDate: "2024-01-18",
-    assignedTo: "David Wilson",
-    done: false
-  }
-];
+// Task interface is now imported from useTasks hook
 
 
 export function TaskManagement() {
-  const [tasks, setTasks] = useState<Task[]>(sampleTasks);
+  const { tasks, loading: tasksLoading, createTask, updateTask } = useTasks();
+  const { leads, loading: leadsLoading } = useLeads();
+  const { profiles, loading: profilesLoading } = useProfiles();
+  const { toast } = useToast();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<string>("");
+  const [leadSearchOpen, setLeadSearchOpen] = useState(false);
   const [newTask, setNewTask] = useState({
-    leadName: "",
-    emailAddress: "",
-    phoneNumber: "",
     dueDate: "",
     assignedTo: ""
   });
 
-  const handleAddTask = () => {
-    if (newTask.leadName && newTask.emailAddress && newTask.dueDate) {
-      const task: Task = {
-        ...newTask,
-        id: Date.now().toString(),
+  const selectedLeadData = leads.find(lead => lead.id === selectedLead);
+
+  const handleAddTask = async () => {
+    if (!selectedLead || !newTask.dueDate) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a lead and set a due date.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const leadData = leads.find(lead => lead.id === selectedLead);
+    if (!leadData) {
+      toast({
+        title: "Invalid Lead",
+        description: "Selected lead not found in database.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await createTask({
+        lead_id: selectedLead,
+        lead_name: leadData.name,
+        email_address: leadData.email,
+        phone_number: leadData.phone || "",
+        due_date: newTask.dueDate,
+        assigned_to: newTask.assignedTo,
         done: false
-      };
-      setTasks([task, ...tasks]);
+      });
+
+      setSelectedLead("");
       setNewTask({
-        leadName: "",
-        emailAddress: "",
-        phoneNumber: "",
         dueDate: "",
         assignedTo: ""
       });
       setIsDialogOpen(false);
+      
+      toast({
+        title: "Task Created",
+        description: "Task has been successfully created."
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create task.",
+        variant: "destructive"
+      });
     }
   };
 
-  const toggleTaskDone = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, done: !task.done } : task
-    ));
+  const toggleTaskDone = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      await updateTask(taskId, { done: !task.done });
+    }
   };
 
   return (
@@ -129,35 +145,62 @@ export function TaskManagement() {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="lead-name">Lead Name *</Label>
-                <Input
-                  id="lead-name"
-                  value={newTask.leadName}
-                  onChange={(e) => setNewTask({ ...newTask, leadName: e.target.value })}
-                  placeholder="Enter lead name"
-                />
+                <Label>Lead *</Label>
+                <Popover open={leadSearchOpen} onOpenChange={setLeadSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={leadSearchOpen}
+                      className="w-full justify-between"
+                    >
+                      {selectedLeadData ? selectedLeadData.name : "Select lead..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search leads..." />
+                      <CommandList>
+                        <CommandEmpty>No leads found.</CommandEmpty>
+                        <CommandGroup>
+                          {leads.map((lead) => (
+                            <CommandItem
+                              key={lead.id}
+                              value={lead.id}
+                              onSelect={(currentValue) => {
+                                setSelectedLead(currentValue === selectedLead ? "" : currentValue);
+                                setLeadSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedLead === lead.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{lead.name}</span>
+                                <span className="text-sm text-muted-foreground">{lead.email}</span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newTask.emailAddress}
-                  onChange={(e) => setNewTask({ ...newTask, emailAddress: e.target.value })}
-                  placeholder="Enter email address"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={newTask.phoneNumber}
-                  onChange={(e) => setNewTask({ ...newTask, phoneNumber: e.target.value })}
-                  placeholder="Enter phone number"
-                />
-              </div>
+              {selectedLeadData && (
+                <div className="space-y-2">
+                  <Label>Selected Lead Details</Label>
+                  <div className="rounded-md border p-2 text-sm">
+                    <div><strong>Email:</strong> {selectedLeadData.email}</div>
+                    <div><strong>Phone:</strong> {selectedLeadData.phone || "Not provided"}</div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -171,13 +214,22 @@ export function TaskManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="assigned-to">Assigned To</Label>
-                  <Input
-                    id="assigned-to"
+                  <Label>Assigned To</Label>
+                  <Select
                     value={newTask.assignedTo}
-                    onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-                    placeholder="Assign to agent"
-                  />
+                    onValueChange={(value) => setNewTask({ ...newTask, assignedTo: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select user..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.full_name || profile.email}>
+                          {profile.full_name || profile.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -212,19 +264,19 @@ export function TaskManagement() {
               {tasks.map((task) => (
                 <TableRow key={task.id} className={task.done ? "opacity-60" : ""}>
                   <TableCell className={`font-medium ${task.done ? "line-through" : ""}`}>
-                    {task.leadName}
+                    {task.lead_name}
                   </TableCell>
                   <TableCell className={task.done ? "line-through" : ""}>
-                    {task.emailAddress}
+                    {task.email_address}
                   </TableCell>
                   <TableCell className={task.done ? "line-through" : ""}>
-                    {task.phoneNumber}
+                    {task.phone_number}
                   </TableCell>
                   <TableCell className={task.done ? "line-through" : ""}>
-                    {new Date(task.dueDate).toLocaleDateString()}
+                    {new Date(task.due_date).toLocaleDateString()}
                   </TableCell>
                   <TableCell className={task.done ? "line-through" : ""}>
-                    {task.assignedTo}
+                    {task.assigned_to}
                   </TableCell>
                   <TableCell>
                     <Checkbox
