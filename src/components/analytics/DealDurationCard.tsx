@@ -33,18 +33,13 @@ export const DealDurationCard = ({ selectedMonth }: DealDurationCardProps) => {
   };
 
   return (
-    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
+    <Card className="h-fit">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Clock className="w-5 h-5 text-primary" />
-              Deal Duration
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Monitor the time it takes to close deals
-            </p>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <Clock className="w-5 h-5 text-primary" />
+            Deal Duration
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -65,20 +60,18 @@ export const DealDurationCard = ({ selectedMonth }: DealDurationCardProps) => {
           {loading ? (
             <Skeleton className="h-24 w-full" />
           ) : (
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className={`${changeDays >= 0 ? 'text-red-600' : 'text-green-600'} h-4 w-4`} />
-                  <span className={`text-sm font-medium ${changeDays >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {changeDays >= 0 ? '+' : ''}{formatDuration(changeDays, changeHours)}
-                  </span>
-                </div>
-                <div className="text-3xl font-bold">
-                  {formatDuration(averageDurationDays, averageDurationHours)}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Average duration (days)
-                </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp className={`h-4 w-4 ${changeDays >= 0 ? 'text-red-600' : 'text-green-600'}`} />
+                <span className={`text-sm font-medium ${changeDays >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {changeDays >= 0 ? '+' : ''}{formatDuration(changeDays, changeHours)}
+                </span>
+              </div>
+              <div className="text-3xl font-bold">
+                {formatDuration(averageDurationDays, averageDurationHours)}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Average duration (days)
               </div>
             </div>
           )}

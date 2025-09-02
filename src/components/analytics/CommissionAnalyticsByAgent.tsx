@@ -78,18 +78,13 @@ export const CommissionAnalyticsByAgent = ({ selectedMonth }: CommissionAnalytic
   };
 
   return (
-    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
+    <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <DollarSign className="w-5 h-5 text-primary" />
-              Commission Analytics by Agent
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Track commission earned by each sales agent over time
-            </p>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <DollarSign className="w-5 h-5 text-primary" />
+            Commission Analytics by Agent
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -110,32 +105,30 @@ export const CommissionAnalyticsByAgent = ({ selectedMonth }: CommissionAnalytic
           {loading ? (
             <Skeleton className="h-80 w-full" />
           ) : chartData.length > 0 ? (
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                {agents.map((agent, index) => (
+                  <Bar
+                    key={agent}
+                    dataKey={agent}
+                    stackId="commission"
+                    fill={agentColors[index % agentColors.length]}
+                    radius={index === agents.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                   />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  {agents.map((agent, index) => (
-                    <Bar
-                      key={agent}
-                      dataKey={agent}
-                      stackId="commission"
-                      fill={agentColors[index % agentColors.length]}
-                      radius={index === agents.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-                    />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-80 text-muted-foreground">
               <div className="text-center">

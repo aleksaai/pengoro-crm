@@ -24,18 +24,13 @@ export const AverageDealValueCard = ({ selectedMonth }: AverageDealValueCardProp
   const changePercentage = previousAverageDealValue > 0 ? (change / previousAverageDealValue) * 100 : 0;
 
   return (
-    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
+    <Card className="h-fit">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Target className="w-5 h-5 text-primary" />
-              Average Value of Won Deals
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Track the average value of successfully closed deals
-            </p>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <Target className="w-5 h-5 text-primary" />
+            Average Value of Won Deals
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -56,20 +51,18 @@ export const AverageDealValueCard = ({ selectedMonth }: AverageDealValueCardProp
           {loading ? (
             <Skeleton className="h-24 w-full" />
           ) : (
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className={`${change >= 0 ? 'text-green-600' : 'text-red-600'} h-4 w-4`} />
-                  <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {change >= 0 ? '+' : ''}{change.toLocaleString()} € ({changePercentage.toFixed(2)}%)
-                  </span>
-                </div>
-                <div className="text-3xl font-bold">
-                  {averageDealValue.toLocaleString()} €
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Average deal value (EUR)
-                </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp className={`h-4 w-4 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {change >= 0 ? '+' : ''}{change.toLocaleString()} € ({changePercentage.toFixed(2)}%)
+                </span>
+              </div>
+              <div className="text-3xl font-bold">
+                {averageDealValue.toLocaleString()} €
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Average deal value (EUR)
               </div>
             </div>
           )}
