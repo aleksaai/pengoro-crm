@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Upload, Mail, Phone, User, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AddLeadDialog } from "./AddLeadDialog";
-import { MassUploadDialog } from "./MassUploadDialog";
-import { LeadDetailsModal } from "./LeadDetailsModal";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { AbandonLeadDialog } from "./AbandonLeadDialog";
+import { ArrowRight, Search, Plus, Upload, Clock } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -31,6 +30,10 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { AddLeadDialog } from "./AddLeadDialog";
+import { MassUploadDialog } from "./MassUploadDialog";
+import { LeadDetailsModal } from "./LeadDetailsModal";
+import { AbandonLeadDialog } from "./AbandonLeadDialog";
 
 export interface LeadHistoryEntry {
   id: string;
@@ -83,6 +86,21 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getTodoButtonColor = () => {
+    // Default to blue (company CI blue) for now
+    // Will be updated when todo functionality is added
+    return "bg-blue-600 hover:bg-blue-700";
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -92,55 +110,65 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
       className="glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30"
       onClick={() => onClick(lead)}
     >
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-foreground text-sm truncate">{lead.name}</h4>
-            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-              {lead.email && (
-                <>
-                  <Mail className="w-3 h-3" />
-                  <span className="truncate">{lead.email}</span>
-                </>
-              )}
-            </div>
-            {lead.phone && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                <Phone className="w-3 h-3" />
-                <span>{lead.phone}</span>
-              </div>
-            )}
-            {lead.assigned_to && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                <User className="w-3 h-3" />
-                <span className="truncate">{lead.assigned_to}</span>
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             {lead.source && (
               <Badge variant="outline" className={`text-xs px-2 py-0.5 ${getSourceBadgeClass(lead.source)}`}>
                 {lead.source}
               </Badge>
             )}
+            {lead.assigned_to && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src="" alt={lead.assigned_to} />
+                      <AvatarFallback className="text-xs">
+                        {getInitials(lead.assigned_to)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{lead.assigned_to}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
-          {lead.status !== "Abandoned" && (
+          
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="outline"
               onClick={(e) => {
                 e.stopPropagation();
-                onConvert(lead);
+                // Todo functionality will be added later
               }}
-              className="text-xs h-6 px-2"
+              className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
             >
-              <ArrowRight className="w-3 h-3 mr-1" />
-              Convert
+              <Clock className="w-3 h-3" />
             </Button>
-          )}
+            {lead.status !== "Abandoned" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConvert(lead);
+                }}
+                className="text-xs h-6 px-2"
+              >
+                <ArrowRight className="w-3 h-3 mr-1" />
+                Convert
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

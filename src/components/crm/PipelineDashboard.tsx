@@ -1,16 +1,19 @@
-import { Badge } from "@/components/ui/badge";
-import { User, Calendar, GripVertical, Clock, Filter, X, Check } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
+import { useLeads, type Lead } from "@/hooks/useLeads";
+import { supabase } from "@/integrations/supabase/client";
+import { GripVertical, Search, Calendar, Check, X, Clock, Filter } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { LeadDetailsModal } from "./LeadDetailsModal";
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
-import { useLeads, type Lead } from "@/hooks/useLeads";
-import { useToast } from "@/hooks/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 
 const dealStages = [
   { 
@@ -86,6 +89,21 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = 
     onWonClick(deal);
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getTodoButtonColor = () => {
+    // Default to blue (company CI blue) for now
+    // Will be updated when todo functionality is added
+    return "bg-blue-600 hover:bg-blue-700";
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -107,17 +125,11 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = 
 
       {/* Card Content */}
       <div className="p-3 cursor-pointer" onClick={handleClick}>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {/* Company Name */}
           <h4 className="font-medium text-foreground text-sm leading-tight pr-6">
             {deal.name}
           </h4>
-          
-          {/* Assigned User */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <User className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{deal.assigned_to}</span>
-          </div>
 
           {/* Products */}
           {deal.interested_products && deal.interested_products.length > 0 && (
@@ -135,11 +147,37 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = 
             </div>
           )}
 
-          {/* Date and Action Buttons */}
+          {/* Bottom Row with Avatar, Todo Button and Action Buttons */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Calendar className="w-3 h-3 flex-shrink-0" />
-              <span>{new Date(deal.created_at).toLocaleDateString('de-DE')}</span>
+            <div className="flex items-center gap-2">
+              {deal.assigned_to && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src="" alt={deal.assigned_to} />
+                        <AvatarFallback className="text-xs">
+                          {getInitials(deal.assigned_to)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{deal.assigned_to}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Todo functionality will be added later
+                }}
+                className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
+              >
+                <Clock className="w-3 h-3" />
+              </Button>
             </div>
             
             {/* Action Buttons */}
