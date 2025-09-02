@@ -1,5 +1,7 @@
 import { PipelineConversionAnalytics } from "@/components/analytics/PipelineConversionAnalytics";
 import { CommissionAnalyticsByAgent } from "@/components/analytics/CommissionAnalyticsByAgent";
+import { AverageDealValueCard } from "@/components/analytics/AverageDealValueCard";
+import { DealDurationCard } from "@/components/analytics/DealDurationCard";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -210,6 +212,12 @@ const Analytics = () => {
 
       {/* Commission Analytics by Agent */}
       <CommissionAnalyticsByAgent selectedMonth={selectedMonth} />
+
+      {/* Deal Value and Duration Analytics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <AverageDealValueCard selectedMonth={selectedMonth} />
+        <DealDurationCard selectedMonth={selectedMonth} />
+      </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
