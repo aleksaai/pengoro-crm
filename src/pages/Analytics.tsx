@@ -1,4 +1,5 @@
 import { PipelineConversionAnalytics } from "@/components/analytics/PipelineConversionAnalytics";
+import { CommissionAnalyticsByAgent } from "@/components/analytics/CommissionAnalyticsByAgent";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -206,6 +207,9 @@ const Analytics = () => {
 
       {/* Pipeline Conversion Analytics */}
       <PipelineConversionAnalytics />
+
+      {/* Commission Analytics by Agent */}
+      <CommissionAnalyticsByAgent selectedMonth={selectedMonth} />
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
