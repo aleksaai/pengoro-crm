@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { GlobalSearch } from "@/components/ui/global-search";
 
 interface CRMLayoutProps {
   children: React.ReactNode;
@@ -39,6 +40,12 @@ export function CRMLayout({ children }: CRMLayoutProps) {
         <main className="flex-1">
           <header className="sticky top-0 z-50 h-16 flex items-center border-b border-glass-border/60 px-6 bg-glass/30 backdrop-blur-sm">
             <SidebarTrigger className="mr-4" />
+            
+            {/* Global Search */}
+            <div className="flex-1 max-w-md mx-4">
+              <GlobalSearch />
+            </div>
+            
             <div className="flex-1" />
             
             {/* User profile dropdown */}
