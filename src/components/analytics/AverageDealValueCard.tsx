@@ -24,7 +24,7 @@ export const AverageDealValueCard = ({ selectedMonth }: AverageDealValueCardProp
   const changePercentage = previousAverageDealValue > 0 ? (change / previousAverageDealValue) * 100 : 0;
 
   return (
-    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm h-fit">
+    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>

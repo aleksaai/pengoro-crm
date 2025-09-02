@@ -33,7 +33,7 @@ export const DealDurationCard = ({ selectedMonth }: DealDurationCardProps) => {
   };
 
   return (
-    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm h-fit">
+    <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>
