@@ -16,6 +16,7 @@ import {
   Trash2, Euro, CreditCard, Users, ArrowLeft, Edit3, X, Check, Eye, Download,
   Activity, NotebookPen, FileAudio, Image as ImageIcon, Calendar as CalendarIcon
 } from "lucide-react";
+import { LeadHistoryDetails } from "@/components/crm/LeadHistoryDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLeadDetails, useLeads, type Lead } from "@/hooks/useLeads";
@@ -423,10 +424,10 @@ export default function LeadDetail() {
       <div className="flex gap-6 p-6">
         {/* Left Column - Lead Details */}
         <div className="flex-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
+          <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <User className="w-5 h-5 text-primary" />
                 Basic Information
               </CardTitle>
             </CardHeader>
@@ -613,10 +614,10 @@ export default function LeadDetail() {
           </Card>
 
           {/* Documents Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="w-5 h-5" />
+          <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <ImageIcon className="w-5 h-5 text-primary" />
                 ID Documents
               </CardTitle>
             </CardHeader>
@@ -693,10 +694,10 @@ export default function LeadDetail() {
 
         {/* Right Column - Activity Timeline */}
         <div className="w-96 space-y-6">
-          <Card className="h-fit">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5" />
+          <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <Activity className="w-5 h-5 text-primary" />
                 Activity
               </CardTitle>
             </CardHeader>
@@ -734,10 +735,10 @@ export default function LeadDetail() {
                   <ScrollArea className="h-64">
                     <div className="space-y-3">
                       {notes.map((note) => (
-                        <div key={note.id} className="border-l-2 border-primary/20 pl-3 space-y-1">
-                          <p className="text-sm">{note.content}</p>
+                        <div key={note.id} className="border-l-2 border-primary/20 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2">
+                          <p className="text-sm leading-relaxed">{note.content}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{note.author_name || 'Unknown'}</span>
+                            <span className="font-medium">{note.author_name || 'Unknown'}</span>
                             <span>•</span>
                             <span>{new Date(note.created_at).toLocaleDateString()}</span>
                           </div>
@@ -754,9 +755,16 @@ export default function LeadDetail() {
                   <ScrollArea className="h-80">
                     <div className="space-y-3">
                       {history.map((entry) => (
-                        <div key={entry.id} className="border-l-2 border-muted/20 pl-3 space-y-1">
+                        <div key={entry.id} className="border-l-2 border-primary/20 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">{entry.action}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium">{entry.action}</p>
+                              <LeadHistoryDetails 
+                                changedFields={entry.changed_fields} 
+                                oldValues={entry.old_values} 
+                                newValues={entry.new_values} 
+                              />
+                            </div>
                             <span className="text-xs text-muted-foreground">
                               {new Date(entry.created_at).toLocaleDateString()}
                             </span>
@@ -765,7 +773,7 @@ export default function LeadDetail() {
                             <p className="text-xs text-muted-foreground">{entry.details}</p>
                           )}
                           {entry.user_name && (
-                            <p className="text-xs text-muted-foreground">by {entry.user_name}</p>
+                            <p className="text-xs text-muted-foreground font-medium">by {entry.user_name}</p>
                           )}
                         </div>
                       ))}
