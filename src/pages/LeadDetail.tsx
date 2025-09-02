@@ -506,6 +506,42 @@ export default function LeadDetail() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Lead Creation Date</Label>
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-foreground">
+                      {new Date(currentLead.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Monthly Salary</Label>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editedLead?.net_salary || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, net_salary: parseFloat(e.target.value) || 0 } : null)}
+                      placeholder="Enter monthly salary"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Euro className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">
+                        {currentLead.net_salary ? 
+                          `€${parseFloat(currentLead.net_salary.toString()).toLocaleString()}` : 
+                          "Not provided"
+                        }
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Assigned To</Label>
                   {isEditing ? (
                     <Select 
@@ -745,7 +781,7 @@ export default function LeadDetail() {
                   
                   <ScrollArea className="h-64">
                     <div className="space-y-3">
-                      {notes.map((note) => (
+                      {[...notes].reverse().map((note) => (
                         <div key={note.id} className="border-l-2 border-primary/20 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2">
                           <p className="text-sm leading-relaxed">{note.content}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
