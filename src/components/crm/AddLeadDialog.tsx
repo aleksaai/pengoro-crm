@@ -5,6 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { Lead } from "@/hooks/useLeads";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 interface AddLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddLead: (lead: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => void;
+  onAddLead: (lead: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>, taskData: {title: string; description?: string; due_date: string}) => void;
 }
 
 const productOptions = ["PKV", "PAV", "Investments", "Insurances", "Real Estate"];
@@ -60,21 +66,49 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
     interested_products: [] as string[]
   });
 
+  const [taskData, setTaskData] = useState({
+    title: "",
+    description: "",
+    due_date: undefined as Date | undefined
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.name && formData.email && formData.source) {
-      onAddLead(formData);
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        source: "",
-        status: "New",
-        assigned_to: "",
-        interested_products: []
+    
+    // Validate required fields
+    if (!formData.name || !formData.email || !formData.source || !taskData.title || !taskData.due_date) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields including task details.",
+        variant: "destructive",
       });
-      onOpenChange(false);
+      return;
     }
+
+    const taskFormData = {
+      title: taskData.title,
+      description: taskData.description || undefined,
+      due_date: format(taskData.due_date, 'yyyy-MM-dd')
+    };
+
+    onAddLead(formData, taskFormData);
+    
+    // Reset forms
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      source: "",
+      status: "New",
+      assigned_to: "",
+      interested_products: []
+    });
+    setTaskData({
+      title: "",
+      description: "",
+      due_date: undefined
+    });
+    onOpenChange(false);
   };
 
   const toggleProduct = (product: string) => {
@@ -180,6 +214,60 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
                   </Badge>
                 );
               })}
+            </div>
+          </div>
+
+          <div className="border-t pt-4 space-y-4">
+            <Label className="text-base font-medium">Initial Task (Required)</Label>
+            
+            <div className="space-y-2">
+              <Label htmlFor="task-title">Task Title *</Label>
+              <Input
+                id="task-title"
+                value={taskData.title}
+                onChange={(e) => setTaskData({ ...taskData, title: e.target.value })}
+                placeholder="Enter initial task title..."
+                className="bg-input/50 border-glass-border"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="task-description">Task Description</Label>
+              <Textarea
+                id="task-description"
+                value={taskData.description}
+                onChange={(e) => setTaskData({ ...taskData, description: e.target.value })}
+                placeholder="Enter task description... (optional)"
+                className="bg-input/50 border-glass-border resize-none h-20"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Task Due Date *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-input/50 border-glass-border",
+                      !taskData.due_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {taskData.due_date ? format(taskData.due_date, "PPP") : "Select due date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={taskData.due_date}
+                    onSelect={(date) => setTaskData({ ...taskData, due_date: date })}
+                    initialFocus
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

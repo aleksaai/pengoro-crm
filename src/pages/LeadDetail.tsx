@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { LeadHistoryDetails } from "@/components/crm/LeadHistoryDetails";
 import { TaskCreateModal } from "@/components/crm/TaskCreateModal";
+import { TaskCompletionModal } from "@/components/crm/TaskCompletionModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLeadDetails, useLeads, type Lead } from "@/hooks/useLeads";
@@ -36,6 +37,7 @@ export default function LeadDetail() {
   const [viewingTranscript, setViewingTranscript] = useState<{content: string, name: string} | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [completingTask, setCompletingTask] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -71,6 +73,38 @@ export default function LeadDetail() {
 
     fetchUsers();
   }, []);
+
+  // Handle task completion with new task creation
+  const handleCompleteTask = async (taskId: string, newTaskData: any) => {
+    try {
+      // First, mark the current task as done
+      await updateTask(taskId, { done: true });
+      
+      // Then create the new task
+      const { error } = await supabase.from('tasks').insert({
+        lead_id: newTaskData.lead_id,
+        lead_name: newTaskData.lead_name,
+        email_address: newTaskData.email_address,
+        phone_number: newTaskData.phone_number,
+        title: newTaskData.title,
+        description: newTaskData.description,
+        due_date: newTaskData.due_date,
+        assigned_to: newTaskData.assigned_to,
+        assigned_to_name: newTaskData.assigned_to_name,
+        done: false,
+        created_by: user?.id || "",
+      });
+
+      if (error) throw error;
+
+      // Refresh tasks
+      refetchTasks();
+      setCompletingTask(null);
+    } catch (error) {
+      console.error('Error completing task:', error);
+      throw error;
+    }
+  };
 
   if (!lead) {
     return (
@@ -831,12 +865,20 @@ export default function LeadDetail() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={task.done}
-                                    onChange={() => updateTask(task.id, { done: !task.done })}
-                                    className="rounded border-border"
-                                  />
+                                   <input
+                                     type="checkbox"
+                                     checked={task.done}
+                                     onChange={() => {
+                                       if (!task.done) {
+                                         // If task is not done, open completion modal
+                                         setCompletingTask(task);
+                                       } else {
+                                         // If task is done, allow unchecking (reopen task)
+                                         updateTask(task.id, { done: false });
+                                       }
+                                     }}
+                                     className="rounded border-border"
+                                   />
                                   <h4 className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                                     {task.title}
                                   </h4>
@@ -988,6 +1030,16 @@ export default function LeadDetail() {
           currentUserId={user.id}
           currentUserName={registeredUsers.find(u => u.id === user.id)?.full_name || user.email || "Unknown User"}
           onTaskCreated={refetchTasks}
+        />
+      )}
+
+      {/* Task Completion Modal */}
+      {user && completingTask && (
+        <TaskCompletionModal
+          open={!!completingTask}
+          onOpenChange={(open) => !open && setCompletingTask(null)}
+          currentTask={completingTask}
+          onCompleteTask={handleCompleteTask}
         />
       )}
     </div>

@@ -298,9 +298,57 @@ export function LeadsPipeline() {
 
   const totalLeads = leadsInBoard.length;
 
-  const handleAddLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
-    await createLead(leadData);
-    setShowAddDialog(false);
+  const handleAddLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>, taskData: {title: string; description?: string; due_date: string}) => {
+    try {
+      // First create the lead
+      const newLead = await createLead(leadData);
+      
+      if (newLead) {
+        // Then create the initial task for the lead
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData.user;
+        
+        if (user) {
+          // Find registered users for the current user's name
+          const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('user_id', user.id)
+            .single();
+          
+          const userName = profiles?.full_name || profiles?.email || user.email || "Unknown User";
+          
+          const taskPayload = {
+            lead_id: newLead.id,
+            lead_name: leadData.name,
+            email_address: leadData.email || null,
+            phone_number: leadData.phone || null,
+            title: taskData.title,
+            description: taskData.description || null,
+            due_date: taskData.due_date,
+            assigned_to: user.id,
+            assigned_to_name: userName,
+            done: false,
+            created_by: user.id,
+          };
+
+          await supabase.from('tasks').insert(taskPayload);
+        }
+      }
+      
+      setShowAddDialog(false);
+      toast({
+        title: "Success",
+        description: "Lead and initial task created successfully!",
+      });
+    } catch (error) {
+      console.error('Error creating lead and task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create lead and task. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleMassUpload = async (leads: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'created_by'>[]) => {
