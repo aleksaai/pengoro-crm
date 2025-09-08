@@ -44,7 +44,7 @@ export default function LeadDetail() {
   const { leads, updateLead } = useLeads();
   const lead = leads.find(l => l.id === id);
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(id || null);
-  const { tasks: leadTasks, loading: tasksLoading, updateTask } = useLeadTasks(id || "");
+  const { tasks: leadTasks, loading: tasksLoading, updateTask, refetch: refetchTasks } = useLeadTasks(id || "");
 
   // Fetch registered users
   useEffect(() => {
@@ -987,6 +987,7 @@ export default function LeadDetail() {
           leadPhone={lead.phone}
           currentUserId={user.id}
           currentUserName={registeredUsers.find(u => u.id === user.id)?.full_name || user.email || "Unknown User"}
+          onTaskCreated={refetchTasks}
         />
       )}
     </div>

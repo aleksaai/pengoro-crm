@@ -21,6 +21,7 @@ interface TaskCreateModalProps {
   leadPhone?: string;
   currentUserId: string;
   currentUserName: string;
+  onTaskCreated?: () => void;
 }
 
 export function TaskCreateModal({
@@ -32,6 +33,7 @@ export function TaskCreateModal({
   leadPhone,
   currentUserId,
   currentUserName,
+  onTaskCreated,
 }: TaskCreateModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -81,6 +83,9 @@ export function TaskCreateModal({
       setDescription("");
       setDueDate(undefined);
       onOpenChange(false);
+      
+      // Refresh lead tasks if callback provided
+      onTaskCreated?.();
     } catch (error) {
       console.error('Error creating task:', error);
       toast({
