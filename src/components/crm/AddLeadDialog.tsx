@@ -125,12 +125,12 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-strong border-glass-border max-w-md max-h-[85vh] flex flex-col">
+      <DialogContent className="glass-strong border-glass-border max-w-md max-h-[85vh] overflow-hidden grid-rows-[auto_1fr]">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-lg font-semibold">Add New Lead</DialogTitle>
         </DialogHeader>
-        <form id="add-lead-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1 pr-2">
+        <form id="add-lead-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <ScrollArea className="flex-1 min-h-0 pr-2">
             <div className="space-y-3 pb-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
