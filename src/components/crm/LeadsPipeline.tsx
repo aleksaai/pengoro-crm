@@ -118,9 +118,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     if (!leadTasks || leadTasks.length === 0) {
       return "bg-muted hover:bg-muted/80";
     }
-
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
     
     // Find the earliest pending task
     const pendingTasks = leadTasks.filter(task => !task.done);
@@ -139,18 +136,29 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     const todayDate = new Date(now);
     todayDate.setHours(0, 0, 0, 0);
     
-    // Check if due today first (before checking overdue)
-    if (dueDay.getTime() === todayDate.getTime()) {
-      // Due today - always orange regardless of time
-      return "bg-warning hover:bg-warning/80";
-    }
-
-    if (dueDay.getTime() < todayDate.getTime()) {
-      // Overdue (past today) - red
+    const daysDifference = Math.ceil((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysDifference < 0) {
+      // Overdue (past due) - RED
       return "bg-destructive hover:bg-destructive/80";
     }
-
-    // Future - blue
+    
+    if (daysDifference === 0) {
+      // Due today - ORANGE
+      return "bg-warning hover:bg-warning/80";
+    }
+    
+    if (daysDifference === 1) {
+      // Due tomorrow - YELLOW
+      return "bg-yellow-500 hover:bg-yellow-600";
+    }
+    
+    if (daysDifference <= 7) {
+      // Due in next 7 days - GREEN
+      return "bg-success hover:bg-success/80";
+    }
+    
+    // Due in more than 7 days - BLUE
     return "bg-primary hover:bg-primary/80";
   };
 
