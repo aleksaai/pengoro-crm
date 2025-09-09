@@ -55,7 +55,7 @@ export default function Settings() {
       // Update profile in database
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ profile_picture_url: publicUrl })
+        .update({ profile_picture_url: publicUrl } as any)
         .eq('user_id', user.id);
 
       if (updateError) throw updateError;
