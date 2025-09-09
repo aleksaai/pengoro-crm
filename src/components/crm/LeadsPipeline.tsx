@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Search, Plus, Upload, Clock } from "lucide-react";
+import { ArrowRight, Search, Plus, Upload, ChevronRight } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -201,7 +201,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
               }}
               className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
             >
-              <Clock className="w-3 h-3" />
+              <ChevronRight className="w-3 h-3" />
             </Button>
             {lead.status !== "Abandoned" && (
               <Button
