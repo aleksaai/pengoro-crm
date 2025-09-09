@@ -37,18 +37,18 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <SidebarHeader className={`relative border-b border-glass-border/40 ${isCollapsed ? 'p-3' : 'p-6'} bg-gradient-to-br from-primary/5 via-background to-accent/5`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-5'} relative z-10`}>
-          <div className="relative flex-shrink-0 group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+          <div className="relative flex-shrink-0">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur opacity-50 transition duration-300"></div>
             <img 
               src={pengoroLogo} 
-              alt="Pengoro Magic logo" 
-              className={`relative ${isCollapsed ? 'w-10 h-10' : 'w-14 h-14'} rounded-2xl shadow-xl border border-glass-border/30 bg-background/50 backdrop-blur-sm transition-all duration-300 group-hover:scale-105`}
+              alt="Pengoro UG logo" 
+              className={`relative ${isCollapsed ? 'w-10 h-10' : 'w-14 h-14'} rounded-2xl shadow-xl border border-glass-border/30 bg-background/50 backdrop-blur-sm`}
             />
           </div>
           {!isCollapsed && (
             <div className="space-y-2">
               <h2 className="font-display font-bold text-2xl text-foreground tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Pengoro Magic
+                Pengoro UG
               </h2>
               <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-[0.2em] border-l-2 border-primary/30 pl-3">
                 Magic CRM System
