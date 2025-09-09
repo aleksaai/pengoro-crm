@@ -33,7 +33,8 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
 
   // Check if current user can edit this frozen lead
   const canEditFrozenLead = lead.is_frozen ? isSuperAdmin : true;
-  const isEditingRestricted = lead.is_frozen && isAdmin && !isSuperAdmin;
+  const isEditingRestricted = lead.is_frozen && !isSuperAdmin;
+  const showMeetingRequest = lead.is_frozen && isAdmin && !isSuperAdmin;
 
   const pendingTasks = tasks.filter(task => !task.done);
   const completedTasks = tasks.filter(task => task.done);
@@ -146,6 +147,10 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
     refetch();
   };
 
+  const handleRequestMeeting = () => {
+    window.open('https://cal.com/aleksa-ai/kritikgesprach?overlayCalendar=true', '_blank');
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -184,10 +189,22 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
               </div>
               
               {isEditingRestricted && (
-                <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 space-y-3">
                   <p className="text-sm text-warning">
                     ⚠️ This lead is frozen due to overdue tasks. Only Super Admins can manage tasks for frozen leads.
                   </p>
+                  
+                  {showMeetingRequest && (
+                    <Button
+                      onClick={handleRequestMeeting}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      Request Explanation Review Meeting
+                    </Button>
+                  )}
                 </div>
               )}
               
