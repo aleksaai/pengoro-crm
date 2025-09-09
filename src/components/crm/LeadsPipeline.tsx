@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useLeads, type Lead } from "@/hooks/useLeads";
+import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Search, Plus, Upload, Clock } from "lucide-react";
 import {
@@ -72,6 +73,7 @@ interface LeadCardProps {
 
 function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
   const navigate = useNavigate();
+  const { tasks: leadTasks } = useLeadTasks(lead.id);
   const {
     attributes,
     listeners,
@@ -97,9 +99,36 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
   };
 
   const getTodoButtonColor = () => {
-    // Default to blue (company CI blue) for now
-    // Will be updated when todo functionality is added
-    return "bg-blue-600 hover:bg-blue-700";
+    if (!leadTasks || leadTasks.length === 0) {
+      return "bg-muted hover:bg-muted/80";
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Find the earliest pending task
+    const pendingTasks = leadTasks.filter(task => !task.done);
+    if (pendingTasks.length === 0) {
+      return "bg-success hover:bg-success/80";
+    }
+
+    const earliestTask = pendingTasks.sort((a, b) => 
+      new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    )[0];
+
+    const taskDate = new Date(earliestTask.due_date);
+    taskDate.setHours(0, 0, 0, 0);
+    
+    if (taskDate < today) {
+      // Overdue - red
+      return "bg-destructive hover:bg-destructive/80";
+    } else if (taskDate.getTime() === today.getTime()) {
+      // Due today - orange/warning
+      return "bg-warning hover:bg-warning/80";
+    } else {
+      // Future - blue
+      return "bg-primary hover:bg-primary/80";
+    }
   };
 
   const handleCardClick = () => {
