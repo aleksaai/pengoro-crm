@@ -51,7 +51,7 @@ export function AppSidebar() {
                 Pengoro UG
               </h2>
               <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-[0.2em] border-l-2 border-primary/30 pl-3">
-                Magic CRM System
+                Magic CRM
               </p>
             </div>
           )}
