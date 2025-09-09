@@ -35,6 +35,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { AddLeadDialog } from "./AddLeadDialog";
 import { MassUploadDialog } from "./MassUploadDialog";
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
+import { LeadTasksModal } from "./LeadTasksModal";
 
 export interface LeadHistoryEntry {
   id: string;
@@ -69,9 +70,10 @@ interface LeadCardProps {
   lead: Lead;
   onClick: (lead: Lead) => void;
   onConvert: (lead: Lead) => void;
+  onOpenTasks: (lead: Lead) => void;
 }
 
-function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
+function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   const navigate = useNavigate();
   const { tasks: leadTasks } = useLeadTasks(lead.id);
   const {
@@ -195,7 +197,7 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                // Todo functionality will be added later
+                onOpenTasks(lead);
               }}
               className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
             >
@@ -227,9 +229,10 @@ interface LeadStageProps {
   leads: Lead[];
   onLeadClick: (lead: Lead) => void;
   onConvert: (lead: Lead) => void;
+  onOpenTasks: (lead: Lead) => void;
 }
 
-function LeadStage({ stage, leads, onLeadClick, onConvert }: LeadStageProps) {
+function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadStageProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
   });
@@ -249,6 +252,7 @@ function LeadStage({ stage, leads, onLeadClick, onConvert }: LeadStageProps) {
               lead={lead}
               onClick={onLeadClick}
               onConvert={onConvert}
+              onOpenTasks={onOpenTasks}
             />
           ))}
         </SortableContext>
@@ -268,8 +272,10 @@ function LeadStage({ stage, leads, onLeadClick, onConvert }: LeadStageProps) {
 export function LeadsPipeline() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedLeadForTasks, setSelectedLeadForTasks] = useState<Lead | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
+  const [showTasksModal, setShowTasksModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -408,6 +414,11 @@ export function LeadsPipeline() {
     setSelectedLead(lead);
   };
 
+  const handleOpenTasks = (lead: Lead) => {
+    setSelectedLeadForTasks(lead);
+    setShowTasksModal(true);
+  };
+
   const handleConvertToDeal = async (lead: Lead) => {
     try {
       await updateLead(lead.id, { status: "Discovery Call Booked" });
@@ -543,6 +554,7 @@ export function LeadsPipeline() {
               leads={stage.leads}
               onLeadClick={handleLeadClick}
               onConvert={handleConvertToDeal}
+              onOpenTasks={handleOpenTasks}
             />
           ))}
         </div>
@@ -553,6 +565,7 @@ export function LeadsPipeline() {
               lead={leads.find(lead => lead.id === activeId)!}
               onClick={() => {}}
               onConvert={() => {}}
+              onOpenTasks={() => {}}
             />
           ) : null}
         </DragOverlay>
@@ -606,6 +619,15 @@ export function LeadsPipeline() {
           }
         }}
       />
+
+      {/* Tasks Modal */}
+      {selectedLeadForTasks && (
+        <LeadTasksModal
+          open={showTasksModal}
+          onOpenChange={setShowTasksModal}
+          lead={selectedLeadForTasks}
+        />
+      )}
     </div>
   );
 }
