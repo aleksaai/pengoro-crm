@@ -129,8 +129,8 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-lg font-semibold">Add New Lead</DialogTitle>
         </DialogHeader>
-        <form id="add-lead-form" onSubmit={handleSubmit} className="flex-1 flex flex-col">
-          <ScrollArea className="flex-1 -mx-6 px-6">
+        <form id="add-lead-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <ScrollArea className="flex-1 pr-2">
             <div className="space-y-3 pb-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
