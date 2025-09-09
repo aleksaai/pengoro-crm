@@ -14,6 +14,9 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
+import { LeadTasksModal } from "./LeadTasksModal";
+import { useLeadTasks } from "@/hooks/useLeadTasks";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const dealStages = [
   { 
@@ -53,10 +56,11 @@ interface DealCardProps {
   onDealClick: (deal: Lead) => void;
   onLostClick: (deal: Lead) => void;
   onWonClick: (deal: Lead) => void;
+  onOpenTasks: (deal: Lead) => void;
   isDragOverlay?: boolean;
 }
 
-function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = false }: DealCardProps) {
+function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isDragOverlay = false }: DealCardProps) {
   const navigate = useNavigate();
   const {
     attributes,
@@ -66,6 +70,14 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = 
     transition,
     isDragging,
   } = useSortable({ id: deal.id });
+
+  const { tasks: leadTasks } = useLeadTasks(deal.id);
+  const { isAdmin, isSuperAdmin } = usePermissions();
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -100,9 +112,49 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = 
   };
 
   const getTodoButtonColor = () => {
-    // Default to blue (company CI blue) for now
-    // Will be updated when todo functionality is added
-    return "bg-blue-600 hover:bg-blue-700";
+    if (deal.is_frozen && isAdmin && !isSuperAdmin) {
+      return "bg-destructive hover:bg-destructive/80";
+    }
+
+    if (!leadTasks || leadTasks.length === 0) {
+      return "bg-muted hover:bg-muted/80";
+    }
+
+    const pendingTasks = leadTasks.filter(task => !task.done);
+    if (pendingTasks.length === 0) {
+      return "bg-success hover:bg-success/80";
+    }
+
+    const earliestTask = pendingTasks.sort((a, b) =>
+      new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    )[0];
+
+    const due = new Date(earliestTask.due_date);
+    const dueDay = new Date(due);
+    dueDay.setHours(0, 0, 0, 0);
+
+    const todayDate = new Date(now);
+    todayDate.setHours(0, 0, 0, 0);
+
+    if (due.getTime() < now) {
+      return "bg-destructive hover:bg-destructive/80";
+    }
+
+    const daysDifference = Math.floor((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysDifference === 0) {
+      return "bg-warning hover:bg-warning/80";
+    }
+
+    if (daysDifference === 1) {
+      return "bg-yellow hover:bg-yellow/80";
+    }
+
+    if (daysDifference <= 7) {
+      return "bg-success hover:bg-success/80";
+    }
+
+    return "bg-primary hover:bg-primary/80";
   };
 
   return (
@@ -173,7 +225,7 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, isDragOverlay = 
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Todo functionality will be added later
+                  onOpenTasks(deal);
                 }}
                 className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
               >
@@ -245,6 +297,12 @@ export function PipelineDashboard() {
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [pendingLostLead, setPendingLostLead] = useState<Lead | null>(null);
+  const [showTasksModal, setShowTasksModal] = useState(false);
+  const [selectedLeadForTasks, setSelectedLeadForTasks] = useState<Lead | null>(null);
+  const handleOpenTasks = (lead: Lead) => {
+    setSelectedLeadForTasks(lead);
+    setShowTasksModal(true);
+  };
   const { updateLead, leads } = useLeads();
   const { toast } = useToast();
 
@@ -568,6 +626,7 @@ export function PipelineDashboard() {
                         onDealClick={handleDealClick}
                         onLostClick={handleLostClick}
                         onWonClick={handleWonClick}
+                        onOpenTasks={handleOpenTasks}
                       />
                     ))}
                   </div>
@@ -592,11 +651,20 @@ export function PipelineDashboard() {
               onDealClick={() => {}} 
               onLostClick={() => {}}
               onWonClick={() => {}}
+              onOpenTasks={() => {}}
               isDragOverlay 
             />
           )}
         </DragOverlay>
       </DndContext>
+
+      {selectedLeadForTasks && (
+        <LeadTasksModal
+          open={showTasksModal}
+          onOpenChange={setShowTasksModal}
+          lead={selectedLeadForTasks}
+        />
+      )}
 
       <AbandonLeadDialog
         open={showLostDialog}
