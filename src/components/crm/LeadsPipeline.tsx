@@ -83,6 +83,13 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
     isDragging,
   } = useSortable({ id: lead.id });
 
+  // Tick every minute to keep time-based UI (like task urgency color) fresh
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -103,7 +110,7 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
       return "bg-muted hover:bg-muted/80";
     }
 
-    const today = new Date();
+    const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     
     // Find the earliest pending task
@@ -116,19 +123,25 @@ function LeadCard({ lead, onClick, onConvert }: LeadCardProps) {
       new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     )[0];
 
-    const taskDate = new Date(earliestTask.due_date);
-    taskDate.setHours(0, 0, 0, 0);
-    
-    if (taskDate < today) {
-      // Overdue - red
+    const due = new Date(earliestTask.due_date);
+
+    if (due.getTime() < now) {
+      // Overdue by time - red
       return "bg-destructive hover:bg-destructive/80";
-    } else if (taskDate.getTime() === today.getTime()) {
-      // Due today - orange/warning
-      return "bg-warning hover:bg-warning/80";
-    } else {
-      // Future - blue
-      return "bg-primary hover:bg-primary/80";
     }
+
+    const todayDate = new Date(now);
+    if (
+      due.getFullYear() === todayDate.getFullYear() &&
+      due.getMonth() === todayDate.getMonth() &&
+      due.getDate() === todayDate.getDate()
+    ) {
+      // Due later today - warning
+      return "bg-warning hover:bg-warning/80";
+    }
+
+    // Future - blue
+    return "bg-primary hover:bg-primary/80";
   };
 
   const handleCardClick = () => {

@@ -12,6 +12,27 @@ export function useLeadTasks(leadId: string) {
     }
   }, [leadId]);
 
+  // Realtime updates for this lead's tasks
+  useEffect(() => {
+    if (!leadId) return;
+
+    const channel = supabase
+      .channel(`tasks-lead-${leadId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'tasks',
+        filter: `lead_id=eq.${leadId}`,
+      }, () => {
+        fetchLeadTasks();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [leadId]);
+
   const fetchLeadTasks = async () => {
     try {
       const { data, error } = await supabase
