@@ -279,7 +279,7 @@ export function MassUploadDialog({ open, onOpenChange, onUploadLeads }: MassUplo
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
           {step === 'upload' && (
             <div className="space-y-6 p-6">
               <div className="text-center space-y-4">
