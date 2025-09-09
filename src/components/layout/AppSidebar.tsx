@@ -35,26 +35,28 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-      <SidebarHeader className={`border-b border-glass-border/60 ${isCollapsed ? 'p-2' : 'p-8'}`}>
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
-          <div className="relative flex-shrink-0">
+      <SidebarHeader className={`relative border-b border-glass-border/40 ${isCollapsed ? 'p-3' : 'p-6'} bg-gradient-to-br from-primary/5 via-background to-accent/5`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-5'} relative z-10`}>
+          <div className="relative flex-shrink-0 group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
             <img 
               src={pengoroLogo} 
-              alt="Pengoro logo" 
-              className={`${isCollapsed ? 'w-8 h-8' : 'w-12 h-12'} rounded-xl shadow-lg`}
+              alt="Pengoro Magic logo" 
+              className={`relative ${isCollapsed ? 'w-10 h-10' : 'w-14 h-14'} rounded-2xl shadow-xl border border-glass-border/30 bg-background/50 backdrop-blur-sm transition-all duration-300 group-hover:scale-105`}
             />
           </div>
           {!isCollapsed && (
-            <div className="space-y-1">
-              <h2 className="font-display font-bold text-xl text-foreground">
+            <div className="space-y-2">
+              <h2 className="font-display font-bold text-2xl text-foreground tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Pengoro Magic
               </h2>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-[0.2em] border-l-2 border-primary/30 pl-3">
                 Magic CRM System
               </p>
             </div>
           )}
         </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-glass/10 to-transparent"></div>
       </SidebarHeader>
       
       <SidebarContent className="px-4 py-6">
