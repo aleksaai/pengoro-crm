@@ -188,19 +188,22 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                           </div>
                           
                           <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleMarkAsDone(task)}
-                            >
-                              Mark Done
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleCompleteWithNewTask(task)}
-                            >
-                              Complete & Add Next
-                            </Button>
+                            {pendingTasks.length > 1 ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleMarkAsDone(task)}
+                              >
+                                Mark Done
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => handleCompleteWithNewTask(task)}
+                              >
+                                Complete & Add Next Task
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -223,12 +226,17 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                           key={task.id}
                           className="p-3 rounded-lg bg-success/10 border border-success/20"
                         >
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-success" />
-                            <span className="font-medium text-sm">{task.title}</span>
-                            <Badge variant="outline" className="text-xs">
-                              Completed
-                            </Badge>
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-success" />
+                              <span className="font-medium text-sm">{task.title}</span>
+                              <Badge variant="outline" className="text-xs">
+                                Completed
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {format(new Date(task.updated_at), "PPP p")}
+                            </div>
                           </div>
                         </div>
                       ))}
