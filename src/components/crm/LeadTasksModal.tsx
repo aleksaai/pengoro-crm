@@ -117,19 +117,26 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   };
 
   const handleCompleteTask = async (taskId: string, newTaskData: any) => {
+    console.log("Starting handleCompleteTask:", { taskId, newTaskData });
     try {
       // Mark current task as done
+      console.log("Marking task as done...");
       await updateTask(taskId, { done: true });
+      console.log("Task marked as done successfully");
       
       // Create new task
+      console.log("Creating new task...");
       await createTask(newTaskData);
+      console.log("New task created successfully");
       
       toast({
         title: "Success",
         description: "Task completed and new task created!",
       });
       
+      console.log("Calling refetch...");
       refetch();
+      console.log("Refetch called, closing modal...");
       setShowCompletionModal(false);
       setSelectedTask(null);
     } catch (error) {

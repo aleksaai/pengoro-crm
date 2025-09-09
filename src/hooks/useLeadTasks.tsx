@@ -23,7 +23,8 @@ export function useLeadTasks(leadId: string) {
         schema: 'public',
         table: 'tasks',
         filter: `lead_id=eq.${leadId}`,
-      }, () => {
+      }, (payload) => {
+        console.log("Real-time update received:", payload);
         fetchLeadTasks();
       })
       .subscribe();
@@ -34,6 +35,7 @@ export function useLeadTasks(leadId: string) {
   }, [leadId]);
 
   const fetchLeadTasks = async () => {
+    console.log("fetchLeadTasks called for leadId:", leadId);
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -42,6 +44,7 @@ export function useLeadTasks(leadId: string) {
         .order('due_date', { ascending: true });
 
       if (error) throw error;
+      console.log("fetchLeadTasks - fetched tasks:", data?.length, "tasks");
       setTasks(data || []);
     } catch (error) {
       console.error('Error fetching lead tasks:', error);
@@ -51,6 +54,7 @@ export function useLeadTasks(leadId: string) {
   };
 
   const createTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
+    console.log("useLeadTasks createTask called with:", taskData);
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -59,6 +63,7 @@ export function useLeadTasks(leadId: string) {
         .single();
 
       if (error) throw error;
+      console.log("Task inserted successfully:", data);
       
       // Add history entry for task creation
       const { data: userData } = await supabase.auth.getUser();
@@ -76,7 +81,12 @@ export function useLeadTasks(leadId: string) {
         created_by: userData.user?.id,
       });
       
-      setTasks(prev => [data, ...prev]);
+      console.log("Before updating local state, current tasks:", tasks.length);
+      setTasks(prev => {
+        const newTasks = [data, ...prev];
+        console.log("Updated local state with new tasks:", newTasks.length);
+        return newTasks;
+      });
       return data;
     } catch (error) {
       console.error('Error creating task:', error);
