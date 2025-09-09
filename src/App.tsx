@@ -13,6 +13,7 @@ import Customers from "./pages/Customers";
 import Winbacks from "./pages/Winbacks";
 import Analytics from "./pages/Analytics";
 import Tasks from "./pages/Tasks";
+import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Setup from "./pages/Setup";
 import Admin from "./pages/Admin";
@@ -76,6 +77,13 @@ const App = () => (
               <ProtectedRoute>
                 <CRMLayout>
                   <Tasks />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <Settings />
                 </CRMLayout>
               </ProtectedRoute>
             } />

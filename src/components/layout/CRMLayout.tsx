@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GlobalSearch } from "@/components/ui/global-search";
+import { useNavigate } from "react-router-dom";
 
 interface CRMLayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ interface CRMLayoutProps {
 
 export function CRMLayout({ children }: CRMLayoutProps) {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
@@ -64,7 +66,10 @@ export function CRMLayout({ children }: CRMLayoutProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-sm border-glass-border/40">
-                  <DropdownMenuItem className="cursor-pointer hover:bg-glass/50">
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/settings')}
+                    className="cursor-pointer hover:bg-glass/50"
+                  >
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </DropdownMenuItem>
