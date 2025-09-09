@@ -60,6 +60,10 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --warning-light: 38 70% 95%;
+    /* Tomorrow (yellow) token */
+    --yellow: 50 100% 52%;
+    --yellow-foreground: 220 20% 8%;
+    --yellow-light: 50 90% 95%;
     --info: 201 96% 32%;
     --info-foreground: 0 0% 100%;
     --info-light: 201 80% 95%;

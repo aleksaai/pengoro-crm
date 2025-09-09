@@ -136,28 +136,29 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     const todayDate = new Date(now);
     todayDate.setHours(0, 0, 0, 0);
     
-    const daysDifference = Math.ceil((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDifference < 0) {
-      // Overdue (past due) - RED
+    // Overdue by time
+    if (due.getTime() < now) {
       return "bg-destructive hover:bg-destructive/80";
     }
-    
+
+    // Calculate day difference for upcoming tasks
+    const daysDifference = Math.floor((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+
     if (daysDifference === 0) {
-      // Due today - ORANGE
+      // Due later today - ORANGE
       return "bg-warning hover:bg-warning/80";
     }
     
     if (daysDifference === 1) {
       // Due tomorrow - YELLOW
-      return "bg-yellow-500 hover:bg-yellow-600";
+      return "bg-yellow hover:bg-yellow/80";
     }
     
     if (daysDifference <= 7) {
       // Due in next 7 days - GREEN
       return "bg-success hover:bg-success/80";
     }
-    
+
     // Due in more than 7 days - BLUE
     return "bg-primary hover:bg-primary/80";
   };

@@ -75,21 +75,26 @@ export default {
 					DEFAULT: 'hsl(var(--glass))',
 					border: 'hsl(var(--glass-border))'
 				},
-				success: {
-					DEFAULT: 'hsl(var(--success))',
-					foreground: 'hsl(var(--success-foreground))',
-					light: 'hsl(var(--success-light))'
-				},
-				warning: {
-					DEFAULT: 'hsl(var(--warning))',
-					foreground: 'hsl(var(--warning-foreground))',
-					light: 'hsl(var(--warning-light))'
-				},
-				info: {
-					DEFAULT: 'hsl(var(--info))',
-					foreground: 'hsl(var(--info-foreground))',
-					light: 'hsl(var(--info-light))'
-				},
+					success: {
+						DEFAULT: 'hsl(var(--success))',
+						foreground: 'hsl(var(--success-foreground))',
+						light: 'hsl(var(--success-light))'
+					},
+					warning: {
+						DEFAULT: 'hsl(var(--warning))',
+						foreground: 'hsl(var(--warning-foreground))',
+						light: 'hsl(var(--warning-light))'
+					},
+					yellow: {
+						DEFAULT: 'hsl(var(--yellow))',
+						foreground: 'hsl(var(--yellow-foreground))',
+						light: 'hsl(var(--yellow-light))'
+					},
+					info: {
+						DEFAULT: 'hsl(var(--info))',
+						foreground: 'hsl(var(--info-foreground))',
+						light: 'hsl(var(--info-light))'
+					},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
