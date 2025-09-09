@@ -56,9 +56,32 @@ export function useLeadTasks(leadId: string) {
   const createTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
     console.log("useLeadTasks createTask called with:", taskData);
     try {
+      // Ensure required fields and enrich payload
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      const userId = authData.user?.id;
+      if (!userId) throw new Error('No authenticated user');
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const payload = {
+        ...taskData,
+        // Fallbacks to guarantee NOT NULL columns
+        lead_id: (taskData as any).lead_id || leadId,
+        created_by: (taskData as any).created_by || userId,
+        assigned_to: (taskData as any).assigned_to || userId,
+        assigned_to_name:
+          (taskData as any).assigned_to_name ?? profileData?.full_name ?? null,
+        done: (taskData as any).done ?? false,
+      } as Omit<Task, 'id' | 'created_at' | 'updated_at'>;
+
       const { data, error } = await supabase
         .from('tasks')
-        .insert(taskData)
+        .insert(payload)
         .select()
         .single();
 
@@ -67,17 +90,17 @@ export function useLeadTasks(leadId: string) {
       
       // Add history entry for task creation
       const { data: userData } = await supabase.auth.getUser();
-      const { data: profileData } = await supabase
+      const { data: profileForHistory } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('user_id', userData.user?.id)
-        .single();
+        .maybeSingle();
 
       await supabase.from('lead_history').insert({
-        lead_id: leadId,
+        lead_id: payload.lead_id,
         action: 'Task Created',
         details: `New task created: "${data.title}" - Due: ${new Date(data.due_date).toLocaleDateString()}`,
-        user_name: profileData?.full_name || 'Unknown User',
+        user_name: profileForHistory?.full_name || 'Unknown User',
         created_by: userData.user?.id,
       });
       

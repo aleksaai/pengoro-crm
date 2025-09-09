@@ -135,8 +135,8 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
       });
       
       console.log("Calling refetch...");
-      refetch();
-      console.log("Refetch called, closing modal...");
+      await refetch();
+      console.log("Refetch awaited, closing modal...");
       setShowCompletionModal(false);
       setSelectedTask(null);
     } catch (error) {
