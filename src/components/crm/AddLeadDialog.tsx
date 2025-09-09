@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -124,14 +125,15 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-strong border-glass-border max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Add New Lead</DialogTitle>
+      <DialogContent className="glass-strong border-glass-border max-w-md max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="text-lg font-semibold">Add New Lead</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name *</Label>
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          <form id="add-lead-form" onSubmit={handleSubmit} className="space-y-3 pb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="name" className="text-sm">Full Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -141,8 +143,8 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-sm">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -154,9 +156,9 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-sm">Phone</Label>
               <Input
                 id="phone"
                 value={formData.phone}
@@ -165,8 +167,8 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="source">Lead Source *</Label>
+            <div className="space-y-1">
+              <Label htmlFor="source" className="text-sm">Lead Source *</Label>
               <Select value={formData.source} onValueChange={(value) => setFormData({ ...formData, source: value })}>
                 <SelectTrigger className="bg-input/50 border-glass-border">
                   <SelectValue placeholder="Select source" />
@@ -180,8 +182,8 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="assigned_to">Assigned To</Label>
+          <div className="space-y-1">
+            <Label htmlFor="assigned_to" className="text-sm">Assigned To</Label>
             <Select value={formData.assigned_to} onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}>
               <SelectTrigger className="bg-input/50 border-glass-border">
                 <SelectValue placeholder="Select user" />
@@ -198,9 +200,9 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Products Interested In</Label>
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-1">
+            <Label className="text-sm">Products Interested In</Label>
+            <div className="flex flex-wrap gap-1">
               {productOptions.map(product => {
                 const isSelected = formData.interested_products.includes(product);
                 return (
@@ -219,11 +221,11 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
             </div>
           </div>
 
-          <div className="border-t pt-4 space-y-4">
-            <Label className="text-base font-medium">Initial Task (Required)</Label>
+          <div className="border-t pt-3 space-y-3">
+            <Label className="text-sm font-medium">Initial Task (Required)</Label>
             
-            <div className="space-y-2">
-              <Label htmlFor="task-title">Task Title *</Label>
+            <div className="space-y-1">
+              <Label htmlFor="task-title" className="text-sm">Task Title *</Label>
               <Input
                 id="task-title"
                 value={taskData.title}
@@ -234,20 +236,20 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="task-description">Task Description</Label>
+            <div className="space-y-1">
+              <Label htmlFor="task-description" className="text-sm">Task Description</Label>
               <Textarea
                 id="task-description"
                 value={taskData.description}
                 onChange={(e) => setTaskData({ ...taskData, description: e.target.value })}
                 placeholder="Enter task description... (optional)"
-                className="bg-input/50 border-glass-border resize-none h-20"
+                className="bg-input/50 border-glass-border resize-none h-16"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Task Due Date *</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-sm">Task Due Date *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -274,8 +276,8 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
                 </Popover>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="task-due-time">Task Due Time *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="task-due-time" className="text-sm">Task Due Time *</Label>
                 <Input
                   id="task-due-time"
                   type="time"
@@ -288,15 +290,16 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1 bg-primary hover:bg-primary-hover">
-              Add Lead
-            </Button>
-          </div>
-        </form>
+          </form>
+        </ScrollArea>
+        <div className="flex gap-3 pt-3 border-t flex-shrink-0">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            Cancel
+          </Button>
+          <Button type="submit" form="add-lead-form" className="flex-1 bg-primary hover:bg-primary-hover">
+            Add Lead
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
