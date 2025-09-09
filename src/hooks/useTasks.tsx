@@ -52,6 +52,24 @@ export function useTasks() {
 
       if (error) throw error;
       
+      // Add history entry for task creation if lead_id is available
+      if (taskData.lead_id) {
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', userData.user?.id)
+          .single();
+
+        await supabase.from('lead_history').insert({
+          lead_id: taskData.lead_id,
+          action: 'Task Created',
+          details: `New task created: "${data.title}" - Due: ${new Date(data.due_date).toLocaleDateString()}`,
+          user_name: profileData?.full_name || 'Unknown User',
+          created_by: userData.user?.id,
+        });
+      }
+      
       setTasks(prev => [data, ...prev]);
       return data;
     } catch (error) {

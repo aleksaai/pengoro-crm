@@ -403,6 +403,21 @@ export function LeadsPipeline() {
           };
 
           await supabase.from('tasks').insert(taskPayload);
+          
+          // Add history entry for task creation
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', user.id)
+            .single();
+
+          await supabase.from('lead_history').insert({
+            lead_id: newLead.id,
+            action: 'Task Created',
+            details: `New task created: "${taskPayload.title}" - Due: ${new Date(taskPayload.due_date).toLocaleDateString()}`,
+            user_name: profileData?.full_name || 'Unknown User',
+            created_by: user.id,
+          });
         }
       }
       

@@ -114,6 +114,21 @@ export default function LeadDetail() {
 
       if (error) throw error;
 
+      // Add history entry for task creation
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user?.id)
+        .single();
+
+      await supabase.from('lead_history').insert({
+        lead_id: newTaskData.lead_id,
+        action: 'Task Created',
+        details: `New task created: "${newTaskData.title}" - Due: ${new Date(newTaskData.due_date).toLocaleDateString()}`,
+        user_name: profileData?.full_name || 'Unknown User',
+        created_by: user?.id,
+      });
+
       // Refresh tasks
       refetchTasks();
       setCompletingTask(null);
@@ -800,14 +815,10 @@ export default function LeadDetail() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="notes" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="notes" className="text-xs">
                     <NotebookPen className="w-3 h-3 mr-1" />
                     Notes
-                  </TabsTrigger>
-                  <TabsTrigger value="tasks" className="text-xs">
-                    <CheckSquare className="w-3 h-3 mr-1" />
-                    Tasks
                   </TabsTrigger>
                   <TabsTrigger value="history" className="text-xs">
                     <Clock className="w-3 h-3 mr-1" />
@@ -852,64 +863,6 @@ export default function LeadDetail() {
                   </ScrollArea>
                 </TabsContent>
                 
-                <TabsContent value="tasks" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsTaskModalOpen(true)}
-                      className="w-full flex items-center gap-2"
-                      disabled={!user}
-                    >
-                      <Plus className="w-4 h-4" />
-                      Create Task
-                    </Button>
-                  </div>
-                  
-                  <ScrollArea className="h-64">
-                    <div className="space-y-3">
-                      {tasksLoading ? (
-                        <p className="text-center text-muted-foreground text-sm">Loading tasks...</p>
-                      ) : leadTasks.length > 0 ? (
-                        leadTasks.map((task) => (
-                          <div key={task.id} className="border-l-2 border-primary/20 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                   <input
-                                     type="checkbox"
-                                     checked={task.done}
-                                     onChange={() => {
-                                       if (!task.done) {
-                                         // If task is not done, open completion modal
-                                         setCompletingTask(task);
-                                       } else {
-                                         // If task is done, allow unchecking (reopen task)
-                                         updateTask(task.id, { done: false });
-                                       }
-                                     }}
-                                     className="rounded border-border"
-                                   />
-                                  <h4 className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                                    {task.title}
-                                  </h4>
-                                </div>
-                                {task.description && (
-                                  <p className="text-xs text-muted-foreground mt-1 ml-6">{task.description}</p>
-                                )}
-                              </div>
-                              <div className="text-xs text-muted-foreground text-right">
-                                <p>Due: {new Date(task.due_date).toLocaleDateString()}</p>
-                                <p>{task.assigned_to_name}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-center text-muted-foreground text-sm">No tasks yet</p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
                 
                 <TabsContent value="history" className="mt-4">
                   <ScrollArea className="h-80">

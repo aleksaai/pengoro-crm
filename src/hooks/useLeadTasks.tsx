@@ -60,6 +60,22 @@ export function useLeadTasks(leadId: string) {
 
       if (error) throw error;
       
+      // Add history entry for task creation
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', userData.user?.id)
+        .single();
+
+      await supabase.from('lead_history').insert({
+        lead_id: leadId,
+        action: 'Task Created',
+        details: `New task created: "${data.title}" - Due: ${new Date(data.due_date).toLocaleDateString()}`,
+        user_name: profileData?.full_name || 'Unknown User',
+        created_by: userData.user?.id,
+      });
+      
       setTasks(prev => [data, ...prev]);
       return data;
     } catch (error) {
@@ -70,6 +86,8 @@ export function useLeadTasks(leadId: string) {
 
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
+      const originalTask = tasks.find(task => task.id === taskId);
+      
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -78,6 +96,27 @@ export function useLeadTasks(leadId: string) {
         .single();
 
       if (error) throw error;
+
+      // Add history entry for significant task updates
+      if (updates.done !== undefined && originalTask) {
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', userData.user?.id)
+          .single();
+
+        const action = updates.done ? 'Task Completed' : 'Task Reopened';
+        const details = `Task "${originalTask.title}" was ${updates.done ? 'completed' : 'reopened'}`;
+
+        await supabase.from('lead_history').insert({
+          lead_id: leadId,
+          action,
+          details,
+          user_name: profileData?.full_name || 'Unknown User',
+          created_by: userData.user?.id,
+        });
+      }
 
       setTasks(prev => prev.map(task => 
         task.id === taskId ? data : task
