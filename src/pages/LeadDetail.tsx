@@ -48,6 +48,23 @@ export default function LeadDetail() {
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(id || null);
   const { tasks: leadTasks, loading: tasksLoading, updateTask, refetch: refetchTasks } = useLeadTasks(id || "");
 
+  // Determine where user came from based on state
+  const getBackInfo = () => {
+    const from = location.state?.from;
+    
+    switch (from) {
+      case 'pipeline':
+        return { text: 'Back to Sales Pipeline', route: '/' };
+      case 'winbacks':
+        return { text: 'Back to Winbacks', route: '/winbacks' };
+      case 'leads':
+      default:
+        return { text: 'Back to Leads', route: '/leads' };
+    }
+  };
+  
+  const { text: backButtonText, route: backRoute } = getBackInfo();
+
   // Fetch registered users
   useEffect(() => {
     const fetchUsers = async () => {
@@ -112,9 +129,9 @@ export default function LeadDetail() {
         <div className="text-center">
           <h2 className="text-2xl font-semibold mb-2">Lead not found</h2>
           <p className="text-muted-foreground mb-4">The lead you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/leads')}>
+          <Button onClick={() => navigate(backRoute)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Leads
+            {backButtonText}
           </Button>
         </div>
       </div>
@@ -122,13 +139,6 @@ export default function LeadDetail() {
   }
 
   const currentLead = editedLead || lead;
-
-  // Determine if user came from pipeline based on referrer or state
-  const isFromPipeline = location.state?.from === 'pipeline' || 
-    (typeof window !== 'undefined' && document.referrer.includes('/pipeline'));
-  
-  const backButtonText = isFromPipeline ? 'Back to Sales Pipeline' : 'Back to Leads';
-  const backRoute = isFromPipeline ? '/' : '/leads';
 
   const handleEdit = () => {
     setEditedLead({ ...lead });

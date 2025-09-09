@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { LeadDetailsModal } from "./LeadDetailsModal";
 import {
   DndContext,
   DragEndEvent,
@@ -53,11 +53,11 @@ const winbackStages = [
 
 interface WinbackCardProps {
   lead: LeadWithReason;
-  onClick: (lead: Lead) => void;
   onReactivate: (leadId: string) => void;
 }
 
-function WinbackCard({ lead, onClick, onReactivate }: WinbackCardProps) {
+function WinbackCard({ lead, onReactivate }: WinbackCardProps) {
+  const navigate = useNavigate();
   const {
     attributes,
     listeners,
@@ -73,6 +73,10 @@ function WinbackCard({ lead, onClick, onReactivate }: WinbackCardProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const handleClick = () => {
+    navigate(`/leads/${lead.id}`, { state: { from: 'winbacks' } });
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -80,7 +84,7 @@ function WinbackCard({ lead, onClick, onReactivate }: WinbackCardProps) {
       {...attributes}
       {...listeners}
       className="glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30"
-      onClick={() => onClick(lead)}
+      onClick={handleClick}
     >
       <div className="space-y-2">
         <div className="flex items-start justify-between">
@@ -146,11 +150,10 @@ function WinbackCard({ lead, onClick, onReactivate }: WinbackCardProps) {
 interface WinbackStageProps {
   stage: typeof winbackStages[0];
   leads: LeadWithReason[];
-  onLeadClick: (lead: Lead) => void;
   onReactivate: (leadId: string) => void;
 }
 
-function WinbackStage({ stage, leads, onLeadClick, onReactivate }: WinbackStageProps) {
+function WinbackStage({ stage, leads, onReactivate }: WinbackStageProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
   });
@@ -168,7 +171,6 @@ function WinbackStage({ stage, leads, onLeadClick, onReactivate }: WinbackStageP
             <WinbackCard
               key={lead.id}
               lead={lead}
-              onClick={onLeadClick}
               onReactivate={onReactivate}
             />
           ))}
@@ -190,7 +192,6 @@ export function WinbacksPipeline() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [winbackLeads, setWinbackLeads] = useState<LeadWithReason[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -359,9 +360,6 @@ export function WinbacksPipeline() {
     }
   };
 
-  const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead);
-  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -549,7 +547,6 @@ export function WinbacksPipeline() {
               key={stage.id}
               stage={stage}
               leads={stage.leads}
-              onLeadClick={handleLeadClick}
               onReactivate={handleReactivate}
             />
           ))}
@@ -559,20 +556,11 @@ export function WinbacksPipeline() {
           {activeId ? (
             <WinbackCard
               lead={winbackLeads.find(lead => lead.id === activeId)!}
-              onClick={() => {}}
               onReactivate={() => {}}
             />
           ) : null}
         </DragOverlay>
       </DndContext>
-
-      <LeadDetailsModal 
-        lead={selectedLead} 
-        open={!!selectedLead}
-        onOpenChange={(open) => !open && setSelectedLead(null)}
-        onUpdateLead={updateLead}
-        pipelineType="winbacks"
-      />
     </div>
   );
 }
