@@ -62,6 +62,7 @@ export function TaskManagement() {
     dueDate: "",
     assignedTo: ""
   });
+  const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
 
   const selectedLeadData = leads.find(lead => lead.id === selectedLead);
 
@@ -129,14 +130,45 @@ export function TaskManagement() {
     }
   };
 
+  // Filter tasks based on assigned person
+  const filteredTasks = tasks.filter(task => {
+    if (assignedToFilter === "all") return true;
+    return task.assigned_to_name === assignedToFilter;
+  });
+
+  // Get unique assigned users for filter dropdown
+  const uniqueAssignedUsers = Array.from(new Set(
+    tasks.map(task => task.assigned_to_name).filter(name => name)
+  )).sort();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold text-foreground mb-2">Tasks</h1>
           <p className="text-muted-foreground">
-            {tasks.filter(t => t.done).length}/{tasks.length} tasks completed
+            {filteredTasks.filter(t => t.done).length}/{filteredTasks.length} tasks completed
           </p>
+        </div>
+        
+        {/* Filter by Assigned To */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="assigned-filter">Assigned to:</Label>
+            <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by assigned user..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                {uniqueAssignedUsers.map((userName) => (
+                  <SelectItem key={userName} value={userName}>
+                    {userName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -267,7 +299,7 @@ export function TaskManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tasks.map((task) => (
+              {filteredTasks.map((task) => (
                 <TableRow key={task.id} className={task.done ? "opacity-60" : ""}>
                   <TableCell className={`font-medium ${task.done ? "line-through" : ""}`}>
                     {task.lead_name}
@@ -282,7 +314,7 @@ export function TaskManagement() {
                     {new Date(task.due_date).toLocaleDateString()}
                   </TableCell>
                   <TableCell className={task.done ? "line-through" : ""}>
-                    {task.assigned_to}
+                    {task.assigned_to_name || 'Unassigned'}
                   </TableCell>
                   <TableCell>
                     <Checkbox
