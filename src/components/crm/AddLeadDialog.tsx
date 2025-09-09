@@ -129,8 +129,9 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-lg font-semibold">Add New Lead</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <form id="add-lead-form" onSubmit={handleSubmit} className="space-y-3 pb-4">
+        <form id="add-lead-form" onSubmit={handleSubmit} className="flex-1 flex flex-col">
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-3 pb-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="name" className="text-sm">Full Name *</Label>
@@ -290,16 +291,17 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
             </div>
           </div>
 
-          </form>
-        </ScrollArea>
-        <div className="flex gap-3 pt-3 border-t flex-shrink-0">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-            Cancel
-          </Button>
-          <Button type="submit" form="add-lead-form" className="flex-1 bg-primary hover:bg-primary-hover">
-            Add Lead
-          </Button>
-        </div>
+            </div>
+          </ScrollArea>
+          <div className="flex gap-3 pt-3 border-t flex-shrink-0">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1 bg-primary hover:bg-primary-hover">
+              Add Lead
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
