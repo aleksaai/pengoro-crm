@@ -188,6 +188,7 @@ export type Database = {
           id_document_back_path: string | null
           id_document_path: string | null
           interested_products: string[] | null
+          is_frozen: boolean | null
           name: string
           net_salary: number | null
           phone: string | null
@@ -206,6 +207,7 @@ export type Database = {
           id_document_back_path?: string | null
           id_document_path?: string | null
           interested_products?: string[] | null
+          is_frozen?: boolean | null
           name: string
           net_salary?: number | null
           phone?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           id_document_back_path?: string | null
           id_document_path?: string | null
           interested_products?: string[] | null
+          is_frozen?: boolean | null
           name?: string
           net_salary?: number | null
           phone?: string | null
@@ -235,6 +238,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"] | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -243,6 +247,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -251,6 +256,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -316,10 +322,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_edit_lead: {
+        Args: { lead_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
+      check_and_freeze_overdue_leads: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      account_type: "super_admin" | "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -446,6 +459,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_type: ["super_admin", "admin", "user"],
+    },
   },
 } as const

@@ -8,6 +8,7 @@ import { Clock, Plus, CheckCircle, Calendar, User } from "lucide-react";
 import { format, isPast, isToday } from "date-fns";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { TaskCreateModal } from "./TaskCreateModal";
 import { TaskCompletionModal } from "./TaskCompletionModal";
@@ -27,7 +28,12 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   
   const { tasks, loading, updateTask, createTask, refetch } = useLeadTasks(lead.id);
   const { user } = useAuth();
+  const { isAdmin, isSuperAdmin } = usePermissions();
   const { toast } = useToast();
+
+  // Check if current user can edit this frozen lead
+  const canEditFrozenLead = lead.is_frozen ? isSuperAdmin : true;
+  const isEditingRestricted = lead.is_frozen && isAdmin && !isSuperAdmin;
 
   const pendingTasks = tasks.filter(task => !task.done);
   const completedTasks = tasks.filter(task => task.done);
@@ -69,6 +75,15 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   };
 
   const handleMarkAsDone = async (task: Task) => {
+    if (isEditingRestricted) {
+      toast({
+        title: "Access Restricted",
+        description: "This lead is frozen due to overdue tasks. Only Super Admins can edit frozen leads.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       await updateTask(task.id, { done: true });
       toast({
@@ -87,6 +102,15 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   };
 
   const handleCompleteWithNewTask = (task: Task) => {
+    if (isEditingRestricted) {
+      toast({
+        title: "Access Restricted",
+        description: "This lead is frozen due to overdue tasks. Only Super Admins can edit frozen leads.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSelectedTask(task);
     setShowCompletionModal(true);
   };
@@ -139,14 +163,33 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">Pending Tasks</h3>
                 <Button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => {
+                    if (isEditingRestricted) {
+                      toast({
+                        title: "Access Restricted",
+                        description: "This lead is frozen due to overdue tasks. Only Super Admins can edit frozen leads.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setShowCreateModal(true);
+                  }}
                   size="sm"
                   className="gap-2"
+                  disabled={isEditingRestricted}
                 >
                   <Plus className="w-4 h-4" />
                   Add Task
                 </Button>
               </div>
+              
+              {isEditingRestricted && (
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+                  <p className="text-sm text-warning">
+                    ⚠️ This lead is frozen due to overdue tasks. Only Super Admins can manage tasks for frozen leads.
+                  </p>
+                </div>
+              )}
               
               {loading ? (
                 <p className="text-muted-foreground">Loading tasks...</p>
@@ -193,6 +236,7 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleMarkAsDone(task)}
+                                disabled={isEditingRestricted}
                               >
                                 Mark Done
                               </Button>
@@ -200,6 +244,7 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                               <Button
                                 size="sm"
                                 onClick={() => handleCompleteWithNewTask(task)}
+                                disabled={isEditingRestricted}
                               >
                                 Complete & Add Next Task
                               </Button>

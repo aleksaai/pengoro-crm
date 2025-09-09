@@ -19,6 +19,7 @@ export interface Lead {
   gross_salary?: number;
   id_document_path?: string;
   id_document_back_path?: string;
+  is_frozen?: boolean;
 }
 
 export interface LeadNote {
@@ -60,6 +61,9 @@ export function useLeads() {
 
   const fetchLeads = async () => {
     try {
+      // First, check and update frozen status for overdue leads
+      await supabase.rpc('check_and_freeze_overdue_leads');
+      
       const { data, error } = await supabase
         .from('leads')
         .select('*')

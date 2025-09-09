@@ -36,6 +36,7 @@ import { AddLeadDialog } from "./AddLeadDialog";
 import { MassUploadDialog } from "./MassUploadDialog";
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
 import { LeadTasksModal } from "./LeadTasksModal";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export interface LeadHistoryEntry {
   id: string;
@@ -76,6 +77,7 @@ interface LeadCardProps {
 function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   const navigate = useNavigate();
   const { tasks: leadTasks } = useLeadTasks(lead.id);
+  const { isAdmin, isSuperAdmin } = usePermissions();
   const {
     attributes,
     listeners,
@@ -108,6 +110,11 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   };
 
   const getTodoButtonColor = () => {
+    // If lead is frozen and user is admin (not super admin), show red button
+    if (lead.is_frozen && isAdmin && !isSuperAdmin) {
+      return "bg-destructive hover:bg-destructive/80";
+    }
+    
     if (!leadTasks || leadTasks.length === 0) {
       return "bg-muted hover:bg-muted/80";
     }
@@ -147,8 +154,18 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   };
 
   const handleCardClick = () => {
+    // Prevent navigation for admins on frozen leads (unless super admin)
+    if (lead.is_frozen && isAdmin && !isSuperAdmin) {
+      return;
+    }
     navigate(`/leads/${lead.id}`, { state: { from: 'leads' } });
   };
+
+  // Determine if the card should be greyed out for admins
+  const isCardDisabled = lead.is_frozen && isAdmin && !isSuperAdmin;
+  const cardClasses = isCardDisabled 
+    ? "glass-card p-4 cursor-not-allowed transition-all duration-200 border border-glass-border/30 opacity-50 grayscale" 
+    : "glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30";
 
   return (
     <div
@@ -156,7 +173,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className="glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30"
+      className={cardClasses}
       onClick={handleCardClick}
     >
       <div className="space-y-3">
@@ -209,8 +226,13 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
+                  // Prevent conversion for admins on frozen leads (unless super admin)
+                  if (lead.is_frozen && isAdmin && !isSuperAdmin) {
+                    return;
+                  }
                   onConvert(lead);
                 }}
+                disabled={isCardDisabled}
                 className="text-xs h-6 px-2"
               >
                 <ArrowRight className="w-3 h-3 mr-1" />
