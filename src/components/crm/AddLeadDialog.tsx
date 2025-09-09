@@ -69,7 +69,8 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
   const [taskData, setTaskData] = useState({
     title: "",
     description: "",
-    due_date: undefined as Date | undefined
+    due_date: undefined as Date | undefined,
+    due_time: "09:00"
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -88,7 +89,7 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
     const taskFormData = {
       title: taskData.title,
       description: taskData.description || undefined,
-      due_date: format(taskData.due_date, 'yyyy-MM-dd')
+      due_date: format(new Date(`${format(taskData.due_date, 'yyyy-MM-dd')}T${taskData.due_time}`), 'yyyy-MM-dd HH:mm:ssXXX')
     };
 
     onAddLead(formData, taskFormData);
@@ -106,7 +107,8 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
     setTaskData({
       title: "",
       description: "",
-      due_date: undefined
+      due_date: undefined,
+      due_time: "09:00"
     });
     onOpenChange(false);
   };
@@ -243,31 +245,46 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Task Due Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal bg-input/50 border-glass-border",
-                      !taskData.due_date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {taskData.due_date ? format(taskData.due_date, "PPP") : "Select due date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={taskData.due_date}
-                    onSelect={(date) => setTaskData({ ...taskData, due_date: date })}
-                    initialFocus
-                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                  />
-                </PopoverContent>
-              </Popover>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Task Due Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-input/50 border-glass-border",
+                        !taskData.due_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {taskData.due_date ? format(taskData.due_date, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={taskData.due_date}
+                      onSelect={(date) => setTaskData({ ...taskData, due_date: date })}
+                      initialFocus
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="task-due-time">Task Due Time *</Label>
+                <Input
+                  id="task-due-time"
+                  type="time"
+                  value={taskData.due_time}
+                  onChange={(e) => setTaskData({ ...taskData, due_time: e.target.value })}
+                  className="bg-input/50 border-glass-border"
+                  required
+                />
+              </div>
             </div>
           </div>
 

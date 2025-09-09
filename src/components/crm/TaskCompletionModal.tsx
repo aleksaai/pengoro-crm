@@ -38,6 +38,7 @@ export function TaskCompletionModal({
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskDueDate, setNewTaskDueDate] = useState<Date>();
+  const [newTaskDueTime, setNewTaskDueTime] = useState("09:00");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -59,7 +60,7 @@ export function TaskCompletionModal({
       const newTaskData = {
         title: newTaskTitle.trim(),
         description: newTaskDescription.trim() || undefined,
-        due_date: format(newTaskDueDate, 'yyyy-MM-dd'),
+        due_date: format(new Date(`${format(newTaskDueDate, 'yyyy-MM-dd')}T${newTaskDueTime}`), 'yyyy-MM-dd HH:mm:ssXXX'),
         lead_id: currentTask.lead_id,
         lead_name: currentTask.lead_name,
         email_address: currentTask.email_address,
@@ -79,6 +80,7 @@ export function TaskCompletionModal({
       setNewTaskTitle("");
       setNewTaskDescription("");
       setNewTaskDueDate(undefined);
+      setNewTaskDueTime("09:00");
       onOpenChange(false);
     } catch (error) {
       console.error('Error completing task:', error);
@@ -96,6 +98,7 @@ export function TaskCompletionModal({
     setNewTaskTitle("");
     setNewTaskDescription("");
     setNewTaskDueDate(undefined);
+    setNewTaskDueTime("09:00");
     onOpenChange(false);
   };
 
@@ -138,31 +141,44 @@ export function TaskCompletionModal({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>New Task Due Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !newTaskDueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {newTaskDueDate ? format(newTaskDueDate, "PPP") : "Select due date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={newTaskDueDate}
-                    onSelect={setNewTaskDueDate}
-                    initialFocus
-                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                  />
-                </PopoverContent>
-              </Popover>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Due Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !newTaskDueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newTaskDueDate ? format(newTaskDueDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={newTaskDueDate}
+                      onSelect={setNewTaskDueDate}
+                      initialFocus
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-task-due-time">Due Time *</Label>
+                <Input
+                  id="new-task-due-time"
+                  type="time"
+                  value={newTaskDueTime}
+                  onChange={(e) => setNewTaskDueTime(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

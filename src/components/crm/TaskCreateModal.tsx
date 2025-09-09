@@ -38,6 +38,7 @@ export function TaskCreateModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date>();
+  const [dueTime, setDueTime] = useState("09:00");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { createTask } = useTasks();
   const { toast } = useToast();
@@ -64,7 +65,7 @@ export function TaskCreateModal({
         phone_number: leadPhone || null,
         title: title.trim(),
         description: description.trim() || null,
-        due_date: format(dueDate, 'yyyy-MM-dd'),
+        due_date: format(new Date(`${format(dueDate, 'yyyy-MM-dd')}T${dueTime}`), 'yyyy-MM-dd HH:mm:ssXXX'),
         assigned_to: currentUserId,
         assigned_to_name: currentUserName,
         done: false,
@@ -82,6 +83,7 @@ export function TaskCreateModal({
       setTitle("");
       setDescription("");
       setDueDate(undefined);
+      setDueTime("09:00");
       onOpenChange(false);
       
       // Refresh lead tasks if callback provided
@@ -102,6 +104,7 @@ export function TaskCreateModal({
     setTitle("");
     setDescription("");
     setDueDate(undefined);
+    setDueTime("09:00");
     onOpenChange(false);
   };
 
@@ -138,31 +141,44 @@ export function TaskCreateModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Due Date *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dueDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(dueDate, "PPP") : "Select due date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={setDueDate}
-                  initialFocus
-                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                />
-              </PopoverContent>
-            </Popover>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Due Date *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={setDueDate}
+                    initialFocus
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="due-time">Due Time *</Label>
+              <Input
+                id="due-time"
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

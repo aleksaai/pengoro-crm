@@ -841,7 +841,7 @@ export default function LeadDetail() {
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span className="font-medium">{note.author_name || 'Unknown'}</span>
                             <span>•</span>
-                            <span>{new Date(note.created_at).toLocaleDateString()}</span>
+                            <span>{new Date(note.created_at).toLocaleString()}</span>
                           </div>
                         </div>
                       ))}
@@ -926,7 +926,7 @@ export default function LeadDetail() {
                               />
                             </div>
                             <span className="text-xs text-muted-foreground">
-                              {new Date(entry.created_at).toLocaleDateString()}
+                              {new Date(entry.created_at).toLocaleString()}
                             </span>
                           </div>
                           {entry.details && (
