@@ -269,13 +269,30 @@ export function MassUploadDialog({ open, onOpenChange, onUploadLeads }: MassUplo
     window.URL.revokeObjectURL(url);
   };
 
+  const requiredFields = leadFields.filter(f => f.required).map(f => f.key);
+  const mappedRequiredFields = Object.values(fieldMapping).filter(field => requiredFields.includes(field));
+  const hasRequiredFieldsMapped = mappedRequiredFields.length === requiredFields.length;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl h-[80vh] glass-card border-glass-border flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="text-xl font-display text-foreground flex items-center gap-3">
-            <Upload className="w-5 h-5 text-primary" />
-            Mass Upload Leads
+          <DialogTitle className="text-xl font-display text-foreground flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Upload className="w-5 h-5 text-primary" />
+              Mass Upload Leads
+            </div>
+            {step === 'mapping' && parsedData && (
+              <Button 
+                onClick={processLeads} 
+                className="modern-button"
+                disabled={!hasRequiredFieldsMapped}
+                size="sm"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                Import {parsedData.rows.length} Leads
+              </Button>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -330,7 +347,7 @@ export function MassUploadDialog({ open, onOpenChange, onUploadLeads }: MassUplo
           )}
 
           {step === 'mapping' && parsedData && (
-            <div className="space-y-6 p-6 h-full">
+            <div className="space-y-6 p-6">
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-medium">Map your columns</h3>
                 <p className="text-sm text-muted-foreground">
@@ -338,7 +355,7 @@ export function MassUploadDialog({ open, onOpenChange, onUploadLeads }: MassUplo
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 h-full">
+              <div className="grid grid-cols-2 gap-6">
                 {/* File columns */}
                 <div className="space-y-3">
                   <Label className="text-sm font-medium text-muted-foreground">File Columns</Label>
@@ -409,16 +426,6 @@ export function MassUploadDialog({ open, onOpenChange, onUploadLeads }: MassUplo
                   </ScrollArea>
                 </div>
               </div>
-
-              <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={resetDialog} className="glass-subtle border-glass-border">
-                  Back
-                </Button>
-                <Button onClick={processLeads} className="modern-button">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Import {parsedData.rows.length} Leads
-                </Button>
-              </div>
             </div>
           )}
 
@@ -457,6 +464,37 @@ export function MassUploadDialog({ open, onOpenChange, onUploadLeads }: MassUplo
             </div>
           )}
         </div>
+
+        {/* Fixed action bar at bottom */}
+        {step === 'mapping' && (
+          <div className="flex-shrink-0 border-t border-glass-border/60 p-4 bg-background/50 backdrop-blur-sm">
+            <div className="flex justify-between items-center">
+              <Button 
+                variant="outline" 
+                onClick={resetDialog} 
+                className="glass-subtle border-glass-border"
+              >
+                Back
+              </Button>
+              <div className="flex items-center gap-3">
+                {!hasRequiredFieldsMapped && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-destructive" />
+                    Please map required fields (Name & Email)
+                  </p>
+                )}
+                <Button 
+                  onClick={processLeads} 
+                  className="modern-button"
+                  disabled={!hasRequiredFieldsMapped}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Import {parsedData?.rows.length || 0} Leads
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
