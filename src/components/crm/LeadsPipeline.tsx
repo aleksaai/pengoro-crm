@@ -133,20 +133,21 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     )[0];
 
     const due = new Date(earliestTask.due_date);
-
-    if (due.getTime() < now) {
-      // Overdue by time - red
-      return "bg-destructive hover:bg-destructive/80";
-    }
+    const dueDay = new Date(due);
+    dueDay.setHours(0, 0, 0, 0);
 
     const todayDate = new Date(now);
-    if (
-      due.getFullYear() === todayDate.getFullYear() &&
-      due.getMonth() === todayDate.getMonth() &&
-      due.getDate() === todayDate.getDate()
-    ) {
-      // Due later today - warning
+    todayDate.setHours(0, 0, 0, 0);
+    
+    // Check if due today first (before checking overdue)
+    if (dueDay.getTime() === todayDate.getTime()) {
+      // Due today - always orange regardless of time
       return "bg-warning hover:bg-warning/80";
+    }
+
+    if (dueDay.getTime() < todayDate.getTime()) {
+      // Overdue (past today) - red
+      return "bg-destructive hover:bg-destructive/80";
     }
 
     // Future - blue
