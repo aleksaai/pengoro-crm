@@ -78,7 +78,7 @@ export default function Login() {
         {/* Header */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
-            Welcome to Pengoro
+            Welcome to Pengoro Magic
           </h1>
           <p className="text-muted-foreground font-medium">
             Sign in to your account
@@ -157,7 +157,7 @@ export default function Login() {
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground">
-          <p>© 2024 Pengoro CRM. All rights reserved.</p>
+          <p>© 2024 Pengoro Magic CRM. All rights reserved.</p>
         </div>
       </div>
     </div>

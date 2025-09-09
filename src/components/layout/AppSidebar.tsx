@@ -47,10 +47,10 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div className="space-y-1">
               <h2 className="font-display font-bold text-xl text-foreground">
-                Pengoro
+                Pengoro Magic
               </h2>
               <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                CRM System
+                Magic CRM System
               </p>
             </div>
           )}
