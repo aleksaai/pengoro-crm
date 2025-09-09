@@ -62,6 +62,9 @@ interface DealCardProps {
 
 function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isDragOverlay = false }: DealCardProps) {
   const navigate = useNavigate();
+  const { tasks: leadTasks } = useLeadTasks(deal.id);
+  const { isAdmin, isSuperAdmin } = usePermissions();
+  const isCardDisabled = deal.is_frozen && isAdmin && !isSuperAdmin;
   const {
     attributes,
     listeners,
@@ -69,10 +72,7 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: deal.id });
-
-  const { tasks: leadTasks } = useLeadTasks(deal.id);
-  const { isAdmin, isSuperAdmin } = usePermissions();
+  } = useSortable({ id: deal.id, disabled: isCardDisabled });
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
@@ -86,8 +86,8 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // Don't trigger click if we're dragging
-    if (isDragging) return;
+    // Don't trigger click if we're dragging or card is disabled
+    if (isDragging || isCardDisabled) return;
     e.stopPropagation();
     navigate(`/leads/${deal.id}`, { state: { from: 'pipeline' } });
   };
@@ -163,15 +163,16 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
       style={style}
       className={`
         relative group bg-white border border-border rounded-lg shadow-sm transition-all duration-200
-        ${isDragging ? 'opacity-50 rotate-3 shadow-lg' : 'hover:shadow-md hover:-translate-y-0.5'}
+        ${isDragging ? 'opacity-50 rotate-3 shadow-lg' : ''}
         ${isDragOverlay ? 'shadow-xl border-primary/50' : ''}
+        ${isCardDisabled ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:shadow-md hover:-translate-y-0.5'}
       `}
     >
       {/* Drag Handle */}
       <div 
         {...attributes} 
         {...listeners}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+        className={`absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded ${isCardDisabled ? 'hidden pointer-events-none' : 'cursor-grab active:cursor-grabbing'}`}
       >
         <GripVertical className="w-3 h-3 text-muted-foreground" />
       </div>
@@ -241,6 +242,7 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
                   variant="ghost"
                   size="sm"
                   onClick={handleWonClick}
+                  disabled={isCardDisabled}
                   className="h-6 px-2 text-xs text-green-600 hover:text-green-700 hover:bg-green-100 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Check className="w-3 h-3 mr-1" />
@@ -253,6 +255,7 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
                 variant="ghost"
                 size="sm"
                 onClick={handleLostClick}
+                disabled={isCardDisabled}
                 className="h-6 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <X className="w-3 h-3 mr-1" />
