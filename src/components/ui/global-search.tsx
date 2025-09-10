@@ -19,6 +19,23 @@ import { useLeads } from "@/hooks/useLeads";
 import { useCustomerProducts } from "@/hooks/useCustomerProducts";
 import { cn } from "@/lib/utils";
 
+// Text normalization helpers for robust, accent-insensitive search
+const normalize = (str: string): string =>
+  (str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+const tokenize = (str: string): string[] => normalize(str).split(" ").filter(Boolean);
+
+const words = (str: string): string[] => tokenize(str);
+
+// Check that every token appears in at least one of the provided fields
+const tokensMatch = (tokens: string[], fields: string[]): boolean =>
+  tokens.every((t) => fields.some((f) => f.includes(t)));
+
 const navigationItems = [
   { title: "Customers", url: "/customers", icon: UserCheck, description: "Manage customer data and relationships" },
   { title: "Pipeline", url: "/", icon: BarChart3, description: "View sales pipeline and deals" },
@@ -42,109 +59,133 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
-  const { leads, loading: leadsLoading } = useLeads();
+  const { leads } = useLeads();
   const { products, loading: productsLoading } = useCustomerProducts();
 
   const searchResults = useMemo(() => {
-    if (!query.trim()) return [];
+    const tokens = tokenize(query);
+    if (tokens.length === 0) return [];
 
     const results: SearchResult[] = [];
-    const searchTerm = query.toLowerCase();
 
-    // Search navigation items
-    navigationItems.forEach(item => {
-      if (
-        item.title.toLowerCase().includes(searchTerm) ||
-        item.description.toLowerCase().includes(searchTerm)
-      ) {
+    // Pages: match if all tokens appear in title or description
+    navigationItems.forEach((item) => {
+      const titleN = normalize(item.title);
+      const descN = normalize(item.description);
+      const combined = `${titleN} ${descN}`;
+      if (tokens.every((t) => combined.includes(t))) {
         results.push({
           id: `nav-${item.title}`,
           title: item.title,
           description: item.description,
-          type: 'page',
+          type: "page",
           url: item.url,
           icon: item.icon,
-          action: () => navigate(item.url)
+          action: () => navigate(item.url),
         });
       }
     });
 
-    // Search leads with relevance ranking
+    // Leads: token-based AND search with relevance scoring
     if (leads && leads.length > 0) {
       const leadMatches: { result: SearchResult; score: number }[] = [];
 
       leads.forEach((lead) => {
-        const name = lead.name?.toLowerCase() || "";
-        const email = lead.email?.toLowerCase() || "";
-        const phone = lead.phone?.toLowerCase() || "";
-        const status = lead.status?.toLowerCase() || "";
-        const source = lead.source?.toLowerCase() || "";
-        const assigned = lead.assigned_to?.toLowerCase() || "";
-        const products = (lead.interested_products || []).map((p) => p.toLowerCase());
+        const nameN = normalize(lead.name || "");
+        const emailN = normalize(lead.email || "");
+        const phoneN = normalize(lead.phone || "");
+        const statusN = normalize(lead.status || "");
+        const sourceN = normalize(lead.source || "");
+        const assignedN = normalize(lead.assigned_to || "");
+        const productNs = (lead.interested_products || []).map((p) => normalize(String(p)));
+
+        const fields = [nameN, emailN, phoneN, statusN, sourceN, assignedN, ...productNs];
+
+        if (!tokensMatch(tokens, fields)) return;
 
         let score = 0;
-        // Strongly prioritize name matches
-        if (name === searchTerm) score += 120;
-        else if (name.startsWith(searchTerm)) score += 90;
-        else if (name.includes(searchTerm)) score += 60;
+        const nameWords = words(lead.name || "");
 
-        // Email relevance
-        if (email === searchTerm) score += 80;
-        else if (email.startsWith(searchTerm)) score += 50;
-        else if (email.includes(searchTerm)) score += 30;
+        tokens.forEach((tok) => {
+          if (nameN === tok) score += 120;
+          else if (nameWords.some((w) => w.startsWith(tok))) score += 90;
+          else if (nameN.includes(tok)) score += 60;
 
-        // Other fields
-        if (phone.includes(searchTerm)) score += 20;
-        if (status.includes(searchTerm)) score += 12;
-        if (source.includes(searchTerm)) score += 10;
-        if (assigned.includes(searchTerm)) score += 8;
-        if (products.some((p) => p.includes(searchTerm))) score += 8;
+          if (emailN.startsWith(tok)) score += 50;
+          else if (emailN.includes(tok)) score += 30;
 
-        if (score > 0) {
-          leadMatches.push({
-            score,
-            result: {
-              id: `lead-${lead.id}`,
-              title: lead.name,
-              description: `${lead.email} • ${lead.status} • ${lead.source || 'No source'}`,
-              type: 'lead',
-              icon: Users,
-              action: () => navigate(`/lead/${lead.id}`),
-            },
-          });
+          if (phoneN.includes(tok)) score += 20;
+          if (statusN.includes(tok)) score += 12;
+          if (sourceN.includes(tok)) score += 10;
+          if (assignedN.includes(tok)) score += 8;
+          if (productNs.some((p) => p.includes(tok))) score += 8;
+        });
+
+        leadMatches.push({
+          score,
+          result: {
+            id: `lead-${lead.id}`,
+            title: lead.name,
+            description: `${lead.email} • ${lead.status} • ${lead.source || "No source"}`,
+            type: "lead",
+            icon: Users,
+            action: () => navigate(`/leads/${lead.id}`),
+          },
+        });
+      });
+
+      leadMatches.sort((a, b) => b.score - a.score).forEach((m) => results.push(m.result));
+    }
+
+    // Customers: token-based AND across lead name, provider company, and product name
+    if (products && products.length > 0) {
+      const bestByCustomer = new Map<string, { score: number; result: SearchResult }>();
+
+      products.forEach((product) => {
+        const customerId = String(product.customer_id || "");
+        if (!customerId) return;
+        const lead = leads?.find((l) => l.id === customerId);
+
+        const nameN = normalize(lead?.name || "");
+        const providerN = normalize(product.provider_company || "");
+        const productNameN = normalize(product.product_name || "");
+
+        const fields = [nameN, providerN, productNameN];
+        if (!tokensMatch(tokens, fields)) return;
+
+        let score = 0;
+        const nameWords = words(lead?.name || "");
+        tokens.forEach((tok) => {
+          if (nameWords.some((w) => w.startsWith(tok))) score += 30;
+          else if (nameN.includes(tok)) score += 20;
+          if (providerN.includes(tok)) score += 12;
+          if (productNameN.includes(tok)) score += 10;
+        });
+
+        const count = products.filter((p) => String(p.customer_id || "") === customerId).length;
+
+        const result: SearchResult = {
+          id: `customer-${customerId}`,
+          title: lead?.name || "Customer",
+          description: `Customer • ${count} products`,
+          type: "customer",
+          icon: UserCheck,
+          action: () => navigate("/customers"),
+        };
+
+        const existing = bestByCustomer.get(customerId);
+        if (!existing || score > existing.score) {
+          bestByCustomer.set(customerId, { score, result });
         }
       });
 
-      leadMatches
+      Array.from(bestByCustomer.values())
         .sort((a, b) => b.score - a.score)
-        .forEach((m) => results.push(m.result));
+        .forEach((entry) => results.push(entry.result));
     }
 
-    // Search customers (from customer products)
-    if (!productsLoading) {
-      const uniqueCustomers = new Map();
-      products.forEach(product => {
-        const customerId = product.customer_id;
-        if (!uniqueCustomers.has(customerId)) {
-          // Find matching lead for this customer
-          const matchingLead = leads.find(lead => lead.id === customerId);
-          if (matchingLead && matchingLead.name.toLowerCase().includes(searchTerm)) {
-            uniqueCustomers.set(customerId, {
-              id: `customer-${customerId}`,
-              title: matchingLead.name,
-              description: `Customer • ${products.filter(p => p.customer_id === customerId).length} products`,
-              type: 'customer',
-              icon: UserCheck,
-              action: () => navigate('/customers')
-            });
-          }
-        }
-      });
-      results.push(...Array.from(uniqueCustomers.values()));
-    }
-
-    return results.slice(0, 50); // Increased limit for better coverage
-  }, [query, leads, products, leadsLoading, productsLoading, navigate]);
+    return results.slice(0, 50);
+  }, [query, leads, products, navigate]);
 
   const handleSelect = (result: SearchResult) => {
     if (result.action) {
