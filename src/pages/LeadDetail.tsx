@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Calendar, User, Phone, Mail, Tag, Clock, MessageSquare, Save, Upload, FileText, 
   Trash2, Euro, CreditCard, Users, ArrowLeft, Edit3, X, Check, Eye, Download,
-  Activity, NotebookPen, FileAudio, Image as ImageIcon, Calendar as CalendarIcon, CheckSquare, Plus
+  Activity, NotebookPen, FileAudio, Image as ImageIcon, Calendar as CalendarIcon, CheckSquare, Plus, AlertTriangle
 } from "lucide-react";
 import { LeadHistoryDetails } from "@/components/crm/LeadHistoryDetails";
 import { TaskCreateModal } from "@/components/crm/TaskCreateModal";
@@ -24,6 +24,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLeadDetails, useLeads, type Lead } from "@/hooks/useLeads";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { cn } from "@/lib/utils";
 
 const productOptions = ["PKV", "PAV", "Investments", "Insurances", "Real Estate"];
 
@@ -43,6 +45,7 @@ export default function LeadDetail() {
   const { toast } = useToast();
 
   const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const { leads, updateLead } = useLeads();
   const lead = leads.find(l => l.id === id);
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(id || null);
@@ -64,6 +67,61 @@ export default function LeadDetail() {
   };
   
   const { text: backButtonText, route: backRoute } = getBackInfo();
+
+  // Task utility functions (same as TaskManagement)
+  const getTaskUrgencyColor = (task: any) => {
+    if (task.done) return "secondary";
+    
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    
+    if (taskDate < today) return "destructive"; // Overdue - red
+    if (taskDate.getTime() === today.getTime()) return "outline"; // Due today - outline
+    return "default"; // Future tasks - default
+  };
+
+  const getTaskUrgencyIcon = (task: any) => {
+    if (task.done) return Check;
+    
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    
+    if (taskDate < today) return AlertTriangle; // Overdue
+    if (taskDate.getTime() === today.getTime()) return Clock; // Due today
+    return Calendar; // Future tasks
+  };
+
+  const handleTaskMarkAsDone = async (task: any) => {
+    if (lead?.is_frozen && !isSuperAdmin) {
+      toast({
+        title: "Action Restricted", 
+        description: "This lead is frozen due to overdue tasks. Only super admins can modify frozen leads.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if this is the only active task for the lead
+    const leadActiveTasks = leadTasks.filter(t => !t.done);
+    if (leadActiveTasks.length === 1 && leadActiveTasks[0].id === task.id) {
+      toast({
+        title: "Cannot Complete Task",
+        description: "This is the only active task for this lead. Use 'Complete & Add Next' to create a follow-up task.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (task.done) {
+      await updateTask(task.id, { done: false });
+    } else {
+      await updateTask(task.id, { done: true });
+    }
+  };
 
   // Fetch registered users
   useEffect(() => {
@@ -815,10 +873,14 @@ export default function LeadDetail() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="notes" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="notes" className="text-xs">
                     <NotebookPen className="w-3 h-3 mr-1" />
                     Notes
+                  </TabsTrigger>
+                  <TabsTrigger value="tasks" className="text-xs">
+                    <CheckSquare className="w-3 h-3 mr-1" />
+                    Tasks
                   </TabsTrigger>
                   <TabsTrigger value="history" className="text-xs">
                     <Clock className="w-3 h-3 mr-1" />
@@ -863,6 +925,137 @@ export default function LeadDetail() {
                   </ScrollArea>
                 </TabsContent>
                 
+                <TabsContent value="tasks" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => setIsTaskModalOpen(true)}
+                      className="w-full flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Task
+                    </Button>
+                  </div>
+                  
+                  <ScrollArea className="h-64">
+                    <div className="space-y-3">
+                      {leadTasks.length === 0 ? (
+                        <p className="text-center text-muted-foreground text-sm">No tasks yet</p>
+                      ) : (
+                        [...leadTasks]
+                          .sort((a, b) => {
+                            if (a.done !== b.done) return a.done ? 1 : -1;
+                            return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+                          })
+                          .map((task) => {
+                            const UrgencyIcon = getTaskUrgencyIcon(task);
+                            const urgencyColor = getTaskUrgencyColor(task);
+                            const leadActiveTasks = leadTasks.filter(t => !t.done);
+                            const isOnlyActiveTask = leadActiveTasks.length === 1 && leadActiveTasks[0].id === task.id;
+                            
+                            return (
+                              <div
+                                key={task.id}
+                                className={cn(
+                                  "border rounded-lg p-3 space-y-2",
+                                  urgencyColor === "destructive" && "border-destructive/50 bg-destructive/5",
+                                  urgencyColor === "outline" && "border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20",
+                                  task.done && "opacity-60 bg-muted/30"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <UrgencyIcon className={cn(
+                                        "w-3 h-3",
+                                        urgencyColor === "destructive" && "text-destructive",
+                                        urgencyColor === "outline" && "text-orange-500",
+                                        task.done && "text-muted-foreground"
+                                      )} />
+                                      <span className={cn(
+                                        "text-sm font-medium",
+                                        task.done && "line-through text-muted-foreground"
+                                      )}>
+                                        {task.title}
+                                      </span>
+                                      <Badge variant={urgencyColor} className="text-xs">
+                                        {task.done ? "Done" : 
+                                         urgencyColor === "destructive" ? "Overdue" :
+                                         urgencyColor === "outline" ? "Due Today" : "Upcoming"}
+                                      </Badge>
+                                    </div>
+                                    
+                                    {task.description && (
+                                      <p className={cn(
+                                        "text-xs text-muted-foreground",
+                                        task.done && "line-through"
+                                      )}>
+                                        {task.description}
+                                      </p>
+                                    )}
+                                    
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Calendar className="w-3 h-3" />
+                                      <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                                      {task.assigned_to_name && (
+                                        <>
+                                          <span>•</span>
+                                          <span>{task.assigned_to_name}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 pt-2">
+                                  {!task.done ? (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleTaskMarkAsDone(task)}
+                                        disabled={lead?.is_frozen && !isSuperAdmin || isOnlyActiveTask}
+                                        title={isOnlyActiveTask ? "Cannot mark as done - this is the only active task" : ""}
+                                        className="h-6 px-2 text-xs"
+                                      >
+                                        Mark Done
+                                      </Button>
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => setCompletingTask(task)}
+                                        disabled={lead?.is_frozen && !isSuperAdmin}
+                                        className="h-6 px-2 text-xs"
+                                      >
+                                        Complete & Add Next
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleTaskMarkAsDone(task)}
+                                      disabled={lead?.is_frozen && !isSuperAdmin}
+                                      className="h-6 px-2 text-xs"
+                                    >
+                                      Reopen
+                                    </Button>
+                                  )}
+                                </div>
+                                
+                                {lead?.is_frozen && (
+                                  <div className="pt-2 border-t">
+                                    <Badge variant="destructive" className="text-xs">
+                                      Lead Frozen - Contact Super Admin
+                                    </Badge>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
                 
                 <TabsContent value="history" className="mt-4">
                   <ScrollArea className="h-80">
