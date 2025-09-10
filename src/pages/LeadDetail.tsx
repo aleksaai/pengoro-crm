@@ -105,9 +105,27 @@ export default function LeadDetail() {
     const taskStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
     const diffDays = Math.floor((taskStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return "border-red-500"; // Overdue - red
-    if (diffDays <= 1) return "border-amber-500"; // Due today or tomorrow - amber
-    return "border-green-500"; // Future (beyond tomorrow) - green
+    if (diffDays < 0) return "border-red-500";       // Overdue
+    if (diffDays === 0) return "border-orange-500";   // Today
+    if (diffDays === 1) return "border-yellow-500";   // Tomorrow
+    if (diffDays <= 7) return "border-green-500";     // 2-7 days
+    return "border-blue-500";                          // > 7 days
+  };
+
+  const getTaskIconColor = (task: any) => {
+    if (task.done) return "text-muted-foreground";
+
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const taskStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    const diffDays = Math.floor((taskStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return "text-red-500";       // Overdue
+    if (diffDays === 0) return "text-orange-500";  // Today
+    if (diffDays === 1) return "text-yellow-500";  // Tomorrow
+    if (diffDays <= 7) return "text-green-500";    // 2-7 days
+    return "text-blue-500";                         // > 7 days
   };
 
   const getTaskUrgencyIcon = (task: any) => {
@@ -676,13 +694,14 @@ export default function LeadDetail() {
                             const urgencyColor = getTaskUrgencyColor(task);
                             const UrgencyIcon = getTaskUrgencyIcon(task);
                             const borderColor = getTaskBorderColor(task);
+                            const iconColor = getTaskIconColor(task);
                             
                             return (
                               <div key={task.id} className={`border-l-2 ${borderColor} pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2`}>
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 space-y-2">
                                     <div className="flex items-center gap-2">
-                                      <UrgencyIcon className={`w-4 h-4`} />
+                                      <UrgencyIcon className={`w-4 h-4 ${iconColor}`} />
                                       <span className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : ''}`}>
                                         {task.title}
                                       </span>
