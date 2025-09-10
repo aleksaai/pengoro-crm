@@ -986,42 +986,6 @@ export default function LeadDetail() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Expected Deal Value</Label>
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={(editedLead as any)?.expected_deal_value || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, expected_deal_value: parseFloat(e.target.value) || 0 } : null)}
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                      <Target className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground font-medium">
-                        {(currentLead as any).expected_deal_value ? `€${(currentLead as any).expected_deal_value.toLocaleString()}` : "Not specified"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Commission</Label>
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={(editedLead as any)?.commission || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, commission: parseFloat(e.target.value) || 0 } : null)}
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                      <HandCoins className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground font-medium">
-                        {(currentLead as any).commission ? `€${(currentLead as any).commission.toLocaleString()}` : "Not specified"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Interested Products</Label>
                   {isEditing ? (
                     <div className="space-y-2">
