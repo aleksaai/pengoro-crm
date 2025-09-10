@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Search, Plus, Upload, ChevronRight, GripVertical } from "lucide-react";
+import { ArrowRight, Search, Plus, Upload, ChevronRight } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -74,16 +74,12 @@ interface LeadCardProps {
   onClick: (lead: Lead) => void;
   onConvert: (lead: Lead) => void;
   onOpenTasks: (lead: Lead) => void;
-  suppressClick: boolean;
 }
 
-function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: LeadCardProps) {
+function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   const navigate = useNavigate();
   const { tasks: leadTasks } = useLeadTasks(lead.id);
   const { isAdmin, isSuperAdmin } = usePermissions();
-  // Determine if the card should be non-draggable and greyed out for admins
-  const isCardDisabled = lead.is_frozen && isAdmin && !isSuperAdmin;
-  
   const {
     attributes,
     listeners,
@@ -91,7 +87,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: lead.id, disabled: isCardDisabled });
+  } = useSortable({ id: lead.id });
 
   // Tick every minute to keep time-based UI (like task urgency color) fresh
   const [now, setNow] = useState(Date.now());
@@ -169,12 +165,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
     return "bg-primary hover:bg-primary/80";
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Prevent navigation if a drag is in progress
-    if (suppressClick || isDragging) {
-      return;
-    }
-    
+  const handleCardClick = () => {
     // Prevent navigation for admins on frozen leads (unless super admin)
     if (lead.is_frozen && isAdmin && !isSuperAdmin) {
       return;
@@ -182,7 +173,8 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
     navigate(`/leads/${lead.id}`, { state: { from: 'leads' } });
   };
 
-
+  // Determine if the card should be greyed out for admins
+  const isCardDisabled = lead.is_frozen && isAdmin && !isSuperAdmin;
   const cardClasses = isCardDisabled 
     ? "glass-card p-4 cursor-not-allowed transition-all duration-200 border border-glass-border/30 opacity-50 grayscale" 
     : "glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30";
@@ -192,6 +184,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
       ref={setNodeRef}
       style={style}
       {...attributes}
+      {...listeners}
       className={cardClasses}
       onClick={handleCardClick}
     >
@@ -229,23 +222,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
           </div>
           
           <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    aria-label="Zum Verschieben ziehen"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1 rounded-md text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-                    {...listeners}
-                  >
-                    <GripVertical className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Zum Verschieben ziehen
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
             <Button
               size="sm"
               onClick={(e) => {
@@ -288,10 +264,9 @@ interface LeadStageProps {
   onLeadClick: (lead: Lead) => void;
   onConvert: (lead: Lead) => void;
   onOpenTasks: (lead: Lead) => void;
-  suppressClick: boolean;
 }
 
-function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks, suppressClick }: LeadStageProps) {
+function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadStageProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
   });
@@ -304,7 +279,7 @@ function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks, suppress
       </div>
 
       <div className="flex-1 space-y-3">
-        <SortableContext id={stage.id} items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
           {leads.map((lead) => (
             <LeadCard
               key={lead.id}
@@ -312,7 +287,6 @@ function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks, suppress
               onClick={onLeadClick}
               onConvert={onConvert}
               onOpenTasks={onOpenTasks}
-              suppressClick={suppressClick}
             />
           ))}
         </SortableContext>
@@ -337,36 +311,33 @@ export function LeadsPipeline() {
   const [showMassUpload, setShowMassUpload] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
   
-  const { preferences, updatePreference, loading: preferencesLoading } = useUserPreferences();
+  const { updatePreference, getPreference, loading: preferencesLoading } = useUserPreferences();
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize selectedAgent from preferences when they load
   useEffect(() => {
     if (!preferencesLoading && !isInitialized) {
-      setSelectedAgent(preferences?.leadsPipeline_selectedAgent ?? 'all');
+      setSelectedAgent(getPreference('leadsPipeline_selectedAgent', 'all'));
       setIsInitialized(true);
     }
-  }, [preferencesLoading, isInitialized, preferences?.leadsPipeline_selectedAgent]);
+  }, [preferencesLoading, getPreference, isInitialized]);
 
   // Save selectedAgent to preferences whenever it changes (but not during initialization)
   useEffect(() => {
     if (isInitialized) {
-      if ((preferences?.leadsPipeline_selectedAgent ?? 'all') !== selectedAgent) {
-        updatePreference('leadsPipeline_selectedAgent', selectedAgent);
-      }
+      updatePreference('leadsPipeline_selectedAgent', selectedAgent);
     }
-  }, [selectedAgent, updatePreference, isInitialized, preferences?.leadsPipeline_selectedAgent]);
+  }, [selectedAgent, updatePreference, isInitialized]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [isDraggingCard, setIsDraggingCard] = useState(false);
   const [showAbandonDialog, setShowAbandonDialog] = useState(false);
   const [pendingAbandonLead, setPendingAbandonLead] = useState<Lead | null>(null);
   const { leads, loading, createLead, updateLead } = useLeads();
   const { toast } = useToast();
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -401,6 +372,36 @@ export function LeadsPipeline() {
     fetchUsers();
   }, [toast]);
 
+  // Delete "test 28" lead completely
+  useEffect(() => {
+    const deleteTestLead = async () => {
+      try {
+        const result = await deleteLeadCompletely('e73b0979-ac57-4d76-81ce-2f90f4ea568d');
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: "Lead 'test 28' has been completely removed",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to delete lead completely",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting test lead:', error);
+        toast({
+          title: "Error", 
+          description: "Failed to delete test lead",
+          variant: "destructive",
+        });
+      }
+    };
+
+    // Only run once when component mounts
+    deleteTestLead();
+  }, []); // Empty dependency array to run only once
 
   // Get unique agents from both registered users and existing leads
   const uniqueAgents = Array.from(new Set([
@@ -530,32 +531,19 @@ export function LeadsPipeline() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const id = event.active.id as string;
-    console.debug('[LeadsPipeline] drag start', { id });
-    setActiveId(id);
-    setIsDraggingCard(true);
+    setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over) {
-      console.debug('[LeadsPipeline] drag end - no drop target');
-      setIsDraggingCard(false);
-      setActiveId(null);
-      return;
-    }
+    
+    if (!over) return;
 
     const activeId = active.id as string;
     const overId = over.id as string;
-    console.debug('[LeadsPipeline] drag end', { activeId, overId });
 
     const activeLead = leads.find(lead => lead.id === activeId);
-    if (!activeLead) {
-      console.warn('[LeadsPipeline] active lead not found', { activeId });
-      setIsDraggingCard(false);
-      setActiveId(null);
-      return;
-    }
+    if (!activeLead) return;
 
     // Determine target status (stage or another lead's status)
     let newStatus = activeLead.status;
@@ -571,25 +559,21 @@ export function LeadsPipeline() {
     }
 
     // If dropped to Abandoned, open reason modal instead of immediate update
-    if (newStatus === 'Abandoned' && newStatus !== activeLead.status) {
-      console.debug('[LeadsPipeline] open abandon modal for', { activeId });
+    if (newStatus === "Abandoned" && newStatus !== activeLead.status) {
       setPendingAbandonLead(activeLead);
       setShowAbandonDialog(true);
       setActiveId(null);
-      setIsDraggingCard(false);
       return;
     }
 
     if (newStatus !== activeLead.status) {
-      console.debug('[LeadsPipeline] updating status', { id: activeId, to: newStatus });
       handleUpdateLead(activeId, { status: newStatus });
       toast({
-        title: 'Lead Updated',
+        title: "Lead Updated",
         description: `Lead moved to ${newStatus}`,
       });
     }
 
-    setIsDraggingCard(false);
     setActiveId(null);
   };
 
@@ -604,7 +588,7 @@ export function LeadsPipeline() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Leads</h1>
           <p className="text-muted-foreground">Manage your lead pipeline and convert prospects to deals</p>
@@ -654,14 +638,13 @@ export function LeadsPipeline() {
             Mass Upload
           </Button>
         </div>
-      </header>
+      </div>
 
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragCancel={() => { setActiveId(null); setIsDraggingCard(false); }}
       >
         {/* Pipeline Stages */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -673,18 +656,18 @@ export function LeadsPipeline() {
               onLeadClick={handleLeadClick}
               onConvert={handleConvertToDeal}
               onOpenTasks={handleOpenTasks}
-              suppressClick={isDraggingCard}
             />
           ))}
         </div>
 
         <DragOverlay>
           {activeId ? (
-            <div className="glass-card p-4 border border-glass-border/30">
-              <h4 className="font-medium text-foreground text-sm truncate">
-                {leads.find((lead) => lead.id === activeId)?.name || 'Lead'}
-              </h4>
-            </div>
+            <LeadCard
+              lead={leads.find(lead => lead.id === activeId)!}
+              onClick={() => {}}
+              onConvert={() => {}}
+              onOpenTasks={() => {}}
+            />
           ) : null}
         </DragOverlay>
       </DndContext>
