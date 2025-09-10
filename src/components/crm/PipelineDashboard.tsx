@@ -353,10 +353,6 @@ export function PipelineDashboard() {
     ...leads.map(l => l.assigned_to).filter((a): a is string => !!a)
   ]));
 
-  // Get all deals in pipeline (excluding Won, Lost, etc.)
-  const pipelineStatuses = new Set(dealStages.map(stage => getStatusFromStage(stage.id)));
-  const dealsInBoard = leads.filter(l => pipelineStatuses.has(l.status));
-
   // Map stage id to status string (used before render)
   const getStatusFromStage = (stageId: string): string => {
     const stageMap: Record<string, string> = {
@@ -368,6 +364,10 @@ export function PipelineDashboard() {
     };
     return stageMap[stageId] || "New";
   };
+
+  // Get all deals in pipeline (excluding Won, Lost, etc.)
+  const pipelineStatuses = new Set(dealStages.map(stage => getStatusFromStage(stage.id)));
+  const dealsInBoard = leads.filter(l => pipelineStatuses.has(l.status));
 
   // Filter stages based on selected agent and show only real leads from DB
   const filteredStages = stages.map(stage => {
