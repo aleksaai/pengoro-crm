@@ -279,7 +279,7 @@ function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadSt
       </div>
 
       <div className="flex-1 space-y-3">
-        <SortableContext items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext id={stage.id} items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
           {leads.map((lead) => (
             <LeadCard
               key={lead.id}
@@ -506,30 +506,31 @@ export function LeadsPipeline() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
     if (!over) return;
 
     const activeId = active.id as string;
     const overId = over.id as string;
+    const overContainerId = (over.data?.current as any)?.sortable?.containerId as string | undefined;
 
-    const activeLead = leads.find(lead => lead.id === activeId);
+    const activeLead = leads.find((l) => l.id === activeId);
     if (!activeLead) return;
 
-    // Determine target status (stage or another lead's status)
     let newStatus = activeLead.status;
 
-    const targetStage = leadStages.find(stage => stage.id === overId);
-    if (targetStage) {
-      newStatus = targetStage.id;
+    // Prefer container id if available (the stage column)
+    if (overContainerId && leadStages.some(s => s.id === overContainerId)) {
+      newStatus = overContainerId;
+    } else if (leadStages.some(s => s.id === overId)) {
+      // Dropped directly on a stage container
+      newStatus = overId;
     } else {
-      const targetLead = leads.find(lead => lead.id === overId);
-      if (targetLead) {
-        newStatus = targetLead.status;
-      }
+      // Dropped over another lead card -> use that lead's status
+      const targetLead = leads.find((l) => l.id === overId);
+      if (targetLead) newStatus = targetLead.status;
     }
 
-    // If dropped to Abandoned, open reason modal instead of immediate update
-    if (newStatus === "Abandoned" && newStatus !== activeLead.status) {
+    // Abandoned requires reason
+    if (newStatus === 'Abandoned' && newStatus !== activeLead.status) {
       setPendingAbandonLead(activeLead);
       setShowAbandonDialog(true);
       setActiveId(null);
@@ -538,10 +539,7 @@ export function LeadsPipeline() {
 
     if (newStatus !== activeLead.status) {
       handleUpdateLead(activeId, { status: newStatus });
-      toast({
-        title: "Lead Updated",
-        description: `Lead moved to ${newStatus}`,
-      });
+      toast({ title: 'Lead Updated', description: `Lead moved to ${newStatus}` });
     }
 
     setActiveId(null);
