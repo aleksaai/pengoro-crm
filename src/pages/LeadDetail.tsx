@@ -949,6 +949,32 @@ export default function LeadDetail() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Deal Stage</Label>
+                  {isEditing ? (
+                    <Select
+                      value={editedLead?.status || ""}
+                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, status: value } : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select stage" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getStageOptions().map((stage) => (
+                          <SelectItem key={stage.value} value={stage.value}>
+                            {stage.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <Target className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{currentLead.status}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Company</Label>
                   {isEditing ? (
                     <Input
@@ -966,10 +992,25 @@ export default function LeadDetail() {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Source</Label>
                   {isEditing ? (
-                    <Input
-                      value={editedLead?.source || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, source: e.target.value } : null)}
-                    />
+                    <Select
+                      value={editedLead?.source || "not-specified"}
+                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, source: value === "not-specified" ? "" : value } : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="not-specified">Not specified</SelectItem>
+                        <SelectItem value="Meta Ads">Meta Ads</SelectItem>
+                        <SelectItem value="Google Ads">Google Ads</SelectItem>
+                        <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                        <SelectItem value="Referral">Referral</SelectItem>
+                        <SelectItem value="Cold Call">Cold Call</SelectItem>
+                        <SelectItem value="Website">Website</SelectItem>
+                        <SelectItem value="Social Media">Social Media</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   ) : (
                     <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
                       <Globe className="w-4 h-4 text-muted-foreground" />
@@ -1004,24 +1045,6 @@ export default function LeadDetail() {
                   Financial Information
                 </h4>
                 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Budget</Label>
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={(editedLead as any)?.budget || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, budget: parseFloat(e.target.value) || 0 } : null)}
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                      <Euro className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground font-medium">
-                        {(currentLead as any).budget ? `€${(currentLead as any).budget.toLocaleString()}` : "Not specified"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Net Monthly Income</Label>
                   {isEditing ? (
