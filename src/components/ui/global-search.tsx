@@ -69,33 +69,55 @@ export function GlobalSearch() {
       }
     });
 
-    // Search leads - comprehensive search across all fields
-    if (!leadsLoading && leads.length > 0) {
-      leads.forEach(lead => {
-        const searchableFields = [
-          lead.name?.toLowerCase() || '',
-          lead.email?.toLowerCase() || '',
-          lead.phone?.toLowerCase() || '',
-          lead.status?.toLowerCase() || '',
-          lead.source?.toLowerCase() || '',
-          lead.assigned_to?.toLowerCase() || '',
-          ...(lead.interested_products || []).map(p => p.toLowerCase()),
-          lead.age?.toString() || '',
-          lead.net_salary?.toString() || '',
-          lead.gross_salary?.toString() || ''
-        ].join(' ');
+    // Search leads with relevance ranking
+    if (leads && leads.length > 0) {
+      const leadMatches: { result: SearchResult; score: number }[] = [];
 
-        if (searchableFields.includes(searchTerm)) {
-          results.push({
-            id: `lead-${lead.id}`,
-            title: lead.name,
-            description: `${lead.email} • ${lead.status} • ${lead.source || 'No source'}`,
-            type: 'lead',
-            icon: Users,
-            action: () => navigate(`/lead/${lead.id}`)
+      leads.forEach((lead) => {
+        const name = lead.name?.toLowerCase() || "";
+        const email = lead.email?.toLowerCase() || "";
+        const phone = lead.phone?.toLowerCase() || "";
+        const status = lead.status?.toLowerCase() || "";
+        const source = lead.source?.toLowerCase() || "";
+        const assigned = lead.assigned_to?.toLowerCase() || "";
+        const products = (lead.interested_products || []).map((p) => p.toLowerCase());
+
+        let score = 0;
+        // Strongly prioritize name matches
+        if (name === searchTerm) score += 120;
+        else if (name.startsWith(searchTerm)) score += 90;
+        else if (name.includes(searchTerm)) score += 60;
+
+        // Email relevance
+        if (email === searchTerm) score += 80;
+        else if (email.startsWith(searchTerm)) score += 50;
+        else if (email.includes(searchTerm)) score += 30;
+
+        // Other fields
+        if (phone.includes(searchTerm)) score += 20;
+        if (status.includes(searchTerm)) score += 12;
+        if (source.includes(searchTerm)) score += 10;
+        if (assigned.includes(searchTerm)) score += 8;
+        if (products.some((p) => p.includes(searchTerm))) score += 8;
+
+        if (score > 0) {
+          leadMatches.push({
+            score,
+            result: {
+              id: `lead-${lead.id}`,
+              title: lead.name,
+              description: `${lead.email} • ${lead.status} • ${lead.source || 'No source'}`,
+              type: 'lead',
+              icon: Users,
+              action: () => navigate(`/lead/${lead.id}`),
+            },
           });
         }
       });
+
+      leadMatches
+        .sort((a, b) => b.score - a.score)
+        .forEach((m) => results.push(m.result));
     }
 
     // Search customers (from customer products)
@@ -121,7 +143,7 @@ export function GlobalSearch() {
       results.push(...Array.from(uniqueCustomers.values()));
     }
 
-    return results.slice(0, 15); // Increased limit for better search coverage
+    return results.slice(0, 50); // Increased limit for better coverage
   }, [query, leads, products, leadsLoading, productsLoading, navigate]);
 
   const handleSelect = (result: SearchResult) => {
