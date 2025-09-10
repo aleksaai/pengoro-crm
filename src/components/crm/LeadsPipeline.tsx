@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Search, Plus, Upload, ChevronRight } from "lucide-react";
+import { ArrowRight, Search, Plus, Upload, ChevronRight, GripVertical } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -166,6 +166,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   };
 
   const handleCardClick = () => {
+    if (isDragging) return;
     // Prevent navigation for admins on frozen leads (unless super admin)
     if (lead.is_frozen && isAdmin && !isSuperAdmin) {
       return;
@@ -183,14 +184,33 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       className={cardClasses}
       onClick={handleCardClick}
     >
       <div className="space-y-3">
         <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="p-1 rounded-md cursor-grab active:cursor-grabbing touch-none select-none text-muted-foreground hover:text-foreground"
+                    {...attributes}
+                    {...listeners}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    aria-label="Drag lead"
+                    title="Drag to move"
+                  >
+                    <GripVertical className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Drag to move</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <h4 className="font-medium text-foreground text-sm truncate">{lead.name}</h4>
           </div>
         </div>
@@ -337,7 +357,7 @@ export function LeadsPipeline() {
   const { toast } = useToast();
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor)
   );
 
