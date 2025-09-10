@@ -312,20 +312,22 @@ export function LeadsPipeline() {
   
   const { updatePreference, getPreference, loading: preferencesLoading } = useUserPreferences();
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize selectedAgent from preferences when they load
   useEffect(() => {
-    if (!preferencesLoading) {
+    if (!preferencesLoading && !isInitialized) {
       setSelectedAgent(getPreference('leadsPipeline_selectedAgent', 'all'));
+      setIsInitialized(true);
     }
-  }, [preferencesLoading, getPreference]);
+  }, [preferencesLoading, getPreference, isInitialized]);
 
-  // Save selectedAgent to preferences whenever it changes
+  // Save selectedAgent to preferences whenever it changes (but not during initialization)
   useEffect(() => {
-    if (!preferencesLoading) {
+    if (isInitialized) {
       updatePreference('leadsPipeline_selectedAgent', selectedAgent);
     }
-  }, [selectedAgent, updatePreference, preferencesLoading]);
+  }, [selectedAgent, updatePreference, isInitialized]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showAbandonDialog, setShowAbandonDialog] = useState(false);

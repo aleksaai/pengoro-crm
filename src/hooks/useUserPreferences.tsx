@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -12,6 +12,7 @@ export function useUserPreferences() {
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<UserPreferences>({});
   const [loading, setLoading] = useState(true);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -42,32 +43,41 @@ export function useUserPreferences() {
     }
   };
 
-  const updatePreference = async (key: string, value: any) => {
+  const updatePreference = useCallback(async (key: string, value: any) => {
     if (!user) return;
 
+    // Update local state immediately for smooth UX
     const newPreferences = { ...preferences, [key]: value };
-    
-    try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          preferences: newPreferences
-        }, {
-          onConflict: 'user_id'
-        });
+    setPreferences(newPreferences);
 
-      if (error) throw error;
-
-      setPreferences(newPreferences);
-    } catch (error) {
-      console.error('Error updating user preference:', error);
+    // Debounce the database update
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
     }
-  };
 
-  const getPreference = (key: string, defaultValue: any = null) => {
+    timeoutRef.current = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('user_preferences')
+          .upsert({
+            user_id: user.id,
+            preferences: newPreferences
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating user preference:', error);
+        // Revert local state on error
+        fetchPreferences();
+      }
+    }, 300); // 300ms debounce
+  }, [user, preferences]);
+
+  const getPreference = useCallback((key: string, defaultValue: any = null) => {
     return preferences[key] ?? defaultValue;
-  };
+  }, [preferences]);
 
   return {
     preferences,
