@@ -28,7 +28,7 @@ import { useLeadDetails, useLeads, type Lead } from "@/hooks/useLeads";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { cn } from "@/lib/utils";
+import { cn, getTaskUrgencyLevel } from "@/lib/utils";
 
 const productOptions = ["PKV", "PAV", "Investments", "Insurances", "Real Estate"];
 
@@ -84,61 +84,59 @@ export default function LeadDetail() {
 
   // Task utility functions (same as TaskManagement)
   const getTaskUrgencyColor = (task: any) => {
-    if (task.done) return "secondary";
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
     
-    const dueDate = new Date(task.due_date);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-    
-    if (taskDate < today) return "destructive"; // Overdue - red
-    if (taskDate.getTime() === today.getTime()) return "outline"; // Due today - outline
-    return "default"; // Future tasks - default
+    switch (urgencyLevel) {
+      case 'completed': return "secondary";
+      case 'overdue': return "destructive";
+      case 'today': return "outline";
+      case 'tomorrow': return "default";
+      case 'week': return "default";
+      case 'future': return "default";
+      default: return "default";
+    }
   };
 
   const getTaskBorderColor = (task: any) => {
-    if (task.done) return "border-muted-foreground/50";
-
-    const dueDate = new Date(task.due_date);
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const taskStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-    const diffDays = Math.floor((taskStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return "border-red-500";       // Overdue
-    if (diffDays === 0) return "border-orange-500";   // Today
-    if (diffDays === 1) return "border-yellow-500";   // Tomorrow
-    if (diffDays <= 7) return "border-green-500";     // 2-7 days
-    return "border-blue-500";                          // > 7 days
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
+    
+    switch (urgencyLevel) {
+      case 'completed': return "border-muted-foreground";
+      case 'overdue': return "border-red-500";
+      case 'today': return "border-orange-500";
+      case 'tomorrow': return "border-yellow-500";
+      case 'week': return "border-green-500";
+      case 'future': return "border-blue-500";
+      default: return "border-muted-foreground";
+    }
   };
 
   const getTaskIconColor = (task: any) => {
-    if (task.done) return "text-muted-foreground";
-
-    const dueDate = new Date(task.due_date);
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const taskStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-    const diffDays = Math.floor((taskStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return "text-red-500";       // Overdue
-    if (diffDays === 0) return "text-orange-500";  // Today
-    if (diffDays === 1) return "text-yellow-500";  // Tomorrow
-    if (diffDays <= 7) return "text-green-500";    // 2-7 days
-    return "text-blue-500";                         // > 7 days
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
+    
+    switch (urgencyLevel) {
+      case 'completed': return "text-muted-foreground";
+      case 'overdue': return "text-red-500";
+      case 'today': return "text-orange-500";
+      case 'tomorrow': return "text-yellow-500";
+      case 'week': return "text-green-500";
+      case 'future': return "text-blue-500";
+      default: return "text-muted-foreground";
+    }
   };
 
   const getTaskUrgencyIcon = (task: any) => {
-    if (task.done) return Check;
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
     
-    const dueDate = new Date(task.due_date);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-    
-    if (taskDate < today) return AlertTriangle; // Overdue
-    if (taskDate.getTime() === today.getTime()) return Clock; // Due today
-    return Calendar; // Future tasks
+    switch (urgencyLevel) {
+      case 'completed': return Check;
+      case 'overdue': return AlertTriangle;
+      case 'today': return Clock;
+      case 'tomorrow': return Clock;
+      case 'week': return Calendar;
+      case 'future': return Calendar;
+      default: return Calendar;
+    }
   };
 
   const handleTaskMarkAsDone = async (task: any) => {

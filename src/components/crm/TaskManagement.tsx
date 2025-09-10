@@ -19,6 +19,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { TaskCreateModal } from "./TaskCreateModal";
 import { TaskCompletionModal } from "./TaskCompletionModal";
+import { getTaskUrgencyLevel } from "@/lib/utils";
 
 // Task interface is now imported from useTasks hook
 
@@ -41,29 +42,45 @@ export function TaskManagement() {
 
   // Utility functions for task styling and urgency
   const getTaskUrgencyColor = (task: any) => {
-    if (task.done) return "secondary";
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
     
-    const dueDate = new Date(task.due_date);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-    
-    if (taskDate < today) return "destructive"; // Overdue - red
-    if (taskDate.getTime() === today.getTime()) return "outline"; // Due today - outline
-    return "default"; // Future tasks - default
+    switch (urgencyLevel) {
+      case 'completed': return "secondary";
+      case 'overdue': return "destructive";
+      case 'today': return "outline";
+      case 'tomorrow': return "default";
+      case 'week': return "default";
+      case 'future': return "default";
+      default: return "default";
+    }
   };
 
   const getTaskUrgencyIcon = (task: any) => {
-    if (task.done) return CheckCircle;
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
     
-    const dueDate = new Date(task.due_date);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    switch (urgencyLevel) {
+      case 'completed': return CheckCircle;
+      case 'overdue': return AlertTriangle;
+      case 'today': return Clock;
+      case 'tomorrow': return Clock;
+      case 'week': return Calendar;
+      case 'future': return Calendar;
+      default: return Calendar;
+    }
+  };
+
+  const getTaskIconColor = (task: any) => {
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
     
-    if (taskDate < today) return AlertTriangle; // Overdue
-    if (taskDate.getTime() === today.getTime()) return Clock; // Due today
-    return Calendar; // Future tasks
+    switch (urgencyLevel) {
+      case 'completed': return "text-muted-foreground";
+      case 'overdue': return "text-destructive";
+      case 'today': return "text-orange-500";
+      case 'tomorrow': return "text-yellow-500";
+      case 'week': return "text-green-500";
+      case 'future': return "text-blue-500";
+      default: return "text-muted-foreground";
+    }
   };
 
   const handleMarkAsDone = async (task: any) => {
@@ -251,7 +268,7 @@ export function TaskManagement() {
             return (
               <Card 
                 key={task.id}
-                className={cn(
+                 className={cn(
                   "cursor-pointer transition-all hover:shadow-md",
                   urgencyColor === "destructive" && "border-destructive/50 bg-destructive/5",
                   urgencyColor === "outline" && "border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20",
@@ -264,9 +281,7 @@ export function TaskManagement() {
                       <div className="flex items-center gap-2">
                         <UrgencyIcon className={cn(
                           "w-4 h-4",
-                          urgencyColor === "destructive" && "text-destructive",
-                          urgencyColor === "outline" && "text-orange-500",
-                          task.done && "text-muted-foreground"
+                          getTaskIconColor(task)
                         )} />
                         <h3 className={cn(
                           "font-semibold",

@@ -14,6 +14,7 @@ import { TaskCreateModal } from "./TaskCreateModal";
 import { TaskCompletionModal } from "./TaskCompletionModal";
 import type { Lead } from "@/hooks/useLeads";
 import type { Task } from "@/hooks/useTasks";
+import { getTaskUrgencyLevel } from "@/lib/utils";
 
 interface LeadTasksModalProps {
   open: boolean;
@@ -40,39 +41,31 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   const completedTasks = tasks.filter(task => task.done);
 
   const getTaskUrgencyColor = (task: Task) => {
-    const dueDate = new Date(task.due_date);
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
     
-    if (isPast(dueDate) && !task.done) {
-      return "bg-destructive/10 border-destructive text-destructive";
+    switch (urgencyLevel) {
+      case 'completed': return "bg-success/10 border-success text-success";
+      case 'overdue': return "bg-destructive/10 border-destructive text-destructive";
+      case 'today': return "bg-orange-500/10 border-orange-500 text-orange-500";
+      case 'tomorrow': return "bg-yellow-500/10 border-yellow-500 text-yellow-500";
+      case 'week': return "bg-green-500/10 border-green-500 text-green-500";
+      case 'future': return "bg-blue-500/10 border-blue-500 text-blue-500";
+      default: return "bg-muted/50 border-border text-foreground";
     }
-    
-    if (isToday(dueDate) && !task.done) {
-      return "bg-warning/10 border-warning text-warning";
-    }
-    
-    if (task.done) {
-      return "bg-success/10 border-success text-success";
-    }
-    
-    return "bg-muted/50 border-border text-foreground";
   };
 
   const getTaskUrgencyIcon = (task: Task) => {
-    const dueDate = new Date(task.due_date);
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
     
-    if (isPast(dueDate) && !task.done) {
-      return <Clock className="w-4 h-4 text-destructive" />;
+    switch (urgencyLevel) {
+      case 'completed': return <CheckCircle className="w-4 h-4 text-success" />;
+      case 'overdue': return <Clock className="w-4 h-4 text-destructive" />;
+      case 'today': return <Clock className="w-4 h-4 text-orange-500" />;
+      case 'tomorrow': return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'week': return <Calendar className="w-4 h-4 text-green-500" />;
+      case 'future': return <Calendar className="w-4 h-4 text-blue-500" />;
+      default: return <Calendar className="w-4 h-4 text-muted-foreground" />;
     }
-    
-    if (isToday(dueDate) && !task.done) {
-      return <Clock className="w-4 h-4 text-warning" />;
-    }
-    
-    if (task.done) {
-      return <CheckCircle className="w-4 h-4 text-success" />;
-    }
-    
-    return <Calendar className="w-4 h-4 text-muted-foreground" />;
   };
 
   const handleMarkAsDone = async (task: Task) => {
