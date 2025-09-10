@@ -37,6 +37,7 @@ import { MassUploadDialog } from "./MassUploadDialog";
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
 import { LeadTasksModal } from "./LeadTasksModal";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 export interface LeadHistoryEntry {
   id: string;
@@ -308,14 +309,23 @@ export function LeadsPipeline() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<string>(() => {
-    return localStorage.getItem('leadsPipeline_selectedAgent') || "all";
-  });
+  
+  const { updatePreference, getPreference, loading: preferencesLoading } = useUserPreferences();
+  const [selectedAgent, setSelectedAgent] = useState<string>('all');
 
-  // Save selectedAgent to localStorage whenever it changes
+  // Initialize selectedAgent from preferences when they load
   useEffect(() => {
-    localStorage.setItem('leadsPipeline_selectedAgent', selectedAgent);
-  }, [selectedAgent]);
+    if (!preferencesLoading) {
+      setSelectedAgent(getPreference('leadsPipeline_selectedAgent', 'all'));
+    }
+  }, [preferencesLoading, getPreference]);
+
+  // Save selectedAgent to preferences whenever it changes
+  useEffect(() => {
+    if (!preferencesLoading) {
+      updatePreference('leadsPipeline_selectedAgent', selectedAgent);
+    }
+  }, [selectedAgent, updatePreference, preferencesLoading]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showAbandonDialog, setShowAbandonDialog] = useState(false);

@@ -17,6 +17,7 @@ import { AbandonLeadDialog } from "./AbandonLeadDialog";
 import { LeadTasksModal } from "./LeadTasksModal";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 const dealStages = [
   { 
@@ -296,14 +297,23 @@ export function PipelineDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activeDeal, setActiveDeal] = useState<Lead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
-  const [selectedAgent, setSelectedAgent] = useState<string>(() => {
-    return localStorage.getItem('pipelineDashboard_selectedAgent') || "all";
-  });
+  
+  const { updatePreference, getPreference, loading: preferencesLoading } = useUserPreferences();
+  const [selectedAgent, setSelectedAgent] = useState<string>('all');
 
-  // Save selectedAgent to localStorage whenever it changes
+  // Initialize selectedAgent from preferences when they load
   useEffect(() => {
-    localStorage.setItem('pipelineDashboard_selectedAgent', selectedAgent);
-  }, [selectedAgent]);
+    if (!preferencesLoading) {
+      setSelectedAgent(getPreference('pipelineDashboard_selectedAgent', 'all'));
+    }
+  }, [preferencesLoading, getPreference]);
+
+  // Save selectedAgent to preferences whenever it changes
+  useEffect(() => {
+    if (!preferencesLoading) {
+      updatePreference('pipelineDashboard_selectedAgent', selectedAgent);
+    }
+  }, [selectedAgent, updatePreference, preferencesLoading]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [pendingLostLead, setPendingLostLead] = useState<Lead | null>(null);
