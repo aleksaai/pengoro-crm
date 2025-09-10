@@ -1167,7 +1167,7 @@ export default function LeadDetail() {
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            <ScrollArea className="flex-1 p-4 max-h-96">
+            <ScrollArea className="flex-1 p-4">
               <pre className="text-sm whitespace-pre-wrap">{viewingTranscript.content}</pre>
             </ScrollArea>
           </div>
