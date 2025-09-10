@@ -15,7 +15,7 @@ import {
   Calendar, User, Phone, Mail, Tag, Clock, MessageSquare, Save, Upload, FileText, 
   Trash2, Euro, CreditCard, Users, ArrowLeft, Edit3, X, Check, Eye, Download,
   Activity, NotebookPen, FileAudio, Image as ImageIcon, Calendar as CalendarIcon, CheckSquare, Plus, AlertTriangle,
-  Building, Globe, TrendingUp, Target, HandCoins
+  Building, Globe, TrendingUp, Target, HandCoins, ChevronRight
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -64,6 +64,13 @@ export default function LeadDetail() {
   const lead = leads.find(l => l.id === id);
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(id || null);
   const { tasks: leadTasks, loading: tasksLoading, updateTask, refetch: refetchTasks } = useLeadTasks(id || "");
+
+  // Tick every minute to keep time-based UI (like task urgency color) fresh
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Determine where user came from based on state
   const getBackInfo = () => {
@@ -137,6 +144,61 @@ export default function LeadDetail() {
       case 'future': return Calendar;
       default: return Calendar;
     }
+  };
+
+  // Get Todo button color (same logic as lead cards)
+  const getTodoButtonColor = () => {
+    // If lead is frozen and user is admin (not super admin), show red button
+    if (lead?.is_frozen && !isSuperAdmin) {
+      return "bg-destructive hover:bg-destructive/80";
+    }
+    
+    if (!leadTasks || leadTasks.length === 0) {
+      return "bg-muted hover:bg-muted/80";
+    }
+    
+    // Find the earliest pending task
+    const pendingTasks = leadTasks.filter(task => !task.done);
+    if (pendingTasks.length === 0) {
+      return "bg-success hover:bg-success/80";
+    }
+
+    const earliestTask = pendingTasks.sort((a, b) => 
+      new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    )[0];
+
+    const due = new Date(earliestTask.due_date);
+    const dueDay = new Date(due);
+    dueDay.setHours(0, 0, 0, 0);
+
+    const todayDate = new Date(now);
+    todayDate.setHours(0, 0, 0, 0);
+    
+    // Overdue by time
+    if (due.getTime() < now) {
+      return "bg-destructive hover:bg-destructive/80";
+    }
+
+    // Calculate day difference for upcoming tasks
+    const daysDifference = Math.floor((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysDifference === 0) {
+      // Due later today - ORANGE
+      return "bg-warning hover:bg-warning/80";
+    }
+    
+    if (daysDifference === 1) {
+      // Due tomorrow - YELLOW
+      return "bg-yellow hover:bg-yellow/80";
+    }
+    
+    if (daysDifference <= 7) {
+      // Due in next 7 days - GREEN
+      return "bg-success hover:bg-success/80";
+    }
+
+    // Due in more than 7 days - BLUE
+    return "bg-primary hover:bg-primary/80";
   };
 
   const handleTaskMarkAsDone = async (task: any) => {
@@ -716,11 +778,14 @@ export default function LeadDetail() {
                                   </div>
                                   <div className="flex items-center gap-2 ml-2">
                                     <Button
-                                      variant="default"
                                       size="sm"
-                                      onClick={() => setCompletingTask(task)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCompletingTask(task);
+                                      }}
+                                      className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
                                     >
-                                      To Do
+                                      <ChevronRight className="w-3 h-3" />
                                     </Button>
                                   </div>
                                   
