@@ -17,11 +17,9 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
-  closestCorners,
+  closestCenter,
   KeyboardSensor,
   PointerSensor,
-  MouseSensor,
-  TouchSensor,
   useSensor,
   useSensors,
   useDroppable,
@@ -83,6 +81,8 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
   const navigate = useNavigate();
   const { tasks: leadTasks } = useLeadTasks(lead.id);
   const { isAdmin, isSuperAdmin } = usePermissions();
+  // Determine if the card should be non-draggable and greyed out for admins
+  const isCardDisabled = lead.is_frozen && isAdmin && !isSuperAdmin;
   
   const {
     attributes,
@@ -91,7 +91,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: lead.id });
+  } = useSortable({ id: lead.id, disabled: isCardDisabled });
 
   // Tick every minute to keep time-based UI (like task urgency color) fresh
   const [now, setNow] = useState(Date.now());
@@ -183,8 +183,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
   };
 
 
-  // Determine if the card should be greyed out for admins
-  const isCardDisabled = lead.is_frozen && isAdmin && !isSuperAdmin;
   const cardClasses = isCardDisabled 
     ? "glass-card p-4 cursor-not-allowed transition-all duration-200 border border-glass-border/30 opacity-50 grayscale" 
     : "glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30";
@@ -350,9 +348,7 @@ export function LeadsPipeline() {
   const { toast } = useToast();
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -644,7 +640,7 @@ export function LeadsPipeline() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={() => { setActiveId(null); setIsDraggingCard(false); }}
