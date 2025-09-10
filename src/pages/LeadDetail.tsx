@@ -14,8 +14,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Calendar, User, Phone, Mail, Tag, Clock, MessageSquare, Save, Upload, FileText, 
   Trash2, Euro, CreditCard, Users, ArrowLeft, Edit3, X, Check, Eye, Download,
-  Activity, NotebookPen, FileAudio, Image as ImageIcon, Calendar as CalendarIcon, CheckSquare, Plus, AlertTriangle
+  Activity, NotebookPen, FileAudio, Image as ImageIcon, Calendar as CalendarIcon, CheckSquare, Plus, AlertTriangle,
+  Building, Globe, TrendingUp, Target, HandCoins
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { LeadHistoryDetails } from "@/components/crm/LeadHistoryDetails";
 import { TaskCreateModal } from "@/components/crm/TaskCreateModal";
 import { TaskCompletionModal } from "@/components/crm/TaskCompletionModal";
@@ -567,314 +570,8 @@ export default function LeadDetail() {
 
       {/* Main Content */}
       <div className="flex gap-6 p-6">
-        {/* Left Column - Lead Details */}
+        {/* Left Column - Activity Timeline */}
         <div className="flex-1 space-y-6">
-          <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                <User className="w-5 h-5 text-primary" />
-                Basic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editedLead?.name || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, name: e.target.value } : null)}
-                    />
-                  ) : (
-                    <CopyableText text={currentLead.name}>
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">{currentLead.name}</span>
-                    </CopyableText>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                  {isEditing ? (
-                    <Input
-                      type="email"
-                      value={editedLead?.email || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, email: e.target.value } : null)}
-                    />
-                  ) : (
-                    <CopyableText text={currentLead.email}>
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">{currentLead.email}</span>
-                    </CopyableText>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editedLead?.phone || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, phone: e.target.value } : null)}
-                    />
-                  ) : (
-                    <CopyableText text={currentLead.phone}>
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">{currentLead.phone || "Not provided"}</span>
-                    </CopyableText>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Source</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editedLead?.source || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, source: e.target.value } : null)}
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">{currentLead.source || "Not specified"}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Lead Creation Date</Label>
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-foreground">
-                      {new Date(currentLead.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Monthly Salary</Label>
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={editedLead?.net_salary || ""}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, net_salary: parseFloat(e.target.value) || 0 } : null)}
-                      placeholder="Enter monthly salary"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Euro className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">
-                        {currentLead.net_salary ? 
-                          `€${parseFloat(currentLead.net_salary.toString()).toLocaleString()}` : 
-                          "Not provided"
-                        }
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Assigned To</Label>
-                  {isEditing ? (
-                    <Select 
-                      value={editedLead?.assigned_to || ""} 
-                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, assigned_to: value } : null)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select user" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {registeredUsers.length > 0 ? (
-                          registeredUsers.map(user => (
-                            <SelectItem key={user.id} value={user.full_name}>{user.full_name}</SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem disabled value="none">No users available</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">{currentLead.assigned_to || "Unassigned"}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Deal Stage</Label>
-                  <Select 
-                    value={currentLead.status} 
-                    onValueChange={async (value) => {
-                      await updateLead(lead.id, { status: value });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getStageOptions().map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Financial Information */}
-              {(currentLead.age || currentLead.net_salary || currentLead.gross_salary) && (
-                <div className="mt-6 pt-4 border-t">
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Euro className="w-4 h-4" />
-                    Financial Information
-                  </h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    {currentLead.age && (
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Age</Label>
-                        <p className="font-medium">{currentLead.age} years</p>
-                      </div>
-                    )}
-                    {currentLead.net_salary && (
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Net Salary</Label>
-                        <p className="font-medium">€{Number(currentLead.net_salary).toLocaleString()}</p>
-                      </div>
-                    )}
-                    {currentLead.gross_salary && (
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Gross Salary</Label>
-                        <p className="font-medium">€{Number(currentLead.gross_salary).toLocaleString()}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Interested Products */}
-              <div className="mt-6 pt-4 border-t">
-                <h4 className="font-medium mb-3 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  Interested Products
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {isEditing ? (
-                    productOptions.map(product => {
-                      const isSelected = editedLead?.interested_products?.includes(product);
-                      return (
-                        <Button
-                          key={product}
-                          type="button"
-                          variant={isSelected ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => toggleProduct(product)}
-                          className="text-xs"
-                        >
-                          {product}
-                        </Button>
-                      );
-                    })
-                  ) : (
-                    currentLead.interested_products && currentLead.interested_products.length > 0 ? (
-                      currentLead.interested_products.map(product => (
-                        <Badge key={product} variant="secondary" className="text-xs">
-                          {product}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground text-sm">No products selected</span>
-                    )
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Documents Section */}
-          <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                <ImageIcon className="w-5 h-5 text-primary" />
-                ID Documents
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => idDocumentInputRef.current?.click()}
-                    disabled={!!(currentLead.id_document_path && currentLead.id_document_back_path)}
-                    className="flex items-center gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Upload ID Documents
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    Upload up to 2 ID documents (front and back)
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {currentLead.id_document_path && (
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">ID Front</span>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewIdDocument(false)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteIdDocument(false)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {currentLead.id_document_back_path && (
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">ID Back</span>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewIdDocument(true)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteIdDocument(true)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Activity Timeline */}
-        <div className="w-96 space-y-6">
           <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
@@ -917,7 +614,7 @@ export default function LeadDetail() {
                     </Button>
                   </div>
                   
-                  <ScrollArea className="h-64">
+                  <ScrollArea className="h-96">
                     <div className="space-y-3">
                       {[...notes].reverse().map((note) => (
                         <div key={note.id} className="border-l-2 border-primary/20 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2">
@@ -947,119 +644,81 @@ export default function LeadDetail() {
                     </Button>
                   </div>
                   
-                  <ScrollArea className="h-64">
+                  <ScrollArea className="h-96">
                     <div className="space-y-3">
-                      {leadTasks.length === 0 ? (
-                        <p className="text-center text-muted-foreground text-sm">No tasks yet</p>
+                      {tasksLoading ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                          <p className="text-sm text-muted-foreground mt-2">Loading tasks...</p>
+                        </div>
                       ) : (
-                        [...leadTasks]
+                        leadTasks
                           .sort((a, b) => {
-                            if (a.done !== b.done) return a.done ? 1 : -1;
+                            if (a.done && !b.done) return 1;
+                            if (!a.done && b.done) return -1;
                             return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
                           })
                           .map((task) => {
-                            const UrgencyIcon = getTaskUrgencyIcon(task);
                             const urgencyColor = getTaskUrgencyColor(task);
-                            const leadActiveTasks = leadTasks.filter(t => !t.done);
-                            const isOnlyActiveTask = leadActiveTasks.length === 1 && leadActiveTasks[0].id === task.id;
+                            const UrgencyIcon = getTaskUrgencyIcon(task);
                             
                             return (
-                              <div
-                                key={task.id}
-                                className={cn(
-                                  "border rounded-lg p-3 space-y-2",
-                                  urgencyColor === "destructive" && "border-destructive/50 bg-destructive/5",
-                                  urgencyColor === "outline" && "border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20",
-                                  task.done && "opacity-60 bg-muted/30"
-                                )}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 space-y-1">
+                              <div key={task.id} className={`border-l-2 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2`}>
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1 space-y-2">
                                     <div className="flex items-center gap-2">
-                                      <UrgencyIcon className={cn(
-                                        "w-3 h-3",
-                                        urgencyColor === "destructive" && "text-destructive",
-                                        urgencyColor === "outline" && "text-orange-500",
-                                        task.done && "text-muted-foreground"
-                                      )} />
-                                      <span className={cn(
-                                        "text-sm font-medium",
-                                        task.done && "line-through text-muted-foreground"
-                                      )}>
+                                      <UrgencyIcon className={`w-4 h-4`} />
+                                      <span className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : ''}`}>
                                         {task.title}
                                       </span>
-                                      <Badge variant={task.done ? "secondary" : urgencyColor === "destructive" ? "destructive" : urgencyColor === "outline" ? "outline" : "secondary"} className="text-xs">
-                                        {task.done ? "Done" : 
-                                         urgencyColor === "destructive" ? "Overdue" :
-                                         urgencyColor === "outline" ? "Due Today" : "Upcoming"}
-                                      </Badge>
+                                      {!task.done && (
+                                        <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                          Upcoming
+                                        </Badge>
+                                      )}
                                     </div>
-                                    
                                     {task.description && (
-                                      <p className={cn(
-                                        "text-xs text-muted-foreground",
-                                        task.done && "line-through"
-                                      )}>
+                                      <p className={`text-xs ${task.done ? 'line-through text-muted-foreground' : 'text-muted-foreground'}`}>
                                         {task.description}
                                       </p>
                                     )}
-                                    
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                      <Calendar className="w-3 h-3" />
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                       <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
-                                      {task.assigned_to_name && (
-                                        <>
-                                          <span>•</span>
-                                          <span>{task.assigned_to_name}</span>
-                                        </>
-                                      )}
+                                      <span>•</span>
+                                      <span>Assigned to: {task.assigned_to}</span>
                                     </div>
                                   </div>
-                                </div>
-                                
-                                <div className="flex items-center gap-2 pt-2">
-                                  {!task.done ? (
-                                    <>
+                                  <div className="flex items-center gap-2 ml-2">
+                                    {!task.done && (
                                       <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleTaskMarkAsDone(task)}
-                                        disabled={lead?.is_frozen && !isSuperAdmin || isOnlyActiveTask}
-                                        title={isOnlyActiveTask ? "Cannot mark as done - this is the only active task" : ""}
-                                        className="h-6 px-2 text-xs"
-                                      >
-                                        Mark Done
-                                      </Button>
-                                      <Button
-                                        variant="default"
+                                        variant="ghost"
                                         size="sm"
                                         onClick={() => setCompletingTask(task)}
-                                        disabled={lead?.is_frozen && !isSuperAdmin}
-                                        className="h-6 px-2 text-xs"
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                       >
-                                        Complete & Add Next
+                                        <Check className="w-4 h-4" />
                                       </Button>
-                                    </>
-                                  ) : (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleTaskMarkAsDone(task)}
-                                      disabled={lead?.is_frozen && !isSuperAdmin}
-                                      className="h-6 px-2 text-xs"
-                                    >
-                                      Reopen
-                                    </Button>
+                                    )}
+                                    {task.done && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleTaskMarkAsDone(task.id)}
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                      >
+                                        Reopen
+                                      </Button>
+                                    )}
+                                  </div>
+                                  
+                                  {lead?.is_frozen && (
+                                    <div className="pt-2 border-t">
+                                      <Badge variant="destructive" className="text-xs">
+                                        Lead Frozen - Contact Super Admin
+                                      </Badge>
+                                    </div>
                                   )}
                                 </div>
-                                
-                                {lead?.is_frozen && (
-                                  <div className="pt-2 border-t">
-                                    <Badge variant="destructive" className="text-xs">
-                                      Lead Frozen - Contact Super Admin
-                                    </Badge>
-                                  </div>
-                                )}
                               </div>
                             );
                           })
@@ -1069,7 +728,7 @@ export default function LeadDetail() {
                 </TabsContent>
                 
                 <TabsContent value="history" className="mt-4">
-                  <ScrollArea className="h-80">
+                  <ScrollArea className="h-96">
                     <div className="space-y-3">
                       {history.map((entry) => (
                         <div key={entry.id} className="border-l-2 border-primary/20 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2">
@@ -1113,7 +772,7 @@ export default function LeadDetail() {
                     </Button>
                   </div>
                   
-                  <ScrollArea className="h-60">
+                  <ScrollArea className="h-80">
                     <div className="space-y-2">
                       {transcripts.map((transcript) => (
                         <div key={transcript.id} className="flex items-center justify-between p-2 border rounded">
@@ -1146,6 +805,306 @@ export default function LeadDetail() {
                   </ScrollArea>
                 </TabsContent>
               </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Lead Details */}
+        <div className="w-80 space-y-6">
+          <Card className="shadow-sm border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <User className="w-5 h-5 text-primary" />
+                Basic Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Name</Label>
+                  {isEditing ? (
+                    <Input
+                      value={editedLead?.name || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, name: e.target.value } : null)}
+                    />
+                  ) : (
+                    <CopyableText text={currentLead.name}>
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{currentLead.name}</span>
+                    </CopyableText>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                  {isEditing ? (
+                    <Input
+                      type="email"
+                      value={editedLead?.email || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, email: e.target.value } : null)}
+                    />
+                  ) : (
+                    <CopyableText text={currentLead.email}>
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{currentLead.email}</span>
+                    </CopyableText>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
+                  {isEditing ? (
+                    <Input
+                      value={editedLead?.phone || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, phone: e.target.value } : null)}
+                    />
+                  ) : (
+                    <CopyableText text={currentLead.phone}>
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{currentLead.phone}</span>
+                    </CopyableText>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Company</Label>
+                  {isEditing ? (
+                    <Input
+                      value={(editedLead as any)?.company || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, company: e.target.value } : null)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <Building className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{(currentLead as any).company || "Not specified"}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Source</Label>
+                  {isEditing ? (
+                    <Input
+                      value={editedLead?.source || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, source: e.target.value } : null)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{currentLead.source || "Not specified"}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                  {isEditing ? (
+                    <Textarea
+                      value={(editedLead as any)?.description || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, description: e.target.value } : null)}
+                      className="resize-none"
+                      rows={3}
+                    />
+                  ) : (
+                    <div className="p-2 bg-muted/50 rounded-md">
+                      <p className="text-sm text-foreground">{(currentLead as any).description || "No description available"}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Financial Information */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Euro className="w-4 h-4 text-primary" />
+                  Financial Information
+                </h4>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Budget</Label>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={(editedLead as any)?.budget || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, budget: parseFloat(e.target.value) || 0 } : null)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <Euro className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground font-medium">
+                        {(currentLead as any).budget ? `€${(currentLead as any).budget.toLocaleString()}` : "Not specified"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Net Monthly Income</Label>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={(editedLead as any)?.net_monthly_income || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, net_monthly_income: parseFloat(e.target.value) || 0 } : null)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground font-medium">
+                        {(currentLead as any).net_monthly_income ? `€${(currentLead as any).net_monthly_income.toLocaleString()}` : "Not specified"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Expected Deal Value</Label>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={(editedLead as any)?.expected_deal_value || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, expected_deal_value: parseFloat(e.target.value) || 0 } : null)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <Target className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground font-medium">
+                        {(currentLead as any).expected_deal_value ? `€${(currentLead as any).expected_deal_value.toLocaleString()}` : "Not specified"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Commission</Label>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={(editedLead as any)?.commission || ""}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, commission: parseFloat(e.target.value) || 0 } : null)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <HandCoins className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground font-medium">
+                        {(currentLead as any).commission ? `€${(currentLead as any).commission.toLocaleString()}` : "Not specified"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Interested Products</Label>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      {productOptions.map((product) => (
+                        <div key={product} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={product}
+                            checked={editedLead?.interested_products?.includes(product) || false}
+                            onCheckedChange={(checked) => {
+                              if (editedLead) {
+                                const currentProducts = editedLead.interested_products || [];
+                                const updatedProducts = checked
+                                  ? [...currentProducts, product]
+                                  : currentProducts.filter(p => p !== product);
+                                setEditedLead({ ...editedLead, interested_products: updatedProducts });
+                              }
+                            }}
+                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          />
+                          <Label htmlFor={product} className="text-sm">{product}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {(currentLead.interested_products || []).map((product) => (
+                        <Badge key={product} variant="secondary" className="text-xs">
+                          {product}
+                        </Badge>
+                      ))}
+                      {(!currentLead.interested_products || currentLead.interested_products.length === 0) && (
+                        <span className="text-sm text-muted-foreground">No products selected</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* ID Documents */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-primary" />
+                    ID Documents
+                  </h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => idDocumentInputRef.current?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="w-3 h-3" />
+                    Upload
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {(currentLead as any).id_front_image_url && (
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">ID Front</span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewIdDocument(false)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteIdDocument(false)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(currentLead as any).id_back_image_url && (
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">ID Back</span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewIdDocument(true)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteIdDocument(true)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
