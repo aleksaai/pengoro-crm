@@ -977,7 +977,7 @@ export default function LeadDetail() {
                                       )}>
                                         {task.title}
                                       </span>
-                                      <Badge variant={urgencyColor} className="text-xs">
+                                      <Badge variant={task.done ? "secondary" : urgencyColor === "destructive" ? "destructive" : urgencyColor === "outline" ? "outline" : "secondary"} className="text-xs">
                                         {task.done ? "Done" : 
                                          urgencyColor === "destructive" ? "Overdue" :
                                          urgencyColor === "outline" ? "Due Today" : "Upcoming"}
