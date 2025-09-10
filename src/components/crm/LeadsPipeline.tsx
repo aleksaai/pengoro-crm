@@ -11,13 +11,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Search, Plus, Upload, ChevronRight } from "lucide-react";
+import { ArrowRight, Search, Plus, Upload, ChevronRight, GripVertical } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
-  closestCenter,
+  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -192,7 +192,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       className={cardClasses}
       onClick={handleCardClick}
     >
@@ -230,6 +229,23 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: Lead
           </div>
           
           <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    aria-label="Zum Verschieben ziehen"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1 rounded-md text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                    {...listeners}
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Zum Verschieben ziehen
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               size="sm"
               onClick={(e) => {
@@ -288,7 +304,7 @@ function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks, suppress
       </div>
 
       <div className="flex-1 space-y-3">
-        <SortableContext items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext id={stage.id} items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
           {leads.map((lead) => (
             <LeadCard
               key={lead.id}
@@ -350,7 +366,7 @@ export function LeadsPipeline() {
   const { toast } = useToast();
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -642,7 +658,7 @@ export function LeadsPipeline() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={() => { setActiveId(null); setIsDraggingCard(false); }}
