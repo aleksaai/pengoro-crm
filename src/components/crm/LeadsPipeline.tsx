@@ -426,7 +426,7 @@ export function LeadsPipeline() {
             email_address: leadData.email || null,
             phone_number: leadData.phone || null,
             title: taskData.title,
-            description: taskData.description || null,
+            description: taskData.description?.trim() || null,
             due_date: taskData.due_date,
             assigned_to: user.id,
             assigned_to_name: userName,

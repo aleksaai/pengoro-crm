@@ -89,7 +89,7 @@ export function AddLeadDialog({ open, onOpenChange, onAddLead }: AddLeadDialogPr
 
     const taskFormData = {
       title: taskData.title,
-      description: taskData.description || undefined,
+      description: taskData.description?.trim() || undefined,
       due_date: format(new Date(`${format(taskData.due_date, 'yyyy-MM-dd')}T${taskData.due_time}`), 'yyyy-MM-dd HH:mm:ssXXX')
     };
 
