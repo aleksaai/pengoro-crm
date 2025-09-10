@@ -98,15 +98,16 @@ export default function LeadDetail() {
 
   const getTaskBorderColor = (task: any) => {
     if (task.done) return "border-muted-foreground/50";
-    
+
     const dueDate = new Date(task.due_date);
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-    
-    if (taskDate < today) return "border-red-500"; // Overdue - red
-    if (taskDate.getTime() === today.getTime()) return "border-amber-500"; // Due today - amber
-    return "border-green-500"; // Future tasks - green
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const taskStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    const diffDays = Math.floor((taskStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return "border-red-500"; // Overdue - red
+    if (diffDays <= 1) return "border-amber-500"; // Due today or tomorrow - amber
+    return "border-green-500"; // Future (beyond tomorrow) - green
   };
 
   const getTaskUrgencyIcon = (task: any) => {
