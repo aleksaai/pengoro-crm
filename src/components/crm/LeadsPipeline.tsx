@@ -12,26 +12,7 @@ import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Search, Plus, Upload, ChevronRight, GripVertical } from "lucide-react";
-import {
-  DndContext,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  closestCorners,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import {
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { AddLeadDialog } from "./AddLeadDialog";
 import { MassUploadDialog } from "./MassUploadDialog";
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
@@ -80,14 +61,8 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   const navigate = useNavigate();
   const { tasks: leadTasks } = useLeadTasks(lead.id);
   const { isAdmin, isSuperAdmin } = usePermissions();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: lead.id });
+  // DnD is handled by parent DragDropContext
+
 
   // Tick every minute to keep time-based UI (like task urgency color) fresh
   const [now, setNow] = useState(Date.now());
@@ -96,11 +71,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     return () => clearInterval(id);
   }, []);
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+  const style: React.CSSProperties | undefined = undefined;
 
   const getInitials = (name: string) => {
     return name
@@ -166,7 +137,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   };
 
   const handleCardClick = () => {
-    if (isDragging) return;
     // Prevent navigation for admins on frozen leads (unless super admin)
     if (lead.is_frozen && isAdmin && !isSuperAdmin) {
       return;
@@ -287,39 +257,51 @@ interface LeadStageProps {
 }
 
 function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadStageProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: stage.id,
-  });
-
   return (
-    <div ref={setNodeRef} className="bg-glass/20 rounded-xl border border-glass-border/30 p-4 min-h-[600px]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-foreground">{stage.title}</h3>
-        <Badge className={`${stage.color} text-white`}>{leads.length}</Badge>
-      </div>
-
-      <div className="flex-1 space-y-3">
-        <SortableContext id={stage.id} items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
-          {leads.map((lead) => (
-            <LeadCard
-              key={lead.id}
-              lead={lead}
-              onClick={onLeadClick}
-              onConvert={onConvert}
-              onOpenTasks={onOpenTasks}
-            />
-          ))}
-        </SortableContext>
-        
-        {leads.length === 0 && (
-          <div className={`glass-card p-6 text-center border-2 border-dashed border-glass-border/30 transition-colors duration-200 ${isOver ? 'border-accent bg-accent/5' : ''}`}>
-            <p className="text-muted-foreground text-sm">
-              {isOver ? 'Drop lead here' : 'No leads in this stage'}
-            </p>
+    <Droppable droppableId={stage.id}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.droppableProps}
+          className="bg-glass/20 rounded-xl border border-glass-border/30 p-4 min-h-[600px]"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-foreground">{stage.title}</h3>
+            <Badge className={`${stage.color} text-white`}>{leads.length}</Badge>
           </div>
-        )}
-      </div>
-    </div>
+
+          <div className="flex-1 space-y-3">
+            {leads.map((lead, index) => (
+              <Draggable key={lead.id} draggableId={lead.id} index={index}>
+                {(dragProvided, dragSnapshot) => (
+                  <div
+                    ref={dragProvided.innerRef}
+                    {...dragProvided.draggableProps}
+                    {...dragProvided.dragHandleProps}
+                  >
+                    <LeadCard
+                      lead={lead}
+                      onClick={onLeadClick}
+                      onConvert={onConvert}
+                      onOpenTasks={onOpenTasks}
+                    />
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+
+            {leads.length === 0 && (
+              <div className={`glass-card p-6 text-center border-2 border-dashed border-glass-border/30 transition-colors duration-200 ${snapshot.isDraggingOver ? 'border-accent bg-accent/5' : ''}`}>
+                <p className="text-muted-foreground text-sm">
+                  {snapshot.isDraggingOver ? 'Drop lead here' : 'No leads in this stage'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </Droppable>
   );
 }
 
