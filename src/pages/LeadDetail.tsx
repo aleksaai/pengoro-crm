@@ -933,7 +933,7 @@ export default function LeadDetail() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">Unassigned</SelectItem>
-                        {registeredUsers.map((user) => (
+                        {registeredUsers.length > 0 && registeredUsers.map((user) => (
                           <SelectItem key={user.id} value={user.full_name}>
                             {user.full_name}
                           </SelectItem>
