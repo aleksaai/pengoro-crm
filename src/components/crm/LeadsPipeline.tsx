@@ -555,19 +555,27 @@ export function LeadsPipeline() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const id = event.active.id as string;
+    console.debug('[LeadsPipeline] drag start', { id });
+    setActiveId(id);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
-    if (!over) return;
+    if (!over) {
+      console.debug('[LeadsPipeline] drag end - no drop target');
+      return;
+    }
 
     const activeId = active.id as string;
     const overId = over.id as string;
+    console.debug('[LeadsPipeline] drag end', { activeId, overId });
 
     const activeLead = leads.find(lead => lead.id === activeId);
-    if (!activeLead) return;
+    if (!activeLead) {
+      console.warn('[LeadsPipeline] active lead not found', { activeId });
+      return;
+    }
 
     // Determine target status (stage or another lead's status)
     let newStatus = activeLead.status;
@@ -583,7 +591,8 @@ export function LeadsPipeline() {
     }
 
     // If dropped to Abandoned, open reason modal instead of immediate update
-    if (newStatus === "Abandoned" && newStatus !== activeLead.status) {
+    if (newStatus === 'Abandoned' && newStatus !== activeLead.status) {
+      console.debug('[LeadsPipeline] open abandon modal for', { activeId });
       setPendingAbandonLead(activeLead);
       setShowAbandonDialog(true);
       setActiveId(null);
@@ -591,9 +600,10 @@ export function LeadsPipeline() {
     }
 
     if (newStatus !== activeLead.status) {
+      console.debug('[LeadsPipeline] updating status', { id: activeId, to: newStatus });
       handleUpdateLead(activeId, { status: newStatus });
       toast({
-        title: "Lead Updated",
+        title: 'Lead Updated',
         description: `Lead moved to ${newStatus}`,
       });
     }
@@ -686,12 +696,11 @@ export function LeadsPipeline() {
 
         <DragOverlay>
           {activeId ? (
-            <LeadCard
-              lead={leads.find(lead => lead.id === activeId)!}
-              onClick={() => {}}
-              onConvert={() => {}}
-              onOpenTasks={() => {}}
-            />
+            <div className="glass-card p-4 border border-glass-border/30">
+              <h4 className="font-medium text-foreground text-sm truncate">
+                {leads.find((lead) => lead.id === activeId)?.name || 'Lead'}
+              </h4>
+            </div>
           ) : null}
         </DragOverlay>
       </DndContext>
