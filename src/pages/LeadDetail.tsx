@@ -44,6 +44,17 @@ export default function LeadDetail() {
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Lock background scroll when transcript modal is open
+  useEffect(() => {
+    if (viewingTranscript) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [viewingTranscript]);
+
   const { user } = useAuth();
   const { isSuperAdmin } = usePermissions();
   const { leads, updateLead } = useLeads();
@@ -1159,8 +1170,8 @@ export default function LeadDetail() {
 
       {/* Transcript Viewer Modal */}
       {viewingTranscript && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background border rounded-lg max-w-4xl max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overscroll-contain">
+          <div className="bg-background border rounded-lg w-[90vw] max-w-4xl h-[80vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold">{viewingTranscript.name}</h3>
               <Button variant="ghost" size="sm" onClick={() => setViewingTranscript(null)}>
