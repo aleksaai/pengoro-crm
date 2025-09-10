@@ -80,6 +80,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   const navigate = useNavigate();
   const { tasks: leadTasks } = useLeadTasks(lead.id);
   const { isAdmin, isSuperAdmin } = usePermissions();
+  const [isDragOperation, setIsDragOperation] = useState(false);
   const {
     attributes,
     listeners,
@@ -165,12 +166,35 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     return "bg-primary hover:bg-primary/80";
   };
 
-  const handleCardClick = () => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if we're in the middle of a drag operation
+    if (isDragOperation || isDragging) {
+      return;
+    }
+    
     // Prevent navigation for admins on frozen leads (unless super admin)
     if (lead.is_frozen && isAdmin && !isSuperAdmin) {
       return;
     }
     navigate(`/leads/${lead.id}`, { state: { from: 'leads' } });
+  };
+
+  // Enhanced listeners that track drag state
+  const enhancedListeners = {
+    ...listeners,
+    onMouseDown: (e: React.MouseEvent) => {
+      setIsDragOperation(false);
+      listeners?.onMouseDown?.(e as any);
+    },
+    onDragStart: (e: React.DragEvent) => {
+      setIsDragOperation(true);
+      listeners?.onDragStart?.(e as any);
+    },
+    onDragEnd: (e: React.DragEvent) => {
+      // Reset drag operation state with a small delay to prevent click from firing
+      setTimeout(() => setIsDragOperation(false), 100);
+      listeners?.onDragEnd?.(e as any);
+    },
   };
 
   // Determine if the card should be greyed out for admins
@@ -184,7 +208,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
+      {...enhancedListeners}
       className={cardClasses}
       onClick={handleCardClick}
     >
