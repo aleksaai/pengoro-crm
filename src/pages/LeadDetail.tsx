@@ -689,17 +689,11 @@ export default function LeadDetail() {
                             return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
                           })
                           .map((task) => {
-                            const urgencyColor = getTaskUrgencyColor(task);
-                            const UrgencyIcon = getTaskUrgencyIcon(task);
-                            const borderColor = getTaskBorderColor(task);
-                            const iconColor = getTaskIconColor(task);
-                            
                             return (
-                              <div key={task.id} className={`border-l-2 ${borderColor} pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2`}>
+                              <div key={task.id} className={`border-l-2 border-border pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2`}>
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 space-y-2">
                                     <div className="flex items-center gap-2">
-                                      <UrgencyIcon className={`w-4 h-4 ${iconColor}`} />
                                       <span className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : ''}`}>
                                         {task.title}
                                       </span>
@@ -721,26 +715,13 @@ export default function LeadDetail() {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2 ml-2">
-                                    {!task.done && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setCompletingTask(task)}
-                                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                      >
-                                        <Check className="w-4 h-4" />
-                                      </Button>
-                                    )}
-                                    {task.done && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleTaskMarkAsDone(task.id)}
-                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                      >
-                                        Reopen
-                                      </Button>
-                                    )}
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      onClick={() => setCompletingTask(task)}
+                                    >
+                                      To Do
+                                    </Button>
                                   </div>
                                   
                                   {lead?.is_frozen && (
