@@ -63,6 +63,12 @@ export default function Login() {
         setError("Please check your email and click the verification link before signing in.");
       } else if (error.message.includes("Invalid login credentials")) {
         setError("Invalid email or password. Please check your credentials.");
+      } else if (error.message.includes("requested path is invalid") || 
+                 error.message.includes("Invalid redirect URL") ||
+                 error.message.includes("Site URL")) {
+        setError(`Authentication URL configuration issue. Current URL: ${window.location.origin}. Please contact your administrator to add this URL to the allowed list.`);
+      } else if (error.message.includes("redirect") || error.message.includes("CORS")) {
+        setError(`Access denied from this URL (${window.location.origin}). This domain may not be configured for authentication. Please try from an authorized domain or contact your administrator.`);
       } else {
         setError(error.message || "An error occurred during sign in");
       }
