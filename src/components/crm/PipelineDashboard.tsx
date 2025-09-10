@@ -296,7 +296,14 @@ export function PipelineDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activeDeal, setActiveDeal] = useState<Lead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
-  const [selectedAgent, setSelectedAgent] = useState<string>("all");
+  const [selectedAgent, setSelectedAgent] = useState<string>(() => {
+    return localStorage.getItem('pipelineDashboard_selectedAgent') || "all";
+  });
+
+  // Save selectedAgent to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('pipelineDashboard_selectedAgent', selectedAgent);
+  }, [selectedAgent]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [pendingLostLead, setPendingLostLead] = useState<Lead | null>(null);
@@ -340,8 +347,15 @@ export function PipelineDashboard() {
     fetchUsers();
   }, [toast]);
   
-  // Get unique agents from registered users only
-  const uniqueAgents = registeredUsers.map(user => user.full_name).filter(Boolean);
+  // Get unique agents from both registered users and existing leads
+  const uniqueAgents = Array.from(new Set([
+    ...registeredUsers.map(user => user.full_name).filter(Boolean),
+    ...leads.map(l => l.assigned_to).filter((a): a is string => !!a)
+  ]));
+
+  // Get all deals in pipeline (excluding Won, Lost, etc.)
+  const pipelineStatuses = new Set(dealStages.map(stage => getStatusFromStage(stage.id)));
+  const dealsInBoard = leads.filter(l => pipelineStatuses.has(l.status));
 
   // Map stage id to status string (used before render)
   const getStatusFromStage = (stageId: string): string => {
@@ -562,11 +576,9 @@ export function PipelineDashboard() {
                   <SelectValue placeholder="Filter by agent" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border-border shadow-lg z-50">
-                  <SelectItem value="all">All Agents ({totalDeals})</SelectItem>
+                  <SelectItem value="all">All Agents ({dealsInBoard.length})</SelectItem>
                   {uniqueAgents.map(agent => {
-                    const agentDeals = filteredStages
-                      .flatMap(s => s.deals)
-                      .filter(d => d.assigned_to === agent).length;
+                    const agentDeals = dealsInBoard.filter(d => d.assigned_to === agent).length;
                     return (
                       <SelectItem key={agent} value={agent}>
                         {agent} ({agentDeals})
