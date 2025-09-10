@@ -77,6 +77,17 @@ export function TaskManagement() {
       return;
     }
     
+    // Check if this is the only active task for the lead
+    const leadActiveTasks = tasks.filter(t => t.lead_id === task.lead_id && !t.done);
+    if (leadActiveTasks.length === 1 && leadActiveTasks[0].id === task.id) {
+      toast({
+        title: "Cannot Complete Task",
+        description: "This is the only active task for this lead. Use 'Complete & Add Next' to create a follow-up task.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (task.done) {
       // Reopen task
       await updateTask(task.id, { done: false });
@@ -305,25 +316,35 @@ export function TaskManagement() {
                     <div className="flex items-center gap-2">
                       {!task.done ? (
                         <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleMarkAsDone(task)}
-                            disabled={lead?.is_frozen && !isSuperAdmin}
-                          >
-                            Mark Done
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedTask(task);
-                              setShowCompletionModal(true);
-                            }}
-                            disabled={lead?.is_frozen && !isSuperAdmin}
-                          >
-                            Complete & Add Next
-                          </Button>
+                          {(() => {
+                            const leadActiveTasks = tasks.filter(t => t.lead_id === task.lead_id && !t.done);
+                            const isOnlyActiveTask = leadActiveTasks.length === 1 && leadActiveTasks[0].id === task.id;
+                            
+                            return (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleMarkAsDone(task)}
+                                  disabled={lead?.is_frozen && !isSuperAdmin || isOnlyActiveTask}
+                                  title={isOnlyActiveTask ? "Cannot mark as done - this is the only active task for this lead" : ""}
+                                >
+                                  Mark Done
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setShowCompletionModal(true);
+                                  }}
+                                  disabled={lead?.is_frozen && !isSuperAdmin}
+                                >
+                                  {isOnlyActiveTask ? "Complete & Add Next" : "Complete & Add Next"}
+                                </Button>
+                              </>
+                            );
+                          })()}
                         </>
                       ) : (
                         <Button
