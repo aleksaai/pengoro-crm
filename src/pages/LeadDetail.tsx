@@ -146,59 +146,38 @@ export default function LeadDetail() {
     }
   };
 
-  // Get Todo button color (same logic as lead cards)
-  const getTodoButtonColor = () => {
+  // Get Todo button color for individual task
+  const getTodoButtonColorFor = (task: any) => {
     // If lead is frozen and user is admin (not super admin), show red button
     if (lead?.is_frozen && !isSuperAdmin) {
       return "bg-destructive hover:bg-destructive/80";
     }
     
-    if (!leadTasks || leadTasks.length === 0) {
+    // If task is completed, use muted color
+    if (task.done) {
       return "bg-muted hover:bg-muted/80";
     }
     
-    // Find the earliest pending task
-    const pendingTasks = leadTasks.filter(task => !task.done);
-    if (pendingTasks.length === 0) {
-      return "bg-success hover:bg-success/80";
-    }
-
-    const earliestTask = pendingTasks.sort((a, b) => 
-      new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-    )[0];
-
-    const due = new Date(earliestTask.due_date);
-    const dueDay = new Date(due);
-    dueDay.setHours(0, 0, 0, 0);
-
-    const todayDate = new Date(now);
-    todayDate.setHours(0, 0, 0, 0);
+    // Get urgency level for this specific task
+    const urgencyLevel = getTaskUrgencyLevel(task.due_date, task.done);
     
-    // Overdue by time
-    if (due.getTime() < now) {
-      return "bg-destructive hover:bg-destructive/80";
+    // Map urgency levels to button colors
+    switch (urgencyLevel) {
+      case 'overdue':
+        return "bg-destructive hover:bg-destructive/80"; // Red
+      case 'today':
+        return "bg-warning hover:bg-warning/80"; // Orange
+      case 'tomorrow':
+        return "bg-yellow hover:bg-yellow/80"; // Yellow
+      case 'week':
+        return "bg-success hover:bg-success/80"; // Green
+      case 'future':
+        return "bg-primary hover:bg-primary/80"; // Blue
+      case 'completed':
+        return "bg-muted hover:bg-muted/80"; // Muted
+      default:
+        return "bg-muted hover:bg-muted/80";
     }
-
-    // Calculate day difference for upcoming tasks
-    const daysDifference = Math.floor((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysDifference === 0) {
-      // Due later today - ORANGE
-      return "bg-warning hover:bg-warning/80";
-    }
-    
-    if (daysDifference === 1) {
-      // Due tomorrow - YELLOW
-      return "bg-yellow hover:bg-yellow/80";
-    }
-    
-    if (daysDifference <= 7) {
-      // Due in next 7 days - GREEN
-      return "bg-success hover:bg-success/80";
-    }
-
-    // Due in more than 7 days - BLUE
-    return "bg-primary hover:bg-primary/80";
   };
 
   const handleTaskMarkAsDone = async (task: any) => {
@@ -787,7 +766,7 @@ export default function LeadDetail() {
                                           e.stopPropagation();
                                           setCompletingTask(task);
                                         }}
-                                        className={`h-7 w-7 p-0 ${getTodoButtonColor()} hover-scale`}
+                                        className={`h-7 w-7 p-0 ${getTodoButtonColorFor(task)} hover-scale`}
                                         title="Open task"
                                       >
                                         <ChevronRight className="w-3 h-3" />
