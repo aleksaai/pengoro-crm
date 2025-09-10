@@ -753,7 +753,7 @@ export default function LeadDetail() {
                           .map((task) => {
                             return (
                               <div key={task.id} className={`border-l-2 border-border pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2`}>
-                                <div className="flex items-start justify-between">
+                                <div className="flex flex-col gap-2">
                                   <div className="flex-1 space-y-2">
                                     <div className="flex items-center gap-2">
                                       <span className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : ''}`}>
@@ -776,8 +776,8 @@ export default function LeadDetail() {
                                       <span>Assigned to: {task.assigned_to}</span>
                                     </div>
                                    </div>
-                                   {!task.done && (
-                                     <div className="flex items-center justify-center">
+                                   {!task.done && new Date(task.due_date).getTime() >= now && (
+                                     <div className="flex justify-center mt-2">
                                        <Button
                                          size="sm"
                                          onClick={(e) => {
