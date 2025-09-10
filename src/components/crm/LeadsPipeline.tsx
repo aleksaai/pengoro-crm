@@ -308,7 +308,14 @@ export function LeadsPipeline() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<string>("all");
+  const [selectedAgent, setSelectedAgent] = useState<string>(() => {
+    return localStorage.getItem('leadsPipeline_selectedAgent') || "all";
+  });
+
+  // Save selectedAgent to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('leadsPipeline_selectedAgent', selectedAgent);
+  }, [selectedAgent]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showAbandonDialog, setShowAbandonDialog] = useState(false);
