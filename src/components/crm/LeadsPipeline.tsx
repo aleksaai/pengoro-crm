@@ -359,8 +359,11 @@ export function LeadsPipeline() {
     fetchUsers();
   }, [toast]);
 
-  // Get unique agents from registered users only
-  const uniqueAgents = registeredUsers.map(user => user.full_name).filter(Boolean);
+  // Get unique agents from both registered users and existing leads
+  const uniqueAgents = Array.from(new Set([
+    ...registeredUsers.map(user => user.full_name).filter(Boolean),
+    ...leads.map(l => l.assigned_to).filter((a): a is string => !!a)
+  ]));
 
   // Filter leads by search term and selected agent
   const filteredLeads = leads.filter(lead => {
