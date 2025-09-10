@@ -867,6 +867,33 @@ export default function LeadDetail() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Assigned To</Label>
+                  {isEditing ? (
+                    <Select
+                      value={editedLead?.assigned_to || ""}
+                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, assigned_to: value } : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select assignee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Unassigned</SelectItem>
+                        {registeredUsers.map((user) => (
+                          <SelectItem key={user.id} value={user.full_name}>
+                            {user.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{currentLead.assigned_to || "Unassigned"}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Company</Label>
                   {isEditing ? (
                     <Input
