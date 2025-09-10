@@ -925,14 +925,14 @@ export default function LeadDetail() {
                   <Label className="text-sm font-medium text-muted-foreground">Assigned To</Label>
                   {isEditing ? (
                     <Select
-                      value={editedLead?.assigned_to || ""}
-                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, assigned_to: value } : null)}
+                      value={editedLead?.assigned_to || "unassigned"}
+                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, assigned_to: value === "unassigned" ? "" : value } : null)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select assignee" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {registeredUsers.length > 0 && registeredUsers.map((user) => (
                           <SelectItem key={user.id} value={user.full_name}>
                             {user.full_name}
