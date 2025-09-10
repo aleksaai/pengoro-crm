@@ -67,6 +67,7 @@ export function GlobalSearch() {
     if (tokens.length === 0) return [];
 
     const results: SearchResult[] = [];
+    console.debug('[GlobalSearch] query=', query, 'tokens=', tokens, 'leads=', leads?.length || 0);
 
     // Pages: match if all tokens appear in title or description
     navigationItems.forEach((item) => {
@@ -135,6 +136,7 @@ export function GlobalSearch() {
       });
 
       leadMatches.sort((a, b) => b.score - a.score).forEach((m) => results.push(m.result));
+      console.debug('[GlobalSearch] lead matches=', leadMatches.length);
     }
 
     // Customers: token-based AND across lead name, provider company, and product name
@@ -227,7 +229,7 @@ export function GlobalSearch() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search pages, leads, customers..."
             value={query}
