@@ -20,6 +20,8 @@ import {
   closestCorners,
   KeyboardSensor,
   PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   useDroppable,
@@ -74,13 +76,14 @@ interface LeadCardProps {
   onClick: (lead: Lead) => void;
   onConvert: (lead: Lead) => void;
   onOpenTasks: (lead: Lead) => void;
+  suppressClick: boolean;
 }
 
-function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
+function LeadCard({ lead, onClick, onConvert, onOpenTasks, suppressClick }: LeadCardProps) {
   const navigate = useNavigate();
   const { tasks: leadTasks } = useLeadTasks(lead.id);
   const { isAdmin, isSuperAdmin } = usePermissions();
-  const [isDragOperation, setIsDragOperation] = useState(false);
+  
   const {
     attributes,
     listeners,
@@ -167,8 +170,8 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if we're in the middle of a drag operation
-    if (isDragOperation || isDragging) {
+    // Prevent navigation if a drag is in progress
+    if (suppressClick || isDragging) {
       return;
     }
     
@@ -179,23 +182,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     navigate(`/leads/${lead.id}`, { state: { from: 'leads' } });
   };
 
-  // Enhanced listeners that track drag state
-  const enhancedListeners = {
-    ...listeners,
-    onMouseDown: (e: React.MouseEvent) => {
-      setIsDragOperation(false);
-      listeners?.onMouseDown?.(e as any);
-    },
-    onDragStart: (e: React.DragEvent) => {
-      setIsDragOperation(true);
-      listeners?.onDragStart?.(e as any);
-    },
-    onDragEnd: (e: React.DragEvent) => {
-      // Reset drag operation state with a small delay to prevent click from firing
-      setTimeout(() => setIsDragOperation(false), 100);
-      listeners?.onDragEnd?.(e as any);
-    },
-  };
 
   // Determine if the card should be greyed out for admins
   const isCardDisabled = lead.is_frozen && isAdmin && !isSuperAdmin;
@@ -208,7 +194,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...enhancedListeners}
+      {...listeners}
       className={cardClasses}
       onClick={handleCardClick}
     >
@@ -288,9 +274,10 @@ interface LeadStageProps {
   onLeadClick: (lead: Lead) => void;
   onConvert: (lead: Lead) => void;
   onOpenTasks: (lead: Lead) => void;
+  suppressClick: boolean;
 }
 
-function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadStageProps) {
+function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks, suppressClick }: LeadStageProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
   });
@@ -311,6 +298,7 @@ function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadSt
               onClick={onLeadClick}
               onConvert={onConvert}
               onOpenTasks={onOpenTasks}
+              suppressClick={suppressClick}
             />
           ))}
         </SortableContext>
@@ -355,13 +343,16 @@ export function LeadsPipeline() {
   }, [selectedAgent, updatePreference, isInitialized]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isDraggingCard, setIsDraggingCard] = useState(false);
   const [showAbandonDialog, setShowAbandonDialog] = useState(false);
   const [pendingAbandonLead, setPendingAbandonLead] = useState<Lead | null>(null);
   const { leads, loading, createLead, updateLead } = useLeads();
   const { toast } = useToast();
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -528,12 +519,15 @@ export function LeadsPipeline() {
     const id = event.active.id as string;
     console.debug('[LeadsPipeline] drag start', { id });
     setActiveId(id);
+    setIsDraggingCard(true);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) {
       console.debug('[LeadsPipeline] drag end - no drop target');
+      setIsDraggingCard(false);
+      setActiveId(null);
       return;
     }
 
@@ -544,6 +538,8 @@ export function LeadsPipeline() {
     const activeLead = leads.find(lead => lead.id === activeId);
     if (!activeLead) {
       console.warn('[LeadsPipeline] active lead not found', { activeId });
+      setIsDraggingCard(false);
+      setActiveId(null);
       return;
     }
 
@@ -566,6 +562,7 @@ export function LeadsPipeline() {
       setPendingAbandonLead(activeLead);
       setShowAbandonDialog(true);
       setActiveId(null);
+      setIsDraggingCard(false);
       return;
     }
 
@@ -578,6 +575,7 @@ export function LeadsPipeline() {
       });
     }
 
+    setIsDraggingCard(false);
     setActiveId(null);
   };
 
@@ -592,7 +590,7 @@ export function LeadsPipeline() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <header className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Leads</h1>
           <p className="text-muted-foreground">Manage your lead pipeline and convert prospects to deals</p>
@@ -642,13 +640,14 @@ export function LeadsPipeline() {
             Mass Upload
           </Button>
         </div>
-      </div>
+      </header>
 
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={() => { setActiveId(null); setIsDraggingCard(false); }}
       >
         {/* Pipeline Stages */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -660,6 +659,7 @@ export function LeadsPipeline() {
               onLeadClick={handleLeadClick}
               onConvert={handleConvertToDeal}
               onOpenTasks={handleOpenTasks}
+              suppressClick={isDraggingCard}
             />
           ))}
         </div>
