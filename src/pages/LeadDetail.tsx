@@ -96,6 +96,19 @@ export default function LeadDetail() {
     return "default"; // Future tasks - default
   };
 
+  const getTaskBorderColor = (task: any) => {
+    if (task.done) return "border-muted-foreground/50";
+    
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    
+    if (taskDate < today) return "border-red-500"; // Overdue - red
+    if (taskDate.getTime() === today.getTime()) return "border-amber-500"; // Due today - amber
+    return "border-green-500"; // Future tasks - green
+  };
+
   const getTaskUrgencyIcon = (task: any) => {
     if (task.done) return Check;
     
@@ -661,9 +674,10 @@ export default function LeadDetail() {
                           .map((task) => {
                             const urgencyColor = getTaskUrgencyColor(task);
                             const UrgencyIcon = getTaskUrgencyIcon(task);
+                            const borderColor = getTaskBorderColor(task);
                             
                             return (
-                              <div key={task.id} className={`border-l-2 pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2`}>
+                              <div key={task.id} className={`border-l-2 ${borderColor} pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2`}>
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 space-y-2">
                                     <div className="flex items-center gap-2">
