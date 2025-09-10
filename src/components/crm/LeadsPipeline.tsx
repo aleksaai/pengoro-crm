@@ -152,8 +152,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cardClasses}
       onClick={handleCardClick}
     >
@@ -166,8 +164,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
                   <button
                     type="button"
                     className="p-1 rounded-md cursor-grab active:cursor-grabbing touch-none select-none text-muted-foreground hover:text-foreground"
-                    {...attributes}
-                    {...listeners}
                     onMouseDown={(e) => e.stopPropagation()}
                     onTouchStart={(e) => e.stopPropagation()}
                     aria-label="Drag lead"
@@ -338,10 +334,6 @@ export function LeadsPipeline() {
   const { leads, loading, createLead, updateLead } = useLeads();
   const { toast } = useToast();
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor)
-  );
 
   // Fetch registered users on component mount
   useEffect(() => {
@@ -502,49 +494,24 @@ export function LeadsPipeline() {
     }
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
+  const onDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
+    const fromStage = source.droppableId;
+    const toStage = destination.droppableId;
+    if (toStage === fromStage) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
-    const overContainerId = (over.data?.current as any)?.sortable?.containerId as string | undefined;
-
-    const activeLead = leads.find((l) => l.id === activeId);
-    if (!activeLead) return;
-
-    let newStatus = activeLead.status;
-
-    // Prefer container id if available (the stage column)
-    if (overContainerId && leadStages.some(s => s.id === overContainerId)) {
-      newStatus = overContainerId;
-    } else if (leadStages.some(s => s.id === overId)) {
-      // Dropped directly on a stage container
-      newStatus = overId;
-    } else {
-      // Dropped over another lead card -> use that lead's status
-      const targetLead = leads.find((l) => l.id === overId);
-      if (targetLead) newStatus = targetLead.status;
-    }
-
-    // Abandoned requires reason
-    if (newStatus === 'Abandoned' && newStatus !== activeLead.status) {
-      setPendingAbandonLead(activeLead);
+    // Open abandon dialog to collect reason instead of immediate update
+    if (toStage === 'Abandoned') {
+      const lead = leads.find(l => l.id === draggableId) || null;
+      setPendingAbandonLead(lead);
       setShowAbandonDialog(true);
-      setActiveId(null);
       return;
     }
 
-    if (newStatus !== activeLead.status) {
-      handleUpdateLead(activeId, { status: newStatus });
-      toast({ title: 'Lead Updated', description: `Lead moved to ${newStatus}` });
-    }
-
-    setActiveId(null);
+    await handleUpdateLead(draggableId, { status: toStage as Lead["status"] });
+    toast({ title: 'Lead Updated', description: `Lead moved to ${toStage}` });
   };
 
   if (loading) {
@@ -610,12 +577,7 @@ export function LeadsPipeline() {
         </div>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
+      <DragDropContext onDragEnd={onDragEnd}>
         {/* Pipeline Stages */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {stagesWithLeads.map((stage) => (
@@ -629,18 +591,7 @@ export function LeadsPipeline() {
             />
           ))}
         </div>
-
-        <DragOverlay>
-          {activeId ? (
-            <LeadCard
-              lead={leads.find(lead => lead.id === activeId)!}
-              onClick={() => {}}
-              onConvert={() => {}}
-              onOpenTasks={() => {}}
-            />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      </DragDropContext>
 
       <AddLeadDialog 
         open={showAddDialog}
