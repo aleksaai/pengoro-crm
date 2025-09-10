@@ -321,24 +321,26 @@ export function LeadsPipeline() {
   const [showMassUpload, setShowMassUpload] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
   
-  const { updatePreference, getPreference, loading: preferencesLoading } = useUserPreferences();
+  const { preferences, updatePreference, loading: preferencesLoading } = useUserPreferences();
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize selectedAgent from preferences when they load
   useEffect(() => {
     if (!preferencesLoading && !isInitialized) {
-      setSelectedAgent(getPreference('leadsPipeline_selectedAgent', 'all'));
+      setSelectedAgent(preferences?.leadsPipeline_selectedAgent ?? 'all');
       setIsInitialized(true);
     }
-  }, [preferencesLoading, getPreference, isInitialized]);
+  }, [preferencesLoading, isInitialized, preferences?.leadsPipeline_selectedAgent]);
 
   // Save selectedAgent to preferences whenever it changes (but not during initialization)
   useEffect(() => {
     if (isInitialized) {
-      updatePreference('leadsPipeline_selectedAgent', selectedAgent);
+      if ((preferences?.leadsPipeline_selectedAgent ?? 'all') !== selectedAgent) {
+        updatePreference('leadsPipeline_selectedAgent', selectedAgent);
+      }
     }
-  }, [selectedAgent, updatePreference, isInitialized]);
+  }, [selectedAgent, updatePreference, isInitialized, preferences?.leadsPipeline_selectedAgent]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDraggingCard, setIsDraggingCard] = useState(false);

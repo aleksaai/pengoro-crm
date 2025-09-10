@@ -13,12 +13,15 @@ export function useUserPreferences() {
   const [preferences, setPreferences] = useState<UserPreferences>({});
   const [loading, setLoading] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const preferencesRef = useRef<UserPreferences>({});
 
   useEffect(() => {
     if (user) {
       fetchPreferences();
     } else {
       setLoading(false);
+      setPreferences({});
+      preferencesRef.current = {};
     }
   }, [user]);
 
@@ -34,34 +37,43 @@ export function useUserPreferences() {
 
       if (error) throw error;
 
-      setPreferences((data?.preferences as UserPreferences) || {});
+      const prefs = (data?.preferences as UserPreferences) || {};
+      setPreferences(prefs);
+      preferencesRef.current = prefs;
     } catch (error) {
       console.error('Error fetching user preferences:', error);
       setPreferences({});
+      preferencesRef.current = {};
     } finally {
       setLoading(false);
     }
   };
 
-  const updatePreference = useCallback(async (key: string, value: any) => {
+  const updatePreference = useCallback((key: string, value: any) => {
     if (!user) return;
 
-    // Update local state immediately for smooth UX
-    const newPreferences = { ...preferences, [key]: value };
-    setPreferences(newPreferences);
+    const prev = preferencesRef.current || {};
+    if ((prev as any)[key] === value) {
+      return; // No change
+    }
+
+    const next = { ...prev, [key]: value } as UserPreferences;
+    preferencesRef.current = next;
+    setPreferences(next);
 
     // Debounce the database update
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
+    const payload = next; // capture stable snapshot for debounce
     timeoutRef.current = setTimeout(async () => {
       try {
         const { error } = await supabase
           .from('user_preferences')
           .upsert({
             user_id: user.id,
-            preferences: newPreferences
+            preferences: payload
           }, {
             onConflict: 'user_id'
           });
@@ -73,11 +85,12 @@ export function useUserPreferences() {
         fetchPreferences();
       }
     }, 300); // 300ms debounce
-  }, [user, preferences]);
+  }, [user?.id]);
 
   const getPreference = useCallback((key: string, defaultValue: any = null) => {
-    return preferences[key] ?? defaultValue;
-  }, [preferences]);
+    const prefs = preferencesRef.current || {};
+    return (prefs as any)[key] ?? defaultValue;
+  }, []);
 
   return {
     preferences,
