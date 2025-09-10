@@ -1,37 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Check, ChevronsUpDown } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Clock, CheckCircle, Calendar, User, AlertTriangle, Filter } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -43,97 +14,133 @@ import { cn } from "@/lib/utils";
 import { useLeads } from "@/hooks/useLeads";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useTasks } from "@/hooks/useTasks";
-import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
+import { TaskCreateModal } from "./TaskCreateModal";
+import { TaskCompletionModal } from "./TaskCompletionModal";
 
 // Task interface is now imported from useTasks hook
 
 
 export function TaskManagement() {
   const { tasks, loading: tasksLoading, createTask, updateTask } = useTasks();
-  const { leads, loading: leadsLoading } = useLeads();
-  const { profiles, loading: profilesLoading } = useProfiles();
+  const { leads } = useLeads();
+  const { profiles } = useProfiles();
+  const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
   
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<string>("");
-  const [leadSearchOpen, setLeadSearchOpen] = useState(false);
-  const [newTask, setNewTask] = useState({
-    dueDate: "",
-    assignedTo: ""
-  });
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
+  
+  const currentProfile = profiles.find(p => p.user_id === user?.id);
 
-  const selectedLeadData = leads.find(lead => lead.id === selectedLead);
+  // Utility functions for task styling and urgency
+  const getTaskUrgencyColor = (task: any) => {
+    if (task.done) return "secondary";
+    
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    
+    if (taskDate < today) return "destructive"; // Overdue - red
+    if (taskDate.getTime() === today.getTime()) return "outline"; // Due today - outline
+    return "default"; // Future tasks - default
+  };
 
-  const handleAddTask = async () => {
-    if (!selectedLead || !newTask.dueDate) {
+  const getTaskUrgencyIcon = (task: any) => {
+    if (task.done) return CheckCircle;
+    
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    
+    if (taskDate < today) return AlertTriangle; // Overdue
+    if (taskDate.getTime() === today.getTime()) return Clock; // Due today
+    return Calendar; // Future tasks
+  };
+
+  const handleMarkAsDone = async (task: any) => {
+    const lead = leads.find(l => l.id === task.lead_id);
+    if (lead?.is_frozen && !isSuperAdmin) {
       toast({
-        title: "Missing Information",
-        description: "Please select a lead and set a due date.",
+        title: "Action Restricted",
+        description: "This lead is frozen due to overdue tasks. Only super admins can modify frozen leads.",
         variant: "destructive"
       });
       return;
     }
-
-    const leadData = leads.find(lead => lead.id === selectedLead);
-    if (!leadData) {
-      toast({
-        title: "Invalid Lead",
-        description: "Selected lead not found in database.",
-        variant: "destructive"
-      });
-      return;
+    
+    if (task.done) {
+      // Reopen task
+      await updateTask(task.id, { done: false });
+    } else {
+      // Complete task
+      await updateTask(task.id, { done: true });
     }
+  };
 
+  const handleCompleteTask = async (taskId: string, newTaskData: any) => {
     try {
-      const assignedProfile = profiles.find(p => p.user_id === newTask.assignedTo);
+      // Mark current task as done
+      await updateTask(taskId, { done: true });
       
-      await createTask({
-        lead_id: selectedLead,
-        lead_name: leadData.name,
-        email_address: leadData.email,
-        phone_number: leadData.phone || null,
-        title: `Follow up with ${leadData.name}`,
-        description: null,
-        due_date: newTask.dueDate,
-        assigned_to: newTask.assignedTo,
-        assigned_to_name: assignedProfile?.full_name || null,
-        done: false,
-        created_by: newTask.assignedTo,
-      });
-
-      setSelectedLead("");
-      setNewTask({
-        dueDate: "",
-        assignedTo: ""
-      });
-      setIsDialogOpen(false);
+      // Create new task
+      await createTask(newTaskData);
+      
+      setShowCompletionModal(false);
+      setSelectedTask(null);
       
       toast({
-        title: "Task Created",
-        description: "Task has been successfully created."
+        title: "Task Completed",
+        description: "Task marked as complete and new task created successfully."
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create task.",
+        description: "Failed to complete task and create new one.",
         variant: "destructive"
       });
     }
   };
 
-  const toggleTaskDone = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      await updateTask(taskId, { done: !task.done });
-    }
+  const handleTaskCreated = () => {
+    setShowCreateModal(false);
+    toast({
+      title: "Success",
+      description: "Task created successfully"
+    });
   };
 
-  // Filter tasks based on assigned person
+  // Filter tasks based on status and assigned person
   const filteredTasks = tasks.filter(task => {
-    if (assignedToFilter === "all") return true;
-    return task.assigned_to_name === assignedToFilter;
+    // Status filter
+    if (statusFilter === "pending" && task.done) return false;
+    if (statusFilter === "completed" && !task.done) return false;
+    if (statusFilter === "overdue") {
+      const dueDate = new Date(task.due_date);
+      const today = new Date();
+      if (task.done || dueDate >= today) return false;
+    }
+    
+    // Assigned to filter
+    if (assignedToFilter !== "all" && task.assigned_to_name !== assignedToFilter) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  // Sort tasks by due date (overdue first, then by date)
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1; // Completed tasks last
+    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
   });
 
   // Get unique assigned users for filter dropdown
@@ -141,193 +148,223 @@ export function TaskManagement() {
     tasks.map(task => task.assigned_to_name).filter(name => name)
   )).sort();
 
+  const pendingTasks = tasks.filter(t => !t.done);
+  const completedTasks = tasks.filter(t => t.done);
+  const overdueTasks = tasks.filter(t => {
+    if (t.done) return false;
+    const dueDate = new Date(t.due_date);
+    const today = new Date();
+    return dueDate < today;
+  });
+
   return (
     <div className="space-y-6">
+      {/* Header with stats and actions */}
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Tasks</h1>
-          <p className="text-muted-foreground">
-            {filteredTasks.filter(t => t.done).length}/{filteredTasks.length} tasks completed
-          </p>
-        </div>
-        
-        {/* Filter by Assigned To */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="assigned-filter">Assigned to:</Label>
-            <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by assigned user..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Users</SelectItem>
-                {uniqueAssignedUsers.map((userName) => (
-                  <SelectItem key={userName} value={userName}>
-                    {userName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Task Management</h1>
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <span>{pendingTasks.length} pending</span>
+            <span>{completedTasks.length} completed</span>
+            {overdueTasks.length > 0 && (
+              <span className="text-destructive font-medium">{overdueTasks.length} overdue</span>
+            )}
           </div>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Task</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Lead *</Label>
-                <Popover open={leadSearchOpen} onOpenChange={setLeadSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={leadSearchOpen}
-                      className="w-full justify-between"
-                    >
-                      {selectedLeadData ? selectedLeadData.name : "Select lead..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search leads..." />
-                      <CommandList>
-                        <CommandEmpty>No leads found.</CommandEmpty>
-                        <CommandGroup>
-                          {leads.map((lead) => (
-                            <CommandItem
-                              key={lead.id}
-                              value={lead.id}
-                              onSelect={(currentValue) => {
-                                setSelectedLead(currentValue === selectedLead ? "" : currentValue);
-                                setLeadSearchOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedLead === lead.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex flex-col">
-                                <span>{lead.name}</span>
-                                <span className="text-sm text-muted-foreground">{lead.email}</span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {selectedLeadData && (
-                <div className="space-y-2">
-                  <Label>Selected Lead Details</Label>
-                  <div className="rounded-md border p-2 text-sm">
-                    <div><strong>Email:</strong> {selectedLeadData.email}</div>
-                    <div><strong>Phone:</strong> {selectedLeadData.phone || "Not provided"}</div>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="due-date">Due Date *</Label>
-                  <Input
-                    id="due-date"
-                    type="date"
-                    value={newTask.dueDate}
-                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Assigned To</Label>
-                  <Select
-                    value={newTask.assignedTo}
-                    onValueChange={(value) => setNewTask({ ...newTask, assignedTo: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select user..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {profiles.map((profile) => (
-                        <SelectItem key={profile.id} value={profile.full_name || profile.email}>
-                          {profile.full_name || profile.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                  Cancel
-                </Button>
-                <Button onClick={handleAddTask} className="flex-1">
-                  Add Task
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        
+        <Button onClick={() => setShowCreateModal(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Task
+        </Button>
       </div>
 
-      {/* Tasks Table */}
+      {/* Filters */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Lead Name</TableHead>
-                <TableHead>Email Address</TableHead>
-                <TableHead>Phone Number</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead className="w-[100px]">Done</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTasks.map((task) => (
-                <TableRow key={task.id} className={task.done ? "opacity-60" : ""}>
-                  <TableCell className={`font-medium ${task.done ? "line-through" : ""}`}>
-                    {task.lead_name}
-                  </TableCell>
-                  <TableCell className={task.done ? "line-through" : ""}>
-                    {task.email_address}
-                  </TableCell>
-                  <TableCell className={task.done ? "line-through" : ""}>
-                    {task.phone_number}
-                  </TableCell>
-                  <TableCell className={task.done ? "line-through" : ""}>
-                    {new Date(task.due_date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className={task.done ? "line-through" : ""}>
-                    {task.assigned_to_name || 'Unassigned'}
-                  </TableCell>
-                  <TableCell>
-                    <Checkbox
-                      checked={task.done}
-                      onCheckedChange={() => toggleTaskDone(task.id)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="w-4 h-4" />
+            Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Status:</span>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tasks</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Assigned to:</span>
+              <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  {uniqueAssignedUsers.map((userName) => (
+                    <SelectItem key={userName} value={userName}>
+                      {userName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Task List */}
+      <div className="space-y-3">
+        {sortedTasks.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">No tasks found matching your filters.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          sortedTasks.map((task) => {
+            const UrgencyIcon = getTaskUrgencyIcon(task);
+            const urgencyColor = getTaskUrgencyColor(task);
+            const lead = leads.find(l => l.id === task.lead_id);
+            
+            return (
+              <Card 
+                key={task.id}
+                className={cn(
+                  "cursor-pointer transition-all hover:shadow-md",
+                  urgencyColor === "destructive" && "border-destructive/50 bg-destructive/5",
+                  urgencyColor === "outline" && "border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20",
+                  task.done && "opacity-60 bg-muted/30"
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <UrgencyIcon className={cn(
+                          "w-4 h-4",
+                          urgencyColor === "destructive" && "text-destructive",
+                          urgencyColor === "outline" && "text-orange-500",
+                          task.done && "text-muted-foreground"
+                        )} />
+                        <h3 className={cn(
+                          "font-semibold",
+                          task.done && "line-through text-muted-foreground"
+                        )}>
+                          {task.title}
+                        </h3>
+                        <Badge variant={urgencyColor}>
+                          {task.done ? "Completed" : 
+                           urgencyColor === "destructive" ? "Overdue" :
+                           urgencyColor === "outline" ? "Due Today" : "Upcoming"}
+                        </Badge>
+                      </div>
+                      
+                      {task.description && (
+                        <p className={cn(
+                          "text-sm text-muted-foreground",
+                          task.done && "line-through"
+                        )}>
+                          {task.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          <span>Lead: {task.lead_name}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                        </div>
+                        {task.assigned_to_name && (
+                          <div className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            <span>Assigned: {task.assigned_to_name}</span>
+                          </div>
+                        )}
+                        {lead?.is_frozen && (
+                          <Badge variant="destructive" className="text-xs">
+                            Lead Frozen
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {!task.done ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMarkAsDone(task)}
+                            disabled={lead?.is_frozen && !isSuperAdmin}
+                          >
+                            Mark Done
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedTask(task);
+                              setShowCompletionModal(true);
+                            }}
+                            disabled={lead?.is_frozen && !isSuperAdmin}
+                          >
+                            Complete & Add Next
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleMarkAsDone(task)}
+                          disabled={lead?.is_frozen && !isSuperAdmin}
+                        >
+                          Reopen Task
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Modals */}
+      <TaskCreateModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        leadId=""
+        leadName=""
+        leadEmail=""
+        leadPhone=""
+        currentUserId={user?.id || ""}
+        currentUserName={currentProfile?.full_name || ""}
+        onTaskCreated={handleTaskCreated}
+      />
+
+      {selectedTask && (
+        <TaskCompletionModal
+          open={showCompletionModal}
+          onOpenChange={setShowCompletionModal}
+          currentTask={selectedTask}
+          onCompleteTask={handleCompleteTask}
+        />
+      )}
     </div>
   );
 }
