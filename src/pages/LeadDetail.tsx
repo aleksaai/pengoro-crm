@@ -752,50 +752,46 @@ export default function LeadDetail() {
                           })
                           .map((task) => {
                             return (
-                              <div key={task.id} className={`border-l-2 border-border pl-4 py-3 bg-muted/30 rounded-r-lg space-y-2`}>
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex-1 space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : ''}`}>
+                              <div key={task.id} className="glass-card p-4 border border-glass-border/30 rounded-lg animate-fade-in">
+                                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center">
+                                  <div className="space-y-1">
+                                    <div className="flex items-start gap-2">
+                                      <h4 className={`text-sm font-medium ${task.done ? 'line-through text-muted-foreground' : ''}`}>
                                         {task.title}
-                                      </span>
-                                      {!task.done && (
-                                        <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                                          Upcoming
-                                        </Badge>
+                                      </h4>
+                                      {task.done ? (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Completed</Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">Upcoming</Badge>
                                       )}
                                     </div>
+
                                     {task.description && (
                                       <p className={`text-xs ${task.done ? 'line-through text-muted-foreground' : 'text-muted-foreground'}`}>
                                         {task.description}
                                       </p>
                                     )}
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+
+                                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                                       <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
-                                      <span>•</span>
+                                      <span className="hidden sm:inline">•</span>
                                       <span>Assigned to: {task.assigned_to}</span>
                                     </div>
-                                   </div>
-                                   {!task.done && new Date(task.due_date).getTime() >= now && (
-                                     <div className="flex justify-center mt-2">
-                                       <Button
-                                         size="sm"
-                                         onClick={(e) => {
-                                           e.stopPropagation();
-                                           setCompletingTask(task);
-                                         }}
-                                         className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
-                                       >
-                                         <ChevronRight className="w-3 h-3" />
-                                       </Button>
-                                     </div>
-                                   )}
-                                  
-                                  {lead?.is_frozen && (
-                                    <div className="pt-2 border-t">
-                                      <Badge variant="destructive" className="text-xs">
-                                        Lead Frozen - Contact Super Admin
-                                      </Badge>
+                                  </div>
+
+                                  {!task.done && new Date(task.due_date).getTime() >= now && (
+                                    <div className="flex justify-center sm:justify-end">
+                                      <Button
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCompletingTask(task);
+                                        }}
+                                        className={`h-7 w-7 p-0 ${getTodoButtonColor()} hover-scale`}
+                                        title="Open task"
+                                      >
+                                        <ChevronRight className="w-3 h-3" />
+                                      </Button>
                                     </div>
                                   )}
                                 </div>
