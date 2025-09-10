@@ -775,19 +775,21 @@ export default function LeadDetail() {
                                       <span>•</span>
                                       <span>Assigned to: {task.assigned_to}</span>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 ml-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCompletingTask(task);
-                                      }}
-                                      className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
-                                    >
-                                      <ChevronRight className="w-3 h-3" />
-                                    </Button>
-                                  </div>
+                                   </div>
+                                   {!task.done && (
+                                     <div className="flex items-center justify-center">
+                                       <Button
+                                         size="sm"
+                                         onClick={(e) => {
+                                           e.stopPropagation();
+                                           setCompletingTask(task);
+                                         }}
+                                         className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
+                                       >
+                                         <ChevronRight className="w-3 h-3" />
+                                       </Button>
+                                     </div>
+                                   )}
                                   
                                   {lead?.is_frozen && (
                                     <div className="pt-2 border-t">
