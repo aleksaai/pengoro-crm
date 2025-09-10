@@ -69,14 +69,23 @@ export function GlobalSearch() {
       }
     });
 
-    // Search leads
-    if (!leadsLoading) {
+    // Search leads - comprehensive search across all fields
+    if (!leadsLoading && leads.length > 0) {
       leads.forEach(lead => {
-        if (
-          lead.name.toLowerCase().includes(searchTerm) ||
-          lead.email.toLowerCase().includes(searchTerm) ||
-          (lead.phone && lead.phone.toLowerCase().includes(searchTerm))
-        ) {
+        const searchableFields = [
+          lead.name?.toLowerCase() || '',
+          lead.email?.toLowerCase() || '',
+          lead.phone?.toLowerCase() || '',
+          lead.status?.toLowerCase() || '',
+          lead.source?.toLowerCase() || '',
+          lead.assigned_to?.toLowerCase() || '',
+          ...(lead.interested_products || []).map(p => p.toLowerCase()),
+          lead.age?.toString() || '',
+          lead.net_salary?.toString() || '',
+          lead.gross_salary?.toString() || ''
+        ].join(' ');
+
+        if (searchableFields.includes(searchTerm)) {
           results.push({
             id: `lead-${lead.id}`,
             title: lead.name,
@@ -112,7 +121,7 @@ export function GlobalSearch() {
       results.push(...Array.from(uniqueCustomers.values()));
     }
 
-    return results.slice(0, 8); // Limit results
+    return results.slice(0, 15); // Increased limit for better search coverage
   }, [query, leads, products, leadsLoading, productsLoading, navigate]);
 
   const handleSelect = (result: SearchResult) => {
