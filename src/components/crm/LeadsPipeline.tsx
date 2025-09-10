@@ -328,7 +328,7 @@ export function LeadsPipeline() {
     if (isInitialized) {
       updatePreference('leadsPipeline_selectedAgent', selectedAgent);
     }
-  }, [selectedAgent, updatePreference, isInitialized]);
+  }, [selectedAgent, isInitialized]);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showAbandonDialog, setShowAbandonDialog] = useState(false);
@@ -372,36 +372,6 @@ export function LeadsPipeline() {
     fetchUsers();
   }, [toast]);
 
-  // Delete "test 28" lead completely
-  useEffect(() => {
-    const deleteTestLead = async () => {
-      try {
-        const result = await deleteLeadCompletely('e73b0979-ac57-4d76-81ce-2f90f4ea568d');
-        if (result.success) {
-          toast({
-            title: "Success",
-            description: "Lead 'test 28' has been completely removed",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to delete lead completely",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Error deleting test lead:', error);
-        toast({
-          title: "Error", 
-          description: "Failed to delete test lead",
-          variant: "destructive",
-        });
-      }
-    };
-
-    // Only run once when component mounts
-    deleteTestLead();
-  }, []); // Empty dependency array to run only once
 
   // Get unique agents from both registered users and existing leads
   const uniqueAgents = Array.from(new Set([
