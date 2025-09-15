@@ -221,23 +221,31 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
               <ChevronRight className="w-3 h-3" />
             </Button>
             {lead.status !== "Abandoned" && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Prevent conversion for admins on frozen leads (unless super admin)
-                  if (lead.is_frozen && isAdmin && !isSuperAdmin) {
-                    return;
-                  }
-                  onConvert(lead);
-                }}
-                disabled={isCardDisabled}
-                className="text-xs h-6 px-2"
-              >
-                <ArrowRight className="w-3 h-3 mr-1" />
-                Convert
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Prevent conversion for admins on frozen leads (unless super admin)
+                        if (lead.is_frozen && isAdmin && !isSuperAdmin) {
+                          return;
+                        }
+                        onConvert(lead);
+                      }}
+                      disabled={isCardDisabled}
+                      className="text-xs h-6 w-6 p-0"
+                    >
+                      <ArrowRight className="w-3 h-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Convert to Deal</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>
