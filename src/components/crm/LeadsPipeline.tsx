@@ -185,11 +185,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {lead.source && (
-              <Badge variant="outline" className={`text-xs px-2 py-0.5 ${getSourceBadgeClass(lead.source)}`}>
-                {lead.source}
-              </Badge>
-            )}
             {lead.assigned_to && (
               <TooltipProvider>
                 <Tooltip>
