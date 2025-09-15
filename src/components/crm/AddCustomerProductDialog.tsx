@@ -10,9 +10,11 @@ import { useCustomerProducts } from "@/hooks/useCustomerProducts";
 import { Lead } from "@/hooks/useLeads";
 
 interface AddCustomerProductDialogProps {
-  customer: Lead;
+  customer: Lead | null;
   onProductAdded?: () => void;
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const PRODUCT_OPTIONS = [
@@ -23,8 +25,10 @@ const PROVIDER_OPTIONS = [
   "Allianz", "AXA", "Munich Re", "Generali", "Zurich", "HDI", "R+V", "DEVK", "Other"
 ];
 
-export function AddCustomerProductDialog({ customer, onProductAdded, trigger }: AddCustomerProductDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddCustomerProductDialog({ customer, onProductAdded, trigger, open: externalOpen, onOpenChange }: AddCustomerProductDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [formData, setFormData] = useState({
     product_name: "",
     provider_company: "",
@@ -35,6 +39,8 @@ export function AddCustomerProductDialog({ customer, onProductAdded, trigger }: 
   });
   const [loading, setLoading] = useState(false);
   const { addProduct } = useCustomerProducts();
+
+  if (!customer) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

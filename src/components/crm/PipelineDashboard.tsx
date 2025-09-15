@@ -15,9 +15,12 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { AbandonLeadDialog } from "./AbandonLeadDialog";
 import { LeadTasksModal } from "./LeadTasksModal";
+import { AddCustomerProductDialog } from "./AddCustomerProductDialog";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfiles } from "@/hooks/useProfiles";
 
 const dealStages = [
   { 
@@ -299,16 +302,24 @@ export function PipelineDashboard() {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   
   const { updatePreference, getPreference, loading: preferencesLoading } = useUserPreferences();
+  const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
+  const { profiles } = useProfiles();
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Get current user's full name for default filtering
+  const currentUserName = profiles.find(p => p.user_id === user?.id)?.full_name || user?.email || '';
 
   // Initialize selectedAgent from preferences when they load
   useEffect(() => {
     if (!preferencesLoading && !isInitialized) {
-      setSelectedAgent(getPreference('pipelineDashboard_selectedAgent', 'all'));
+      // For non-super admin users, default to showing their own deals
+      const defaultAgent = isSuperAdmin ? 'all' : currentUserName;
+      setSelectedAgent(getPreference('pipelineDashboard_selectedAgent', defaultAgent));
       setIsInitialized(true);
     }
-  }, [preferencesLoading, getPreference, isInitialized]);
+  }, [preferencesLoading, getPreference, isInitialized, isSuperAdmin, currentUserName]);
 
   // Save selectedAgent to preferences whenever it changes (but not during initialization)
   useEffect(() => {
@@ -316,11 +327,14 @@ export function PipelineDashboard() {
       updatePreference('pipelineDashboard_selectedAgent', selectedAgent);
     }
   }, [selectedAgent, updatePreference, isInitialized]);
+  
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [showLostDialog, setShowLostDialog] = useState(false);
-  const [pendingLostLead, setPendingLostLead] = useState<Lead | null>(null);
   const [showTasksModal, setShowTasksModal] = useState(false);
+  const [showAddProductDialog, setShowAddProductDialog] = useState(false);
+  const [pendingLostLead, setPendingLostLead] = useState<Lead | null>(null);
   const [selectedLeadForTasks, setSelectedLeadForTasks] = useState<Lead | null>(null);
+  const [selectedCustomerForProduct, setSelectedCustomerForProduct] = useState<Lead | null>(null);
   const handleOpenTasks = (lead: Lead) => {
     setSelectedLeadForTasks(lead);
     setShowTasksModal(true);
@@ -473,7 +487,47 @@ export function PipelineDashboard() {
 
   const handleWonConfirm = async (deal: Lead) => {
     try {
-      // Update lead status to Won
+      // Check if customer already exists with the same email
+      const existingCustomer = leads.find(lead => 
+        lead.email === deal.email && 
+        lead.status === "Won" && 
+        lead.id !== deal.id
+      );
+
+      if (existingCustomer) {
+        // Customer exists, open Add Product dialog for upsell
+        setSelectedCustomerForProduct(existingCustomer);
+        setShowAddProductDialog(true);
+        
+        // Add history entry to the existing customer about the upsell
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', userData.user?.id)
+          .single();
+
+        await supabase
+          .from('lead_history')
+          .insert({
+            lead_id: existingCustomer.id,
+            action: 'Upsell Opportunity',
+            details: `Upsale to an already existing customer has been created from deal: ${deal.name}`,
+            created_by: userData.user?.id,
+            user_name: userProfile?.full_name || 'Unknown User'
+          });
+
+        // Mark the deal as won but don't create duplicate customer
+        await updateLead(deal.id, { status: "Won" });
+        
+        toast({
+          title: "Existing Customer Found! 🎯",
+          description: `${deal.name} is already a customer. Please add the new product.`,
+        });
+        return;
+      }
+
+      // No existing customer, proceed with normal conversion
       await updateLead(deal.id, { 
         status: "Won"
       });
@@ -692,6 +746,21 @@ export function PipelineDashboard() {
           lead={selectedLeadForTasks}
         />
       )}
+
+      {/* Add Product Dialog for existing customers */}
+      <AddCustomerProductDialog
+        customer={selectedCustomerForProduct}
+        open={showAddProductDialog}
+        onOpenChange={setShowAddProductDialog}
+        onProductAdded={async () => {
+          setShowAddProductDialog(false);
+          setSelectedCustomerForProduct(null);
+          toast({
+            title: "Success",
+            description: "Product added to existing customer successfully!",
+          });
+        }}
+      />
 
       <AbandonLeadDialog
         open={showLostDialog}
