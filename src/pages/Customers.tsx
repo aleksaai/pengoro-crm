@@ -216,13 +216,13 @@ export default function Customers() {
 
   const handleNewDeal = async (customer: Lead) => {
     try {
-      // Create a new lead with the customer's details but in Discovery Call status
+      // Create a new lead with the customer's details but in New status
       const newLeadData = {
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
         source: "Existing Customer - New Deal",
-        status: "Discovery Call" as const,
+        status: "New" as const,
         assigned_to: customer.assigned_to,
         interested_products: customer.interested_products,
         age: customer.age,
