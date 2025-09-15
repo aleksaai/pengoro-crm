@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { TaskCreateModal } from "./TaskCreateModal";
 import { TaskCompletionModal } from "./TaskCompletionModal";
 import { getTaskUrgencyLevel } from "@/lib/utils";
@@ -33,14 +34,47 @@ export function TaskManagement() {
   const { user } = useAuth();
   const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
+  const { preferences, loading: preferencesLoading, updatePreference, getPreference } = useUserPreferences();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
   
+  // Get current user's profile
   const currentProfile = profiles.find(p => p.user_id === user?.id);
+  
+  // Initialize filters with user preferences or defaults
+  const getDefaultStatusFilter = () => getPreference('tasks_statusFilter', 'all');
+  const getDefaultAssignedToFilter = () => {
+    const saved = getPreference('tasks_assignedToFilter', null);
+    // If no saved preference and user is not super admin, default to their own tasks
+    if (saved === null && !isSuperAdmin && currentProfile?.full_name) {
+      return currentProfile.full_name;
+    }
+    return saved || 'all';
+  };
+  
+  const [statusFilter, setStatusFilter] = useState<string>(getDefaultStatusFilter());
+  const [assignedToFilter, setAssignedToFilter] = useState<string>(getDefaultAssignedToFilter());
+  
+  // Update filters when preferences load
+  useEffect(() => {
+    if (!preferencesLoading) {
+      setStatusFilter(getDefaultStatusFilter());
+      setAssignedToFilter(getDefaultAssignedToFilter());
+    }
+  }, [preferencesLoading, preferences, currentProfile?.full_name, isSuperAdmin]);
+
+  // Save filter preferences when they change
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value);
+    updatePreference('tasks_statusFilter', value);
+  };
+
+  const handleAssignedToFilterChange = (value: string) => {
+    setAssignedToFilter(value);
+    updatePreference('tasks_assignedToFilter', value);
+  };
 
   // Utility functions for task styling and urgency
   const getTaskUrgencyColor = (task: any) => {
@@ -221,7 +255,7 @@ export function TaskManagement() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Status:</span>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
                 <SelectTrigger className="w-36">
                   <SelectValue />
                 </SelectTrigger>
@@ -236,7 +270,7 @@ export function TaskManagement() {
             
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Assigned to:</span>
-              <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
+              <Select value={assignedToFilter} onValueChange={handleAssignedToFilterChange}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
