@@ -8,18 +8,24 @@ import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro, MoreHorizon
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useCustomerProducts } from "@/hooks/useCustomerProducts";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useProfiles } from "@/hooks/useProfiles";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { AddCustomerProductDialog } from "@/components/crm/AddCustomerProductDialog";
 import { LeadDetailsModal } from "@/components/crm/LeadDetailsModal";
 import { CustomerProductsBreakdown } from "@/components/crm/CustomerProductsBreakdown";
 
 export default function Customers() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [selectedCustomer, setSelectedCustomer] = useState<Lead | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [customerTimelines, setCustomerTimelines] = useState<Map<string, {createdAt: string, closedAt: string, cycleDuration: string}>>(new Map());
   const { leads, updateLead } = useLeads();
+  const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
+  const { profiles } = useProfiles();
+  const { preferences, loading: preferencesLoading, updatePreference, getPreference } = useUserPreferences();
   const { 
     products, 
     loading: productsLoading, 
@@ -30,8 +36,44 @@ export default function Customers() {
     refetch: refetchProducts 
   } = useCustomerProducts();
 
+  // Get current user's profile
+  const currentProfile = profiles.find(p => p.user_id === user?.id);
+  
+  // Initialize filters with user preferences or defaults
+  const getDefaultSearchTerm = () => getPreference('customers_searchTerm', '');
+  const getDefaultSelectedAgent = () => {
+    const saved = getPreference('customers_selectedAgent', null);
+    // If no saved preference and user is not super admin, default to their own customers
+    if (saved === null && !isSuperAdmin && currentProfile?.full_name) {
+      return currentProfile.full_name;
+    }
+    return saved || 'all';
+  };
+  
+  const [searchTerm, setSearchTerm] = useState<string>(getDefaultSearchTerm());
+  const [selectedAgent, setSelectedAgent] = useState<string>(getDefaultSelectedAgent());
+
   // Filter customers (leads with status "Won")
   const customers = leads.filter(lead => lead.status === "Won");
+
+  // Update filters when preferences load
+  useEffect(() => {
+    if (!preferencesLoading) {
+      setSearchTerm(getDefaultSearchTerm());
+      setSelectedAgent(getDefaultSelectedAgent());
+    }
+  }, [preferencesLoading, preferences, currentProfile?.full_name, isSuperAdmin]);
+
+  // Save filter preferences when they change
+  const handleSearchTermChange = (value: string) => {
+    setSearchTerm(value);
+    updatePreference('customers_searchTerm', value);
+  };
+
+  const handleSelectedAgentChange = (value: string) => {
+    setSelectedAgent(value);
+    updatePreference('customers_selectedAgent', value);
+  };
 
   // Fetch customer timeline data
   useEffect(() => {
@@ -206,12 +248,12 @@ export default function Customers() {
             <Input
               placeholder="Search customers..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchTermChange(e.target.value)}
               className="pl-10 w-64"
             />
           </div>
           
-          <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+          <Select value={selectedAgent} onValueChange={handleSelectedAgentChange}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Filter by agent" />
             </SelectTrigger>
