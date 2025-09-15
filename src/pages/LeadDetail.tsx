@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,7 @@ export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [editedLead, setEditedLead] = useState<Lead | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -46,6 +47,9 @@ export default function LeadDetail() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Get default tab from URL parameters
+  const defaultTab = searchParams.get('tab') || 'notes';
 
   // Lock background scroll when transcript modal is open
   useEffect(() => {
@@ -651,7 +655,7 @@ export default function LeadDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="notes" className="w-full">
+              <Tabs defaultValue={defaultTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="notes" className="text-xs">
                     <NotebookPen className="w-3 h-3 mr-1" />
