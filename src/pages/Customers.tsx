@@ -216,13 +216,13 @@ export default function Customers() {
 
   const handleNewDeal = async (customer: Lead) => {
     try {
-      // Create a new lead with the customer's details but in New status
+      // Create a new lead with the customer's details for the sales pipeline
       const newLeadData = {
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
         source: "Existing Customer - New Deal",
-        status: "New" as const,
+        status: "Discovery Call Booked" as const,
         assigned_to: customer.assigned_to,
         interested_products: customer.interested_products,
         age: customer.age,
@@ -234,7 +234,7 @@ export default function Customers() {
       
       toast({
         title: "Success",
-        description: "New deal created for existing customer",
+        description: "New deal created in sales pipeline",
       });
       
     } catch (error) {
