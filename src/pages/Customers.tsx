@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro, MoreHorizontal, X } from "lucide-react";
+import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro, MoreHorizontal, X, Repeat } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useCustomerProducts } from "@/hooks/useCustomerProducts";
@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AddCustomerProductDialog } from "@/components/crm/AddCustomerProductDialog";
 import { LeadDetailsModal } from "@/components/crm/LeadDetailsModal";
@@ -21,11 +22,12 @@ export default function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState<Lead | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [customerTimelines, setCustomerTimelines] = useState<Map<string, {createdAt: string, closedAt: string, cycleDuration: string}>>(new Map());
-  const { leads, updateLead } = useLeads();
+  const { leads, updateLead, createLead } = useLeads();
   const { user } = useAuth();
   const { isSuperAdmin } = usePermissions();
   const { profiles } = useProfiles();
   const { preferences, loading: preferencesLoading, updatePreference, getPreference } = useUserPreferences();
+  const { toast } = useToast();
   const { 
     products, 
     loading: productsLoading, 
@@ -212,6 +214,39 @@ export default function Customers() {
     await deleteProduct(productId);
   };
 
+  const handleNewDeal = async (customer: Lead) => {
+    try {
+      // Create a new lead with the customer's details but in Discovery Call status
+      const newLeadData = {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        source: "Existing Customer - New Deal",
+        status: "Discovery Call" as const,
+        assigned_to: customer.assigned_to,
+        interested_products: customer.interested_products,
+        age: customer.age,
+        net_salary: customer.net_salary,
+        gross_salary: customer.gross_salary
+      };
+
+      await createLead(newLeadData);
+      
+      toast({
+        title: "Success",
+        description: "New deal created for existing customer",
+      });
+      
+    } catch (error) {
+      console.error('Error creating new deal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new deal",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleStorno = async (customer: Lead) => {
     try {
       await updateLead(customer.id, { status: "Lost" });
@@ -388,6 +423,13 @@ export default function Customers() {
                               </DropdownMenuItem>
                             }
                           />
+                          <DropdownMenuItem 
+                            onClick={() => handleNewDeal(customer)}
+                            className="cursor-pointer"
+                          >
+                            <Repeat className="mr-2 h-4 w-4" />
+                            New Deal
+                          </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleCustomerClick(customer)}
                             className="cursor-pointer"
