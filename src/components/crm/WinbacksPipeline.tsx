@@ -6,6 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Search, Mail, Phone, User, RotateCcw, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLeads, type Lead } from "@/hooks/useLeads";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useProfiles } from "@/hooks/useProfiles";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -189,19 +193,57 @@ function WinbackStage({ stage, leads, onReactivate }: WinbackStageProps) {
 }
 
 export function WinbacksPipeline() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [winbackLeads, setWinbackLeads] = useState<LeadWithReason[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const { leads, updateLead } = useLeads();
+  const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
+  const { profiles } = useProfiles();
+  const { preferences, loading: preferencesLoading, updatePreference, getPreference } = useUserPreferences();
   const { toast } = useToast();
+  
+  // Get current user's profile
+  const currentProfile = profiles.find(p => p.user_id === user?.id);
+  
+  // Initialize filters with user preferences or defaults
+  const getDefaultSearchTerm = () => getPreference('winbacks_searchTerm', '');
+  const getDefaultSelectedAgent = () => {
+    const saved = getPreference('winbacks_selectedAgent', null);
+    // If no saved preference and user is not super admin, default to their own leads
+    if (saved === null && !isSuperAdmin && currentProfile?.full_name) {
+      return currentProfile.full_name;
+    }
+    return saved || 'all';
+  };
+  
+  const [searchTerm, setSearchTerm] = useState<string>(getDefaultSearchTerm());
+  const [selectedAgent, setSelectedAgent] = useState<string>(getDefaultSelectedAgent());
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor)
   );
+
+  // Update filters when preferences load
+  useEffect(() => {
+    if (!preferencesLoading) {
+      setSearchTerm(getDefaultSearchTerm());
+      setSelectedAgent(getDefaultSelectedAgent());
+    }
+  }, [preferencesLoading, preferences, currentProfile?.full_name, isSuperAdmin]);
+
+  // Save filter preferences when they change
+  const handleSearchTermChange = (value: string) => {
+    setSearchTerm(value);
+    updatePreference('winbacks_searchTerm', value);
+  };
+
+  const handleSelectedAgentChange = (value: string) => {
+    setSelectedAgent(value);
+    updatePreference('winbacks_selectedAgent', value);
+  };
 
   // Fetch registered users
   useEffect(() => {
@@ -510,12 +552,12 @@ export function WinbacksPipeline() {
             <Input
               placeholder="Search winbacks..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchTermChange(e.target.value)}
               className="pl-10 w-64"
             />
           </div>
           
-          <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+          <Select value={selectedAgent} onValueChange={handleSelectedAgentChange}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Filter by agent" />
             </SelectTrigger>
