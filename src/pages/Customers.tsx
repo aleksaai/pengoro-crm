@@ -232,6 +232,34 @@ export default function Customers() {
 
       await createLead(newLeadData);
       
+      // Add specific history entry for existing customer upsell
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', userData.user?.id)
+        .single();
+
+      // Find the newly created lead to get its ID
+      const { data: newLead } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('email', customer.email)
+        .eq('status', 'Discovery Call Booked')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (newLead) {
+        await supabase.from('lead_history').insert({
+          lead_id: newLead.id,
+          action: 'Upsell Creation',
+          details: 'Lead is an existing customer and is an upsale creation',
+          user_name: profile?.full_name || userData.user?.email || 'Unknown User',
+          created_by: userData.user?.id,
+        });
+      }
+      
       toast({
         title: "Success",
         description: "New deal created in sales pipeline",
