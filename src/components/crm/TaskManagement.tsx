@@ -188,22 +188,15 @@ export function TaskManagement() {
   return (
     <div className="space-y-6">
       {/* Header with stats and actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Task Management</h1>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <span>{pendingTasks.length} pending</span>
-            <span>{completedTasks.length} completed</span>
-            {overdueTasks.length > 0 && (
-              <span className="text-destructive font-medium">{overdueTasks.length} overdue</span>
-            )}
-          </div>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Task Management</h1>
+        <div className="flex items-center gap-6 text-sm text-muted-foreground">
+          <span>{pendingTasks.length} pending</span>
+          <span>{completedTasks.length} completed</span>
+          {overdueTasks.length > 0 && (
+            <span className="text-destructive font-medium">{overdueTasks.length} overdue</span>
+          )}
         </div>
-        
-        <Button onClick={() => setShowCreateModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Task
-        </Button>
       </div>
 
       {/* Filters */}
