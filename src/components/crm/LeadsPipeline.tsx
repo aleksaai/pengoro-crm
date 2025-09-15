@@ -19,6 +19,8 @@ import { AbandonLeadDialog } from "./AbandonLeadDialog";
 import { LeadTasksModal } from "./LeadTasksModal";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfiles } from "@/hooks/useProfiles";
 import { deleteLeadCompletely } from "@/utils/deleteLeadCompletely";
 
 export interface LeadHistoryEntry {
@@ -310,16 +312,24 @@ export function LeadsPipeline() {
   const [showTasksModal, setShowTasksModal] = useState(false);
   
   const { updatePreference, getPreference, loading: preferencesLoading } = useUserPreferences();
+  const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
+  const { profiles } = useProfiles();
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Get current user's full name for default filtering
+  const currentUserName = profiles.find(p => p.user_id === user?.id)?.full_name || user?.email || '';
 
   // Initialize selectedAgent from preferences when they load
   useEffect(() => {
     if (!preferencesLoading && !isInitialized) {
-      setSelectedAgent(getPreference('leadsPipeline_selectedAgent', 'all'));
+      // For non-super admin users, default to showing their own leads
+      const defaultAgent = isSuperAdmin ? 'all' : currentUserName;
+      setSelectedAgent(getPreference('leadsPipeline_selectedAgent', defaultAgent));
       setIsInitialized(true);
     }
-  }, [preferencesLoading, getPreference, isInitialized]);
+  }, [preferencesLoading, getPreference, isInitialized, isSuperAdmin, currentUserName]);
 
   // Save selectedAgent to preferences whenever it changes (but not during initialization)
   useEffect(() => {
@@ -450,6 +460,8 @@ export function LeadsPipeline() {
       }
       
       setShowAddDialog(false);
+      // Reset filter to 'all' so user can see their newly created lead
+      setSelectedAgent('all');
       toast({
         title: "Success",
         description: "Lead and initial task created successfully!",
