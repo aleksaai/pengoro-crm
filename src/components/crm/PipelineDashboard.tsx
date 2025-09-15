@@ -517,8 +517,8 @@ export function PipelineDashboard() {
             user_name: userProfile?.full_name || 'Unknown User'
           });
 
-        // Mark the deal as won but don't create duplicate customer
-        await updateLead(deal.id, { status: "Won" });
+        // Mark the deal as "Upsold" instead of "Won" to avoid duplicate customers
+        await updateLead(deal.id, { status: "Upsold" });
         
         toast({
           title: "Existing Customer Found! 🎯",
