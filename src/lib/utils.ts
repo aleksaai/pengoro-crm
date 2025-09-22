@@ -56,20 +56,35 @@ export function getTaskSortingPriority(tasks: any[]): { priority: number; dueTim
     new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
   )[0];
 
-  const dueTime = new Date(earliestTask.due_date).getTime();
-  const urgencyLevel = getTaskUrgencyLevel(earliestTask.due_date, earliestTask.done);
+  const dueDate = new Date(earliestTask.due_date);
+  const dueTime = dueDate.getTime();
+  const now = Date.now();
+  
+  // Check if overdue by actual time (not just day) - matches LeadCard logic
+  if (dueTime < now) {
+    return { priority: 1, dueTime }; // Overdue - RED - highest priority
+  }
 
-  // Priority mapping (lower number = higher priority)
-  const priorityMap: Record<string, number> = {
-    'overdue': 1,    // Highest priority - RED
-    'today': 2,      // High priority - ORANGE  
-    'tomorrow': 3,   // Medium priority - YELLOW
-    'week': 4,       // Lower priority - GREEN
-    'future': 5,     // Lowest priority - BLUE
-    'completed': 6   // Completed tasks
-  };
+  // Use the same day calculation logic as LeadCard component for consistency
+  const dueDay = new Date(dueDate);
+  dueDay.setHours(0, 0, 0, 0);
+  
+  const todayDate = new Date(now);
+  todayDate.setHours(0, 0, 0, 0);
+  
+  const daysDifference = Math.floor((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const priority = priorityMap[urgencyLevel] || 6;
+  let priority = 6; // Default to lowest priority
+  
+  if (daysDifference === 0) {
+    priority = 2; // Due today - ORANGE
+  } else if (daysDifference === 1) {
+    priority = 3; // Due tomorrow - YELLOW
+  } else if (daysDifference <= 7) {
+    priority = 4; // Due within a week - GREEN
+  } else {
+    priority = 5; // Due in future - BLUE
+  }
 
   return { 
     priority, 

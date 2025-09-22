@@ -12,9 +12,18 @@ export function useLeadTasks(leadId: string) {
     }
   }, [leadId]);
 
-  // Realtime updates for this lead's tasks and lead status
+  // Realtime updates for this lead's tasks and lead status - debounced to prevent excessive calls
   useEffect(() => {
     if (!leadId) return;
+
+    let timeoutId: NodeJS.Timeout;
+    
+    const debouncedFetchTasks = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fetchLeadTasks();
+      }, 100); // 100ms debounce
+    };
 
     const taskChannel = supabase
       .channel(`tasks-lead-${leadId}`)
@@ -25,7 +34,7 @@ export function useLeadTasks(leadId: string) {
         filter: `lead_id=eq.${leadId}`,
       }, (payload) => {
         console.log("Real-time task update received:", payload);
-        fetchLeadTasks();
+        debouncedFetchTasks();
       })
       .subscribe();
 
@@ -38,11 +47,12 @@ export function useLeadTasks(leadId: string) {
         filter: `id=eq.${leadId}`,
       }, (payload) => {
         console.log("Real-time lead update received:", payload);
-        fetchLeadTasks();
+        debouncedFetchTasks();
       })
       .subscribe();
 
     return () => {
+      clearTimeout(timeoutId);
       supabase.removeChannel(taskChannel);
       supabase.removeChannel(leadChannel);
     };

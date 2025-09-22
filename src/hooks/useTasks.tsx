@@ -25,8 +25,18 @@ export function useTasks() {
   useEffect(() => {
     fetchTasks();
 
-    // Set up real-time subscription for tasks
+    // Set up real-time subscription for tasks with debouncing
     console.log('Setting up real-time subscription for global tasks');
+    let timeoutId: NodeJS.Timeout;
+    
+    const debouncedFetchTasks = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        console.log('Debounced fetch tasks triggered');
+        fetchTasks();
+      }, 200); // 200ms debounce for global tasks
+    };
+    
     const channel = supabase
       .channel('global-tasks-changes')
       .on(
@@ -38,14 +48,14 @@ export function useTasks() {
         },
         (payload) => {
           console.log('Global tasks real-time update:', payload);
-          // Refetch tasks to ensure consistency
-          fetchTasks();
+          debouncedFetchTasks();
         }
       )
       .subscribe();
 
     return () => {
       console.log('Cleaning up global tasks subscription');
+      clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
   }, []);

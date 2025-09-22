@@ -325,7 +325,7 @@ export function LeadsPipeline() {
   const { profiles } = useProfiles();
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
   const [isInitialized, setIsInitialized] = useState(false);
-  const { tasks: allTasks } = useTasks();
+  const { tasks: allTasks, loading: tasksLoading } = useTasks();
 
   // Get current user's full name for default filtering
   const currentUserName = profiles.find(p => p.user_id === user?.id)?.full_name || user?.email || '';
@@ -410,8 +410,13 @@ export function LeadsPipeline() {
   
   // Sort leads by task urgency within each stage
   const sortLeadsByTaskUrgency = (stageLeads: Lead[]) => {
+    // Don't sort if tasks are still loading
+    if (tasksLoading || !allTasks.length) {
+      return stageLeads;
+    }
+    
     return stageLeads.sort((a, b) => {
-      // Get ALL tasks for each lead (not just incomplete ones)
+      // Get ALL tasks for each lead
       const aTasksForLead = allTasks.filter(task => task.lead_id === a.id);
       const bTasksForLead = allTasks.filter(task => task.lead_id === b.id);
       
@@ -421,10 +426,13 @@ export function LeadsPipeline() {
       console.log(`[SORTING] ${a.name} vs ${b.name}:`, {
         aTaskCount: aTasksForLead.length,
         bTaskCount: bTasksForLead.length,
+        aPendingTasks: aTasksForLead.filter(t => !t.done).length,
+        bPendingTasks: bTasksForLead.filter(t => !t.done).length,
         aPriority: aPriority.priority,
         bPriority: bPriority.priority,
         aDueTime: new Date(aPriority.dueTime).toISOString(),
-        bDueTime: new Date(bPriority.dueTime).toISOString()
+        bDueTime: new Date(bPriority.dueTime).toISOString(),
+        currentTime: new Date().toISOString()
       });
       
       // First sort by priority (lower number = higher priority)
@@ -441,7 +449,7 @@ export function LeadsPipeline() {
     const stageLeads = filteredLeads.filter(lead => lead.status === stage.id);
     const sortedLeads = sortLeadsByTaskUrgency(stageLeads);
     
-    console.log(`[PIPELINE] Stage ${stage.id} has ${stageLeads.length} leads, total tasks: ${allTasks.length}`);
+    console.log(`[PIPELINE] Stage ${stage.id} has ${stageLeads.length} leads, total tasks: ${allTasks.length}, tasks loading: ${tasksLoading}`);
     console.log(`[PIPELINE] Sorted order for ${stage.id}:`, sortedLeads.map(l => l.name));
     
     return {
