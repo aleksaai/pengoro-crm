@@ -57,7 +57,6 @@ export function getTaskSortingPriority(tasks: any[]): { priority: number; dueTim
   )[0];
 
   const dueTime = new Date(earliestTask.due_date).getTime();
-  const now = Date.now();
   const urgencyLevel = getTaskUrgencyLevel(earliestTask.due_date);
 
   // Priority mapping (lower number = higher priority)
@@ -70,8 +69,13 @@ export function getTaskSortingPriority(tasks: any[]): { priority: number; dueTim
     'completed': 6   
   };
 
+  const priority = priorityMap[urgencyLevel] || 6;
+  
+  // Debug logging for task priority calculation
+  console.log(`[Task Priority] Lead tasks: ${tasks.length}, pending: ${pendingTasks.length}, earliest: "${earliestTask.title}" due ${new Date(earliestTask.due_date).toISOString()}, urgency: ${urgencyLevel}, priority: ${priority}`);
+
   return { 
-    priority: priorityMap[urgencyLevel] || 6, 
-    dueTime: dueTime 
+    priority, 
+    dueTime 
   };
 }

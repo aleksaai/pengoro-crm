@@ -114,6 +114,12 @@ export function LeadsTable() {
     const aPriority = getTaskSortingPriority(aTasksForLead);
     const bPriority = getTaskSortingPriority(bTasksForLead);
     
+    // Debug logging to verify sorting
+    if (aTasksForLead.length > 0 || bTasksForLead.length > 0) {
+      console.log(`[LeadsTable Sort] ${a.name}: priority=${aPriority.priority}, dueTime=${new Date(aPriority.dueTime).toISOString()}, tasks=${aTasksForLead.length}`);
+      console.log(`[LeadsTable Sort] ${b.name}: priority=${bPriority.priority}, dueTime=${new Date(bPriority.dueTime).toISOString()}, tasks=${bTasksForLead.length}`);
+    }
+    
     // First sort by priority (lower number = higher priority)
     if (aPriority.priority !== bPriority.priority) {
       return aPriority.priority - bPriority.priority;
