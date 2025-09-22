@@ -47,11 +47,14 @@ const getSourceBadgeClass = (source: string) => {
 };
 
 const leadStages = [
-  { id: "New", title: "New Leads", color: "bg-info", count: 0 },
-  { id: "Not Reached", title: "Not Reached", color: "bg-muted", count: 0 },
-  { id: "Webinar Confirmed", title: "Webinar Confirmed", color: "bg-success", count: 0 },
-  { id: "Call-Back", title: "Call-Back Scheduled", color: "bg-accent", count: 0 },
-  { id: "Abandoned", title: "Abandoned", color: "bg-destructive", count: 0 },
+  { id: "Discovery Call", title: "Discovery Call", color: "bg-info", count: 0 },
+  { id: "Discovery Call Booked", title: "Discovery Call Booked", color: "bg-primary", count: 0 },
+  { id: "Second Meeting Booked", title: "Second Meeting Booked", color: "bg-accent", count: 0 },
+  { id: "Closing Call Scheduled", title: "Closing Call Scheduled", color: "bg-warning", count: 0 },
+  { id: "Follow-Up Scheduled", title: "Follow-Up Scheduled", color: "bg-success", count: 0 },
+  { id: "Won", title: "Won", color: "bg-success", count: 0 },
+  { id: "Stuck", title: "Stuck", color: "bg-muted", count: 0 },
+  { id: "Lost", title: "Lost", color: "bg-destructive", count: 0 },
 ];
 
 interface LeadCardProps {
@@ -217,7 +220,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
             >
               <ChevronRight className="w-3 h-3" />
             </Button>
-            {lead.status !== "Abandoned" && (
+            {lead.status !== "Lost" && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
