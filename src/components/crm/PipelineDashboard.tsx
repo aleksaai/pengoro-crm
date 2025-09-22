@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useLeads, type Lead } from "@/hooks/useLeads";
+import { useTasks } from "@/hooks/useTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { GripVertical, Search, Calendar, Check, X, Clock, Filter } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
@@ -21,6 +22,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles } from "@/hooks/useProfiles";
+import { getTaskSortingPriority } from "@/lib/utils";
 
 const dealStages = [
   { 
@@ -341,6 +343,7 @@ export function PipelineDashboard() {
   };
   const { updateLead, leads } = useLeads();
   const { toast } = useToast();
+  const { tasks: allTasks } = useTasks();
 
   // Fetch registered users on component mount
   useEffect(() => {
@@ -395,14 +398,35 @@ export function PipelineDashboard() {
   const pipelineStatuses = new Set(dealStages.map(stage => getStatusFromStage(stage.id)));
   const dealsInBoard = leads.filter(l => pipelineStatuses.has(l.status));
 
+  // Sort deals by task urgency within each stage
+  const sortDealsByTaskUrgency = (stageDeals: Lead[]) => {
+    return stageDeals.sort((a, b) => {
+      const aTasksForLead = allTasks.filter(task => task.lead_id === a.id);
+      const bTasksForLead = allTasks.filter(task => task.lead_id === b.id);
+      
+      const aPriority = getTaskSortingPriority(aTasksForLead);
+      const bPriority = getTaskSortingPriority(bTasksForLead);
+      
+      // First sort by priority (lower number = higher priority)
+      if (aPriority.priority !== bPriority.priority) {
+        return aPriority.priority - bPriority.priority;
+      }
+      
+      // If same priority, sort by due time (earlier time first)
+      return aPriority.dueTime - bPriority.dueTime;
+    });
+  };
+
   // Filter stages based on selected agent and show only real leads from DB
   const filteredStages = stages.map(stage => {
     const stageStatus = getStatusFromStage(stage.id);
     const dbDeals = leads
       .filter(l => l.status === stageStatus)
       .filter(l => selectedAgent === "all" || l.assigned_to === selectedAgent);
+    
+    const sortedDeals = sortDealsByTaskUrgency(dbDeals);
 
-    return { ...stage, deals: dbDeals };
+    return { ...stage, deals: sortedDeals };
   });
 
   const totalDeals = filteredStages.reduce((acc, stage) => acc + stage.deals.length, 0);

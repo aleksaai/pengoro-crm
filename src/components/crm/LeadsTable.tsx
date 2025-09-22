@@ -17,8 +17,10 @@ import { MassUploadDialog } from "./MassUploadDialog";
 import { LeadRowActions } from "./LeadRowActions";
 import { LeadDetailsModal } from "./LeadDetailsModal";
 import { useLeads, type Lead } from "@/hooks/useLeads";
+import { useTasks } from "@/hooks/useTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getTaskSortingPriority } from "@/lib/utils";
 
 export interface LeadHistoryEntry {
   id: string;
@@ -59,6 +61,7 @@ export function LeadsTable() {
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const { leads, loading, createLead, updateLead } = useLeads();
   const { toast } = useToast();
+  const { tasks: allTasks } = useTasks();
 
   // Fetch registered users on component mount
   useEffect(() => {
@@ -94,7 +97,7 @@ export function LeadsTable() {
   // Get unique agents from registered users only
   const uniqueAgents = registeredUsers.map(user => user.full_name).filter(Boolean);
 
-  // Filter leads by search term and selected agent
+  // Filter leads by search term and selected agent, then sort by task urgency
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = 
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -104,6 +107,20 @@ export function LeadsTable() {
     const matchesAgent = selectedAgent === "all" || lead.assigned_to === selectedAgent;
     
     return matchesSearch && matchesAgent;
+  }).sort((a, b) => {
+    const aTasksForLead = allTasks.filter(task => task.lead_id === a.id);
+    const bTasksForLead = allTasks.filter(task => task.lead_id === b.id);
+    
+    const aPriority = getTaskSortingPriority(aTasksForLead);
+    const bPriority = getTaskSortingPriority(bTasksForLead);
+    
+    // First sort by priority (lower number = higher priority)
+    if (aPriority.priority !== bPriority.priority) {
+      return aPriority.priority - bPriority.priority;
+    }
+    
+    // If same priority, sort by due time (earlier time first)
+    return aPriority.dueTime - bPriority.dueTime;
   });
 
   const totalLeads = leads.length;

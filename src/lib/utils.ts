@@ -38,3 +38,40 @@ export function getTaskUrgencyLevel(dueDate: string | Date, isCompleted: boolean
   if (diffDays <= 7) return 'week';        // Green
   return 'future';                         // Blue
 }
+
+// Calculate task sorting priority for leads (lower number = higher priority)
+export function getTaskSortingPriority(tasks: any[]): { priority: number; dueTime: number } {
+  if (!tasks || tasks.length === 0) {
+    return { priority: 6, dueTime: 0 }; // No tasks - lowest priority
+  }
+
+  // Find the earliest pending task
+  const pendingTasks = tasks.filter(task => !task.done);
+  if (pendingTasks.length === 0) {
+    return { priority: 5, dueTime: 0 }; // All tasks completed
+  }
+
+  // Sort by due date to get the earliest task
+  const earliestTask = pendingTasks.sort((a, b) => 
+    new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+  )[0];
+
+  const dueTime = new Date(earliestTask.due_date).getTime();
+  const now = Date.now();
+  const urgencyLevel = getTaskUrgencyLevel(earliestTask.due_date);
+
+  // Priority mapping (lower number = higher priority)
+  const priorityMap: Record<string, number> = {
+    'overdue': 1,    // Highest priority
+    'today': 2,      
+    'tomorrow': 3,   
+    'week': 4,       
+    'future': 5,     
+    'completed': 6   
+  };
+
+  return { 
+    priority: priorityMap[urgencyLevel] || 6, 
+    dueTime: dueTime 
+  };
+}

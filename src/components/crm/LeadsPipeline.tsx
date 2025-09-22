@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/hooks/use-toast";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useLeadTasks } from "@/hooks/useLeadTasks";
+import { useTasks } from "@/hooks/useTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Search, Plus, Upload, ChevronRight, GripVertical } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -22,6 +23,7 @@ import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles } from "@/hooks/useProfiles";
 import { deleteLeadCompletely } from "@/utils/deleteLeadCompletely";
+import { getTaskSortingPriority } from "@/lib/utils";
 
 export interface LeadHistoryEntry {
   id: string;
@@ -320,6 +322,7 @@ export function LeadsPipeline() {
   const { profiles } = useProfiles();
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
   const [isInitialized, setIsInitialized] = useState(false);
+  const { tasks: allTasks } = useTasks();
 
   // Get current user's full name for default filtering
   const currentUserName = profiles.find(p => p.user_id === user?.id)?.full_name || user?.email || '';
@@ -401,11 +404,36 @@ export function LeadsPipeline() {
   // Group leads by stage and compute totals only for lead board statuses
   const leadStageIds = new Set(leadStages.map(s => s.id));
   const leadsInBoard = leads.filter(l => leadStageIds.has(l.status));
-  const stagesWithLeads = leadStages.map(stage => ({
-    ...stage,
-    leads: filteredLeads.filter(lead => lead.status === stage.id),
-    count: filteredLeads.filter(lead => lead.status === stage.id).length
-  }));
+  
+  // Sort leads by task urgency within each stage
+  const sortLeadsByTaskUrgency = (stageLeads: Lead[]) => {
+    return stageLeads.sort((a, b) => {
+      const aTasksForLead = allTasks.filter(task => task.lead_id === a.id);
+      const bTasksForLead = allTasks.filter(task => task.lead_id === b.id);
+      
+      const aPriority = getTaskSortingPriority(aTasksForLead);
+      const bPriority = getTaskSortingPriority(bTasksForLead);
+      
+      // First sort by priority (lower number = higher priority)
+      if (aPriority.priority !== bPriority.priority) {
+        return aPriority.priority - bPriority.priority;
+      }
+      
+      // If same priority, sort by due time (earlier time first)
+      return aPriority.dueTime - bPriority.dueTime;
+    });
+  };
+  
+  const stagesWithLeads = leadStages.map(stage => {
+    const stageLeads = filteredLeads.filter(lead => lead.status === stage.id);
+    const sortedLeads = sortLeadsByTaskUrgency(stageLeads);
+    
+    return {
+      ...stage,
+      leads: sortedLeads,
+      count: sortedLeads.length
+    };
+  });
 
   const totalLeads = leadsInBoard.length;
 
