@@ -407,9 +407,21 @@ export function LeadsPipeline() {
   const leadStageIds = new Set(leadStages.map(s => s.id));
   const leadsInBoard = leads.filter(l => leadStageIds.has(l.status));
   
+  // Filter leads by search term and selected agent, but only include pipeline leads
+  const filteredPipelineLeads = leadsInBoard.filter(lead => {
+    const matchesSearch = 
+      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.phone?.includes(searchTerm);
+    
+    const matchesAgent = selectedAgent === "all" || lead.assigned_to === selectedAgent;
+    
+    return matchesSearch && matchesAgent;
+  });
+  
   // Group leads by stage - they're already sorted by the database function
   const stagesWithLeads = leadStages.map(stage => {
-    const stageLeads = filteredLeads.filter(lead => lead.status === stage.id);
+    const stageLeads = filteredPipelineLeads.filter(lead => lead.status === stage.id);
     
     console.log(`[PIPELINE] Stage ${stage.id} has ${stageLeads.length} leads (already sorted by database)`);
     console.log(`[PIPELINE] Order for ${stage.id}:`, stageLeads.map(l => l.name));
