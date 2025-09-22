@@ -91,14 +91,12 @@ function WinbackCard({ lead, onReactivate }: WinbackCardProps) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30"
+      {...listeners}
+      className={`glass-card p-4 transition-all duration-200 border border-glass-border/30 ${
+        isDragging ? 'cursor-grabbing' : 'cursor-grab hover:bg-glass/50'
+      }`}
       onClick={handleClick}
     >
-      <div 
-        {...listeners}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing"
-        style={{ zIndex: 10 }}
-      />
       <div className="space-y-2">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
