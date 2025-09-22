@@ -44,6 +44,7 @@ export default function LeadDetail() {
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [completingTask, setCompletingTask] = useState<any>(null);
+  const [isLostWinback, setIsLostWinback] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -68,6 +69,43 @@ export default function LeadDetail() {
   const lead = leads.find(l => l.id === id);
   const { notes, history, transcripts, loading, addNote, addTranscript, deleteTranscript } = useLeadDetails(id || null);
   const { tasks: leadTasks, loading: tasksLoading, updateTask, refetch: refetchTasks } = useLeadTasks(id || "");
+
+  // Check if lead is in Lost winback status
+  const checkWinbackStatus = async () => {
+    if (lead && (lead.status === 'Abandoned' || lead.status === 'Lost')) {
+      try {
+        const { data: latestHistory } = await supabase
+          .from('lead_history')
+          .select('details')
+          .eq('lead_id', lead.id)
+          .in('action', ['Lead Abandoned', 'Abandon Reason Updated'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestHistory?.details) {
+          const abandonReason = latestHistory.details.includes('Reason: ') 
+            ? latestHistory.details.split('Reason: ')[1]
+            : latestHistory.details.includes('Reason changed to: ')
+              ? latestHistory.details.split('Reason changed to: ')[1]
+              : null;
+          
+          // If abandoned for reasons other than "Never reached" or "Future Call", it's in Lost status
+          const isInLostStatus = abandonReason && !['Never reached', 'Future Call'].includes(abandonReason);
+          setIsLostWinback(isInLostStatus);
+        }
+      } catch (error) {
+        console.error('Error checking winback status:', error);
+      }
+    } else {
+      setIsLostWinback(false);
+    }
+  };
+
+  // Check winback status when lead changes
+  useEffect(() => {
+    checkWinbackStatus();
+  }, [lead]);
 
   // Tick every minute to keep time-based UI (like task urgency color) fresh
   const [now, setNow] = useState(Date.now());
@@ -747,12 +785,31 @@ export default function LeadDetail() {
                 <TabsContent value="tasks" className="space-y-4 mt-4">
                   <div className="space-y-2">
                     <Button
-                      onClick={() => setIsTaskModalOpen(true)}
+                      onClick={() => {
+                        if (isLostWinback) {
+                          toast({
+                            title: "Cannot Create Task",
+                            description: "Cannot create tasks for leads in Lost winback status. Please reactivate the lead first.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        setIsTaskModalOpen(true);
+                      }}
                       className="w-full flex items-center gap-2"
+                      disabled={isLostWinback}
                     >
                       <Plus className="w-4 h-4" />
                       Add Task
                     </Button>
+                    
+                    {isLostWinback && (
+                      <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+                        <p className="text-sm text-warning">
+                          ⚠️ This lead is in Lost winback status. Tasks can only be created when reactivating from the Winbacks page.
+                        </p>
+                      </div>
+                    )}
                   </div>
                   
                   <ScrollArea className="h-96">
