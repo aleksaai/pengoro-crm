@@ -78,7 +78,11 @@ function WinbackCard({ lead, onReactivate }: WinbackCardProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent navigation if currently dragging or if the click is on a button
+    if (isDragging || (e.target as HTMLElement).closest('button')) {
+      return;
+    }
     navigate(`/leads/${lead.id}`, { state: { from: 'winbacks' } });
   };
 
@@ -87,10 +91,14 @@ function WinbackCard({ lead, onReactivate }: WinbackCardProps) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       className="glass-card p-4 cursor-pointer hover:bg-glass/50 transition-all duration-200 border border-glass-border/30"
       onClick={handleClick}
     >
+      <div 
+        {...listeners}
+        className="absolute inset-0 cursor-grab active:cursor-grabbing"
+        style={{ zIndex: 10 }}
+      />
       <div className="space-y-2">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
@@ -141,7 +149,7 @@ function WinbackCard({ lead, onReactivate }: WinbackCardProps) {
               e.stopPropagation();
               onReactivate(lead.id);
             }}
-            className="text-xs h-6 px-2"
+            className="text-xs h-6 px-2 relative z-20"
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             Reactivate
