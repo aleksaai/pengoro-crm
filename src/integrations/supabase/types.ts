@@ -357,6 +357,30 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_leads_sorted_by_task_urgency: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          age: number
+          assigned_to: string
+          created_at: string
+          created_by: string
+          earliest_due_time: string
+          email: string
+          gross_salary: number
+          id: string
+          id_document_back_path: string
+          id_document_path: string
+          interested_products: string[]
+          is_frozen: boolean
+          name: string
+          net_salary: number
+          phone: string
+          source: string
+          status: string
+          task_priority: number
+          updated_at: string
+        }[]
+      }
     }
     Enums: {
       account_type: "super_admin" | "admin" | "user"
