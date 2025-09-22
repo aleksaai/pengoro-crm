@@ -182,15 +182,13 @@ function WinbackStage({ stage, leads, onReactivate }: WinbackStageProps) {
       </div>
 
       <div className="flex-1 space-y-3">
-        <SortableContext items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
-          {leads.map((lead) => (
-            <WinbackCard
-              key={lead.id}
-              lead={lead}
-              onReactivate={onReactivate}
-            />
-          ))}
-        </SortableContext>
+        {leads.map((lead) => (
+          <WinbackCard
+            key={lead.id}
+            lead={lead}
+            onReactivate={onReactivate}
+          />
+        ))}
         
         {leads.length === 0 && (
           <div className={`glass-card p-6 text-center border-2 border-dashed border-glass-border/30 transition-colors duration-200 ${isOver ? 'border-accent bg-accent/5' : ''}`}>
@@ -766,17 +764,19 @@ export function WinbacksPipeline() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Pipeline Stages */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stagesWithLeads.map((stage) => (
-            <WinbackStage
-              key={stage.id}
-              stage={stage}
-              leads={stage.leads}
-              onReactivate={handleReactivate}
-            />
-          ))}
-        </div>
+        <SortableContext items={winbackLeads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
+          {/* Pipeline Stages */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stagesWithLeads.map((stage) => (
+              <WinbackStage
+                key={stage.id}
+                stage={stage}
+                leads={stage.leads}
+                onReactivate={handleReactivate}
+              />
+            ))}
+          </div>
+        </SortableContext>
 
         <DragOverlay>
           {activeId ? (
