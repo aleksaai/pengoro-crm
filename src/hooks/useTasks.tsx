@@ -63,28 +63,18 @@ export function useTasks() {
   const fetchTasks = async () => {
     console.log('Fetching all tasks...');
     try {
-      // First get all tasks
-      const { data: tasksData, error: tasksError } = await supabase
+      const { data, error } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          leads!inner(status)
+        `)
+        .neq('leads.status', 'Lost')
         .order('due_date', { ascending: true });
 
-      if (tasksError) throw tasksError;
-
-      // Then get leads to filter out Lost status leads
-      const { data: leadsData, error: leadsError } = await supabase
-        .from('leads')
-        .select('id, status')
-        .neq('status', 'Lost');
-
-      if (leadsError) throw leadsError;
-
-      // Filter tasks to exclude those belonging to Lost leads
-      const validLeadIds = new Set(leadsData?.map(lead => lead.id) || []);
-      const filteredTasks = tasksData?.filter(task => validLeadIds.has(task.lead_id)) || [];
-
-      console.log(`Fetched ${filteredTasks.length} tasks (excluding Lost leads)`);
-      setTasks(filteredTasks);
+      if (error) throw error;
+      console.log(`Fetched ${data?.length || 0} tasks (excluding Lost leads)`);
+      setTasks(data || []);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
