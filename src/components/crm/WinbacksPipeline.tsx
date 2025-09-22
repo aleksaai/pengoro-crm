@@ -18,7 +18,7 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
-  closestCorners,
+  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -169,44 +169,36 @@ interface WinbackStageProps {
   onReactivate: (leadId: string) => void;
 }
 
-function WinbackStage({ stage, leads, onReactivate }: WinbackStageProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: stage.id,
-  });
+// Drop Zone Component (copied from PipelineDashboard)
+interface DropZoneProps {
+  stage: { id: string; title: string; color: string };
+  children: React.ReactNode;
+  isOver?: boolean;
+}
+
+const DropZone = ({ stage, children, isOver = false }: DropZoneProps) => {
+  const { setNodeRef } = useDroppable({ id: stage.id });
 
   return (
-    <div ref={setNodeRef} className="bg-glass/20 rounded-xl border border-glass-border/30 p-4 min-h-[600px]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-foreground">{stage.title}</h3>
-        <Badge className={`${stage.color} text-white`}>{leads.length}</Badge>
-      </div>
-
-      <div className="flex-1 space-y-3">
-        {leads.map((lead) => (
-          <WinbackCard
-            key={lead.id}
-            lead={lead}
-            onReactivate={onReactivate}
-          />
-        ))}
-        
-        {leads.length === 0 && (
-          <div className={`glass-card p-6 text-center border-2 border-dashed border-glass-border/30 transition-colors duration-200 ${isOver ? 'border-accent bg-accent/5' : ''}`}>
-            <p className="text-muted-foreground text-sm">
-              {isOver ? 'Drop lead here' : 'No leads in this stage'}
-            </p>
-          </div>
-        )}
-      </div>
+    <div 
+      ref={setNodeRef} 
+      className={`
+        bg-glass/20 rounded-xl border border-glass-border/30 p-4 min-h-[600px] transition-all duration-200
+        ${isOver ? 'border-primary bg-primary/5 shadow-md' : ''}
+      `}
+    >
+      {children}
     </div>
   );
-}
+};
 
 export function WinbacksPipeline() {
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [winbackLeads, setWinbackLeads] = useState<LeadWithReason[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeLead, setActiveLead] = useState<LeadWithReason | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [showTaskCreateModal, setShowTaskCreateModal] = useState(false);
   const [selectedLeadForTask, setSelectedLeadForTask] = useState<LeadWithReason | null>(null);
   const { leads, updateLead } = useLeads();
@@ -234,8 +226,11 @@ export function WinbacksPipeline() {
   const [selectedAgent, setSelectedAgent] = useState<string>(getDefaultSelectedAgent());
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor)
+    useSensor(PointerSensor, { 
+      activationConstraint: { 
+        distance: 8 
+      } 
+    })
   );
 
   // Update filters when preferences load
@@ -573,68 +568,52 @@ export function WinbacksPipeline() {
 
 
   const handleDragStart = (event: DragStartEvent) => {
-    console.log('🟢 Drag started:', event.active.id);
-    setActiveId(event.active.id as string);
+    const { active } = event;
+    const lead = winbackLeads.find(l => l.id === active.id);
+    setActiveId(active.id as string);
+    setActiveLead(lead || null);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    
-    console.log('🔵 Drag ended:', { activeId: active.id, overId: over?.id, over });
-    
-    if (!over) {
-      console.log('❌ No drop target found');
-      setActiveId(null);
-      return;
-    }
+    setActiveId(null);
+    setActiveLead(null);
+    setDragOverStage(null);
+
+    if (!over) return;
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
     const activeLead = winbackLeads.find(lead => lead.id === activeId);
-    if (!activeLead) {
-      console.log('❌ Active lead not found:', activeId);
-      setActiveId(null);
-      return;
-    }
+    if (!activeLead) return;
 
-    // Handle moving between winback stages or reactivating
+    // Determine target stage
+    const targetStage = winbackStages.find(stage => stage.id === overId);
+    if (!targetStage) return;
+
     let newStage = activeLead.abandonReason;
     
-    console.log('🔍 Checking target stage:', overId);
-    
-    const targetStage = winbackStages.find(stage => stage.id === overId);
-    if (targetStage) {
-      console.log('✅ Found target stage:', targetStage.title);
-      // Convert stage id back to abandon reason
-      switch (targetStage.id) {
-        case "never-reached":
-          newStage = "Never reached";
-          break;
-        case "future-call":
-          newStage = "Future Call";
-          break;
-        case "lost":
-          newStage = "Other Reason";
-          break;
-        case "cold-leads":
-          newStage = "Cold Lead";
-          break;
-      }
-
-      console.log('🔄 Stage change:', activeLead.abandonReason, '->', newStage);
-
-      // Update the abandon reason in lead history if it changed
-      if (newStage !== activeLead.abandonReason) {
-        updateAbandonReason(activeId, newStage);
-      } else {
-        console.log('⚪ No change needed');
-      }
-    } else {
-      console.log('❌ Target stage not found for id:', overId);
+    // Convert stage id back to abandon reason
+    switch (targetStage.id) {
+      case "never-reached":
+        newStage = "Never reached";
+        break;
+      case "future-call":
+        newStage = "Future Call";
+        break;
+      case "lost":
+        newStage = "Other Reason";
+        break;
+      case "cold-leads":
+        newStage = "Cold Lead";
+        break;
     }
 
-    setActiveId(null);
+    // Update the abandon reason in lead history if it changed
+    if (newStage !== activeLead.abandonReason) {
+      updateAbandonReason(activeId, newStage);
+    }
   };
 
   const updateAbandonReason = async (leadId: string, newReason: string) => {
@@ -780,30 +759,59 @@ export function WinbacksPipeline() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Pipeline Stages */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stagesWithLeads.map((stage) => (
-            <WinbackStage
-              key={stage.id}
+            <DropZone 
+              key={stage.id} 
               stage={stage}
-              leads={stage.leads}
-              onReactivate={handleReactivate}
-            />
+              isOver={dragOverStage === stage.id}
+            >
+              {/* Stage Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-foreground">{stage.title}</h3>
+                <Badge className={`${stage.color} text-white`}>{stage.leads.length}</Badge>
+              </div>
+
+              {/* Deals Container */}
+              <div className="flex-1 space-y-3">
+                <SortableContext 
+                  items={stage.leads.map(lead => lead.id)} 
+                  strategy={verticalListSortingStrategy}
+                >
+                  {stage.leads.map((lead) => (
+                    <WinbackCard
+                      key={lead.id}
+                      lead={lead}
+                      onReactivate={handleReactivate}
+                    />
+                  ))}
+                </SortableContext>
+                
+                {stage.leads.length === 0 && (
+                  <div className={`glass-card p-6 text-center border-2 border-dashed border-glass-border/30 transition-colors duration-200 ${dragOverStage === stage.id ? 'border-accent bg-accent/5' : ''}`}>
+                    <p className="text-muted-foreground text-sm">
+                      {dragOverStage === stage.id ? 'Drop lead here' : 'No leads in this stage'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </DropZone>
           ))}
         </div>
 
-        <DragOverlay>
-          {activeId ? (
+        {/* DragOverlay */}
+        {activeId && activeLead && (
+          <div style={{ position: 'fixed', pointerEvents: 'none', top: 0, left: 0, zIndex: 999 }}>
             <WinbackCard
-              lead={winbackLeads.find(lead => lead.id === activeId)!}
+              lead={activeLead}
               onReactivate={() => {}}
             />
-          ) : null}
-        </DragOverlay>
+          </div>
+        )}
       </DndContext>
 
       {/* Task Creation Modal */}
