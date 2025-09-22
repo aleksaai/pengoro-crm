@@ -63,7 +63,6 @@ interface LeadCardProps {
 
 function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   const navigate = useNavigate();
-  const { tasks: leadTasks } = useLeadTasks(lead.id);
   const { isAdmin, isSuperAdmin } = usePermissions();
   // DnD is handled by parent DragDropContext
 
@@ -92,52 +91,32 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
       return "bg-destructive hover:bg-destructive/80";
     }
     
-    if (!leadTasks || leadTasks.length === 0) {
+    // Use pre-calculated task priority from database for instant color
+    const priority = lead.task_priority;
+    
+    if (!priority || priority === 999) {
+      // No pending tasks
       return "bg-muted hover:bg-muted/80";
     }
     
-    // Find the earliest pending task
-    const pendingTasks = leadTasks.filter(task => !task.done);
-    if (pendingTasks.length === 0) {
-      return "bg-success hover:bg-success/80";
+    switch (priority) {
+      case 1:
+        // Overdue
+        return "bg-destructive hover:bg-destructive/80";
+      case 2:
+        // Due today
+        return "bg-warning hover:bg-warning/80";
+      case 3:
+        // Due tomorrow
+        return "bg-yellow hover:bg-yellow/80";
+      case 4:
+        // Due within 7 days
+        return "bg-success hover:bg-success/80";
+      case 5:
+      default:
+        // Due in future (more than 7 days)
+        return "bg-primary hover:bg-primary/80";
     }
-
-    const earliestTask = pendingTasks.sort((a, b) => 
-      new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-    )[0];
-
-    const due = new Date(earliestTask.due_date);
-    const dueDay = new Date(due);
-    dueDay.setHours(0, 0, 0, 0);
-
-    const todayDate = new Date(now);
-    todayDate.setHours(0, 0, 0, 0);
-    
-    // Overdue by time
-    if (due.getTime() < now) {
-      return "bg-destructive hover:bg-destructive/80";
-    }
-
-    // Calculate day difference for upcoming tasks
-    const daysDifference = Math.floor((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysDifference === 0) {
-      // Due later today - ORANGE
-      return "bg-warning hover:bg-warning/80";
-    }
-    
-    if (daysDifference === 1) {
-      // Due tomorrow - YELLOW
-      return "bg-yellow hover:bg-yellow/80";
-    }
-    
-    if (daysDifference <= 7) {
-      // Due in next 7 days - GREEN
-      return "bg-success hover:bg-success/80";
-    }
-
-    // Due in more than 7 days - BLUE
-    return "bg-primary hover:bg-primary/80";
   };
 
   const handleCardClick = () => {
