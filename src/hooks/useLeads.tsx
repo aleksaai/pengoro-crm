@@ -20,6 +20,8 @@ export interface Lead {
   id_document_path?: string;
   id_document_back_path?: string;
   is_frozen?: boolean;
+  task_priority?: number;
+  earliest_due_time?: string;
 }
 
 export interface LeadNote {
