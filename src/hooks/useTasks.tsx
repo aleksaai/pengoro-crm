@@ -24,9 +24,34 @@ export function useTasks() {
 
   useEffect(() => {
     fetchTasks();
+
+    // Set up real-time subscription for tasks
+    console.log('Setting up real-time subscription for global tasks');
+    const channel = supabase
+      .channel('global-tasks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        (payload) => {
+          console.log('Global tasks real-time update:', payload);
+          // Refetch tasks to ensure consistency
+          fetchTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up global tasks subscription');
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchTasks = async () => {
+    console.log('Fetching all tasks...');
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -34,6 +59,7 @@ export function useTasks() {
         .order('due_date', { ascending: true });
 
       if (error) throw error;
+      console.log(`Fetched ${data?.length || 0} tasks`);
       setTasks(data || []);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -43,6 +69,7 @@ export function useTasks() {
   };
 
   const createTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
+    console.log('Creating new task:', taskData);
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -50,10 +77,16 @@ export function useTasks() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error creating task:', error);
+        throw error;
+      }
+      
+      console.log('Task created successfully:', data);
       
       // Add history entry for task creation if lead_id is available
       if (taskData.lead_id) {
+        console.log('Adding task creation to lead history');
         const { data: userData } = await supabase.auth.getUser();
         const { data: profileData } = await supabase
           .from('profiles')
@@ -68,9 +101,13 @@ export function useTasks() {
           user_name: profileData?.full_name || 'Unknown User',
           created_by: userData.user?.id,
         });
+        console.log('Lead history entry added');
       }
       
+      // Update local state immediately for responsiveness
       setTasks(prev => [data, ...prev]);
+      console.log('Local task state updated');
+      
       return data;
     } catch (error) {
       console.error('Error creating task:', error);
@@ -79,6 +116,7 @@ export function useTasks() {
   };
 
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
+    console.log('Updating task:', { taskId, updates });
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -87,11 +125,20 @@ export function useTasks() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error updating task:', error);
+        throw error;
+      }
 
+      console.log('Task updated successfully:', data);
+      
+      // Update local state immediately for responsiveness
       setTasks(prev => prev.map(task => 
         task.id === taskId ? data : task
       ));
+      
+      console.log('Local task state updated');
+      return data;
     } catch (error) {
       console.error('Error updating task:', error);
       throw error;

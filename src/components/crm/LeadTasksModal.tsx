@@ -165,33 +165,49 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   };
 
   const handleCompleteTask = async (taskId: string, newTaskData: any) => {
-    console.log("Starting handleCompleteTask:", { taskId, newTaskData });
+    console.log("LeadTasksModal: Starting handleCompleteTask:", { taskId, newTaskData });
+    
     try {
-      // Mark current task as done
-      console.log("Marking task as done...");
-      await updateTask(taskId, { done: true });
-      console.log("Task marked as done successfully");
+      // First, mark current task as done
+      console.log("LeadTasksModal: Marking task as done...");
+      const updatedTask = await updateTask(taskId, { done: true });
+      console.log("LeadTasksModal: Task marked as done successfully:", updatedTask);
       
-      // Create new task
-      console.log("Creating new task...");
-      await createTask(newTaskData);
-      console.log("New task created successfully");
+      // Then create new task
+      console.log("LeadTasksModal: Creating new task...");
+      const newTask = await createTask(newTaskData);
+      console.log("LeadTasksModal: New task created successfully:", newTask);
       
       toast({
         title: "Success",
         description: "Task completed and new task created!",
       });
       
-      console.log("Calling refetch...");
+      // Explicitly refetch the lead tasks to ensure UI consistency
+      console.log("LeadTasksModal: Calling refetch...");
       await refetch();
-      console.log("Refetch awaited, closing modal...");
+      console.log("LeadTasksModal: Refetch completed");
+      
+      // Close modal
       setShowCompletionModal(false);
       setSelectedTask(null);
+      
+      console.log("LeadTasksModal: Complete & Add Next operation finished successfully");
     } catch (error) {
-      console.error('Error completing task:', error);
+      console.error('LeadTasksModal: Error in handleCompleteTask:', error);
+      
+      // If new task creation failed but task was marked as done, try to revert
+      try {
+        console.log('LeadTasksModal: Attempting to revert task completion due to error...');
+        await updateTask(taskId, { done: false });
+        console.log('LeadTasksModal: Task completion reverted');
+      } catch (revertError) {
+        console.error('LeadTasksModal: Failed to revert task completion:', revertError);
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to complete task. Please try again.",
+        description: "Failed to complete task and create new one. Please try again.",
         variant: "destructive",
       });
     }

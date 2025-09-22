@@ -189,13 +189,20 @@ export function TaskManagement() {
   };
 
   const handleCompleteTask = async (taskId: string, newTaskData: any) => {
+    console.log('TaskManagement: Starting handleCompleteTask:', { taskId, newTaskData });
+    
     try {
-      // Mark current task as done
-      await updateTask(taskId, { done: true });
+      // First, mark current task as done
+      console.log('TaskManagement: Marking task as done...');
+      const updatedTask = await updateTask(taskId, { done: true });
+      console.log('TaskManagement: Task marked as done successfully:', updatedTask);
       
-      // Create new task
-      await createTask(newTaskData);
+      // Then create new task
+      console.log('TaskManagement: Creating new task...');
+      const newTask = await createTask(newTaskData);
+      console.log('TaskManagement: New task created successfully:', newTask);
       
+      // Close modal and show success
       setShowCompletionModal(false);
       setSelectedTask(null);
       
@@ -203,10 +210,23 @@ export function TaskManagement() {
         title: "Task Completed",
         description: "Task marked as complete and new task created successfully."
       });
+      
+      console.log('TaskManagement: Complete & Add Next operation finished successfully');
     } catch (error) {
+      console.error('TaskManagement: Error in handleCompleteTask:', error);
+      
+      // If new task creation failed but task was marked as done, try to revert
+      try {
+        console.log('TaskManagement: Attempting to revert task completion due to error...');
+        await updateTask(taskId, { done: false });
+        console.log('TaskManagement: Task completion reverted');
+      } catch (revertError) {
+        console.error('TaskManagement: Failed to revert task completion:', revertError);
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to complete task and create new one.",
+        description: "Failed to complete task and create new one. Please try again.",
         variant: "destructive"
       });
     }
