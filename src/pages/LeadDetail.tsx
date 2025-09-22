@@ -377,7 +377,14 @@ export default function LeadDetail() {
   const currentLead = editedLead || lead;
 
   const handleEdit = () => {
-    setEditedLead({ ...lead });
+    // Only copy actual database columns, exclude computed fields
+    const {
+      task_priority,
+      earliest_due_time,
+      ...actualLeadData
+    } = lead;
+    
+    setEditedLead(actualLeadData);
     setIsEditing(true);
   };
 
