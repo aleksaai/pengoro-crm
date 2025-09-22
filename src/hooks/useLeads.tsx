@@ -61,18 +61,22 @@ export function useLeads() {
 
   const fetchLeads = async () => {
     try {
-      // First, check and update frozen status for overdue leads
-      await supabase.rpc('check_and_freeze_overdue_leads');
+      setLoading(true);
+      console.log('Fetching leads using database function for task-based sorting...');
       
+      // Use the new database function that returns leads sorted by task urgency
       const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .rpc('get_leads_sorted_by_task_urgency');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching sorted leads:', error);
+        throw error;
+      }
+
+      console.log(`Fetched ${data?.length || 0} leads with task-based sorting from database`);
       setLeads(data || []);
     } catch (error) {
-      console.error('Error fetching leads:', error);
+      console.error('Error in fetchLeads:', error);
       toast({
         title: "Error loading leads",
         description: "Please try again.",
