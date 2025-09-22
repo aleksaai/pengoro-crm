@@ -34,7 +34,7 @@ export function useTasks() {
       timeoutId = setTimeout(() => {
         console.log('Debounced fetch tasks triggered');
         fetchTasks();
-      }, 200); // 200ms debounce for global tasks
+      }, 1000); // 1000ms debounce for global tasks to reduce API calls
     };
     
     const channel = supabase

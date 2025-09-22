@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,31 +62,23 @@ interface LeadCardProps {
   onOpenTasks: (lead: Lead) => void;
 }
 
-function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
+const LeadCard = React.memo(function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   const navigate = useNavigate();
   const { isAdmin, isSuperAdmin } = usePermissions();
   // DnD is handled by parent DragDropContext
 
-
-  // Tick every minute to keep time-based UI (like task urgency color) fresh
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-
   const style: React.CSSProperties | undefined = undefined;
 
-  const getInitials = (name: string) => {
+  const getInitials = useCallback((name: string) => {
     return name
       .split(' ')
       .map(n => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
+  }, []);
 
-  const getTodoButtonColor = () => {
+  const getTodoButtonColor = useMemo(() => {
     // If lead is frozen and user is admin (not super admin), show red button
     if (lead.is_frozen && isAdmin && !isSuperAdmin) {
       return "bg-destructive hover:bg-destructive/80";
@@ -117,15 +110,29 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
         // Due in future (more than 7 days)
         return "bg-primary hover:bg-primary/80";
     }
-  };
+  }, [lead.is_frozen, lead.task_priority, isAdmin, isSuperAdmin]);
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     // Prevent navigation for admins on frozen leads (unless super admin)
     if (lead.is_frozen && isAdmin && !isSuperAdmin) {
       return;
     }
     navigate(`/leads/${lead.id}`, { state: { from: 'leads' } });
-  };
+  }, [lead.is_frozen, lead.id, isAdmin, isSuperAdmin, navigate]);
+
+  const handleConvert = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Prevent conversion for admins on frozen leads (unless super admin)
+    if (lead.is_frozen && isAdmin && !isSuperAdmin) {
+      return;
+    }
+    onConvert(lead);
+  }, [lead, onConvert, lead.is_frozen, isAdmin, isSuperAdmin]);
+
+  const handleOpenTasks = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpenTasks(lead);
+  }, [lead, onOpenTasks]);
 
   // Determine if the card should be greyed out for admins
   const isCardDisabled = lead.is_frozen && isAdmin && !isSuperAdmin;
@@ -186,36 +193,26 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
           </div>
           
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenTasks(lead);
-              }}
-              className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
-            >
-              <ChevronRight className="w-3 h-3" />
-            </Button>
+              <Button
+                size="sm"
+                onClick={handleOpenTasks}
+                className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor}`}
+              >
+                <ChevronRight className="w-3 h-3" />
+              </Button>
             {lead.status !== "Abandoned" && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Prevent conversion for admins on frozen leads (unless super admin)
-                        if (lead.is_frozen && isAdmin && !isSuperAdmin) {
-                          return;
-                        }
-                        onConvert(lead);
-                      }}
-                      disabled={isCardDisabled}
-                      className="text-xs h-6 w-6 p-0"
-                    >
-                      <ArrowRight className="w-3 h-3" />
-                    </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleConvert}
+                    disabled={isCardDisabled}
+                    className="text-xs h-6 w-6 p-0"
+                  >
+                    <ArrowRight className="w-3 h-3" />
+                  </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Convert to Deal</p>
@@ -228,7 +225,7 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
       </div>
     </div>
   );
-}
+});
 
 interface LeadStageProps {
   stage: typeof leadStages[0] & { leads: Lead[]; count: number };
@@ -238,7 +235,7 @@ interface LeadStageProps {
   onOpenTasks: (lead: Lead) => void;
 }
 
-function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadStageProps) {
+const LeadStage = React.memo(function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadStageProps) {
   return (
     <Droppable droppableId={stage.id}>
       {(provided, snapshot) => (
@@ -255,11 +252,12 @@ function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadSt
           <div className="flex-1 space-y-3">
             {leads.map((lead, index) => (
               <Draggable key={lead.id} draggableId={lead.id} index={index}>
-                {(dragProvided, dragSnapshot) => (
+                {(provided, snapshot) => (
                   <div
-                    ref={dragProvided.innerRef}
-                    {...dragProvided.draggableProps}
-                    {...dragProvided.dragHandleProps}
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    className={`${snapshot.isDragging ? "rotate-3 shadow-lg" : ""}`}
                   >
                     <LeadCard
                       lead={lead}
@@ -272,20 +270,12 @@ function LeadStage({ stage, leads, onLeadClick, onConvert, onOpenTasks }: LeadSt
               </Draggable>
             ))}
             {provided.placeholder}
-
-            {leads.length === 0 && (
-              <div className={`glass-card p-6 text-center border-2 border-dashed border-glass-border/30 transition-colors duration-200 ${snapshot.isDraggingOver ? 'border-accent bg-accent/5' : ''}`}>
-                <p className="text-muted-foreground text-sm">
-                  {snapshot.isDraggingOver ? 'Drop lead here' : 'No leads in this stage'}
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )}
     </Droppable>
   );
-}
+});
 
 export function LeadsPipeline() {
   const [searchTerm, setSearchTerm] = useState("");

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,9 +67,8 @@ interface DealCardProps {
   isDragOverlay?: boolean;
 }
 
-function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isDragOverlay = false }: DealCardProps) {
+const DealCard = React.memo(function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isDragOverlay = false }: DealCardProps) {
   const navigate = useNavigate();
-  const { tasks: leadTasks } = useLeadTasks(deal.id);
   const { isAdmin, isSuperAdmin } = usePermissions();
   const isCardDisabled = deal.is_frozen && isAdmin && !isSuperAdmin;
   const {
@@ -79,11 +79,6 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
     transition,
     isDragging,
   } = useSortable({ id: deal.id, disabled: isCardDisabled });
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(id);
-  }, []);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -91,77 +86,64 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
     zIndex: isDragging ? 1000 : 1,
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     // Don't trigger click if we're dragging or card is disabled
     if (isDragging || isCardDisabled) return;
     e.stopPropagation();
     navigate(`/leads/${deal.id}`, { state: { from: 'pipeline' } });
-  };
+  }, [isDragging, isCardDisabled, navigate, deal.id]);
 
-  const handleLostClick = (e: React.MouseEvent) => {
+  const handleLostClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onLostClick(deal);
-  };
+  }, [onLostClick, deal]);
 
-  const handleWonClick = (e: React.MouseEvent) => {
+  const handleWonClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onWonClick(deal);
-  };
+  }, [onWonClick, deal]);
 
-  const getInitials = (name: string) => {
+  const getInitials = useCallback((name: string) => {
     return name
       .split(' ')
       .map(n => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
+  }, []);
 
-  const getTodoButtonColor = () => {
+  const getTodoButtonColor = useMemo(() => {
     if (deal.is_frozen && isAdmin && !isSuperAdmin) {
       return "bg-destructive hover:bg-destructive/80";
     }
 
-    if (!leadTasks || leadTasks.length === 0) {
+    // Use pre-calculated task priority from database for instant color
+    const priority = deal.task_priority;
+    
+    if (!priority || priority === 999) {
+      // No pending tasks
       return "bg-muted hover:bg-muted/80";
     }
-
-    const pendingTasks = leadTasks.filter(task => !task.done);
-    if (pendingTasks.length === 0) {
-      return "bg-success hover:bg-success/80";
+    
+    switch (priority) {
+      case 1:
+        // Overdue
+        return "bg-destructive hover:bg-destructive/80";
+      case 2:
+        // Due today
+        return "bg-warning hover:bg-warning/80";
+      case 3:
+        // Due tomorrow
+        return "bg-yellow hover:bg-yellow/80";
+      case 4:
+        // Due within 7 days
+        return "bg-success hover:bg-success/80";
+      case 5:
+      default:
+        // Due in future (more than 7 days)
+        return "bg-primary hover:bg-primary/80";
     }
-
-    const earliestTask = pendingTasks.sort((a, b) =>
-      new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-    )[0];
-
-    const due = new Date(earliestTask.due_date);
-    const dueDay = new Date(due);
-    dueDay.setHours(0, 0, 0, 0);
-
-    const todayDate = new Date(now);
-    todayDate.setHours(0, 0, 0, 0);
-
-    if (due.getTime() < now) {
-      return "bg-destructive hover:bg-destructive/80";
-    }
-
-    const daysDifference = Math.floor((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysDifference === 0) {
-      return "bg-warning hover:bg-warning/80";
-    }
-
-    if (daysDifference === 1) {
-      return "bg-yellow hover:bg-yellow/80";
-    }
-
-    if (daysDifference <= 7) {
-      return "bg-success hover:bg-success/80";
-    }
-
-    return "bg-primary hover:bg-primary/80";
-  };
+  }, [deal.is_frozen, deal.task_priority, isAdmin, isSuperAdmin]);
 
   return (
     <div
@@ -234,7 +216,7 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
                   e.stopPropagation();
                   onOpenTasks(deal);
                 }}
-                className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor()}`}
+                className={`text-xs h-6 w-6 p-0 ${getTodoButtonColor}`}
               >
                 <Clock className="w-3 h-3" />
               </Button>
@@ -273,7 +255,7 @@ function DealCard({ deal, onDealClick, onLostClick, onWonClick, onOpenTasks, isD
       </div>
     </div>
   );
-}
+});
 
 interface DropZoneProps {
   stage: { id: string; name: string; color: string; deals: Lead[] };
@@ -281,7 +263,7 @@ interface DropZoneProps {
   isOver?: boolean;
 }
 
-function DropZone({ stage, children, isOver = false }: DropZoneProps) {
+const DropZone = React.memo(function DropZone({ stage, children, isOver = false }: DropZoneProps) {
   const { setNodeRef } = useDroppable({ id: stage.id });
 
   return (
@@ -295,7 +277,7 @@ function DropZone({ stage, children, isOver = false }: DropZoneProps) {
       {children}
     </div>
   );
-}
+});
 
 export function PipelineDashboard() {
   const [stages, setStages] = useState(dealStages);
@@ -398,36 +380,45 @@ export function PipelineDashboard() {
   const pipelineStatuses = new Set(dealStages.map(stage => getStatusFromStage(stage.id)));
   const dealsInBoard = leads.filter(l => pipelineStatuses.has(l.status));
 
-  // Sort deals by task urgency within each stage
-  const sortDealsByTaskUrgency = (stageDeals: Lead[]) => {
-    return stageDeals.sort((a, b) => {
-      const aTasksForLead = allTasks.filter(task => task.lead_id === a.id);
-      const bTasksForLead = allTasks.filter(task => task.lead_id === b.id);
-      
-      const aPriority = getTaskSortingPriority(aTasksForLead);
-      const bPriority = getTaskSortingPriority(bTasksForLead);
-      
-      // First sort by priority (lower number = higher priority)
-      if (aPriority.priority !== bPriority.priority) {
-        return aPriority.priority - bPriority.priority;
-      }
-      
-      // If same priority, sort by due time (earlier time first)
-      return aPriority.dueTime - bPriority.dueTime;
-    });
-  };
+  // Sort deals by pre-calculated task priority for better performance
+  const sortDealsByTaskUrgency = useMemo(() => {
+    return (stageDeals: Lead[]) => {
+      return stageDeals.sort((a, b) => {
+        // Use pre-calculated priority from database (lower = more urgent)
+        const aPriority = a.task_priority || 999;
+        const bPriority = b.task_priority || 999;
+        
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority;
+        }
+        
+        // If same priority, sort by earliest due time
+        const aTime = a.earliest_due_time ? new Date(a.earliest_due_time).getTime() : Infinity;
+        const bTime = b.earliest_due_time ? new Date(b.earliest_due_time).getTime() : Infinity;
+        
+        if (aTime !== bTime) {
+          return aTime - bTime;
+        }
+        
+        // Finally by name for consistent ordering
+        return a.name.localeCompare(b.name);
+      });
+    };
+  }, []);
 
   // Filter stages based on selected agent and show only real leads from DB
-  const filteredStages = stages.map(stage => {
-    const stageStatus = getStatusFromStage(stage.id);
-    const dbDeals = leads
-      .filter(l => l.status === stageStatus)
-      .filter(l => selectedAgent === "all" || l.assigned_to === selectedAgent);
-    
-    const sortedDeals = sortDealsByTaskUrgency(dbDeals);
+  const filteredStages = useMemo(() => {
+    return stages.map(stage => {
+      const stageStatus = getStatusFromStage(stage.id);
+      const dbDeals = leads
+        .filter(l => l.status === stageStatus)
+        .filter(l => selectedAgent === "all" || l.assigned_to === selectedAgent);
+      
+      const sortedDeals = sortDealsByTaskUrgency(dbDeals);
 
-    return { ...stage, deals: sortedDeals };
-  });
+      return { ...stage, deals: sortedDeals };
+    });
+  }, [stages, leads, selectedAgent, sortDealsByTaskUrgency]);
 
   const totalDeals = filteredStages.reduce((acc, stage) => acc + stage.deals.length, 0);
 
