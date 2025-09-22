@@ -66,6 +66,7 @@ interface LeadCardProps {
 
 function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
   const navigate = useNavigate();
+  const { tasks: leadTasks, loading: tasksLoading } = useLeadTasks(lead.id);
   const { isAdmin, isSuperAdmin } = usePermissions();
 
   // Tick every minute to keep time-based UI (like task urgency color) fresh
@@ -74,8 +75,6 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
     const id = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
-
-  const style: React.CSSProperties | undefined = undefined;
 
   const getInitials = (name: string) => {
     return name
@@ -92,30 +91,61 @@ function LeadCard({ lead, onClick, onConvert, onOpenTasks }: LeadCardProps) {
       return "bg-destructive hover:bg-destructive/80";
     }
     
-    // Use the task_priority from database function for instant color calculation
-    const taskPriority = lead.task_priority || 999;
-    
-    switch (taskPriority) {
-      case 1:
-        // Overdue - RED
-        return "bg-destructive hover:bg-destructive/80";
-      case 2:
-        // Due today - ORANGE
-        return "bg-warning hover:bg-warning/80";
-      case 3:
-        // Due tomorrow - YELLOW
-        return "bg-yellow hover:bg-yellow/80";
-      case 4:
-        // Due within 7 days - GREEN
-        return "bg-success hover:bg-success/80";
-      case 5:
-        // Due in future - BLUE
-        return "bg-primary hover:bg-primary/80";
-      case 999:
-      default:
-        // No pending tasks - MUTED
-        return "bg-muted hover:bg-muted/80";
+    // First try to use the database task_priority for instant colors
+    if (lead.task_priority && lead.task_priority !== 999) {
+      switch (lead.task_priority) {
+        case 1:
+          return "bg-destructive hover:bg-destructive/80"; // Overdue - RED
+        case 2:
+          return "bg-warning hover:bg-warning/80"; // Today - ORANGE
+        case 3:
+          return "bg-yellow hover:bg-yellow/80"; // Tomorrow - YELLOW
+        case 4:
+          return "bg-success hover:bg-success/80"; // Week - GREEN
+        case 5:
+          return "bg-primary hover:bg-primary/80"; // Future - BLUE
+      }
     }
+    
+    // Fallback to task-based calculation for more precise timing if tasks are loaded
+    if (!tasksLoading && leadTasks && leadTasks.length > 0) {
+      const pendingTasks = leadTasks.filter(task => !task.done);
+      if (pendingTasks.length === 0) {
+        return "bg-success hover:bg-success/80"; // All completed
+      }
+
+      const earliestTask = pendingTasks.sort((a, b) => 
+        new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+      )[0];
+
+      const due = new Date(earliestTask.due_date);
+      const dueDay = new Date(due);
+      dueDay.setHours(0, 0, 0, 0);
+
+      const todayDate = new Date(now);
+      todayDate.setHours(0, 0, 0, 0);
+      
+      // Overdue by actual time
+      if (due.getTime() < now) {
+        return "bg-destructive hover:bg-destructive/80";
+      }
+
+      const daysDifference = Math.floor((dueDay.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysDifference === 0) {
+        return "bg-warning hover:bg-warning/80"; // Today
+      }
+      if (daysDifference === 1) {
+        return "bg-yellow hover:bg-yellow/80"; // Tomorrow
+      }
+      if (daysDifference <= 7) {
+        return "bg-success hover:bg-success/80"; // Week
+      }
+      return "bg-primary hover:bg-primary/80"; // Future
+    }
+    
+    // Default for no tasks or still loading
+    return "bg-muted hover:bg-muted/80";
   };
 
   const handleCardClick = () => {

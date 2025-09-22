@@ -64,19 +64,31 @@ export function useLeads() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      console.log('Fetching leads using database function for task-based sorting...');
       
-      // Use the new database function that returns leads sorted by task urgency
-      const { data, error } = await supabase
+      // First load leads quickly with basic data for immediate display
+      const { data: basicLeads, error: basicError } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (basicError) throw basicError;
+      
+      // Set basic leads immediately for fast rendering
+      setLeads(basicLeads || []);
+      
+      // Then enhance with task priority data for proper sorting
+      console.log('Fetching enhanced leads with task-based sorting...');
+      const { data: enhancedLeads, error: enhancedError } = await supabase
         .rpc('get_leads_sorted_by_task_urgency');
 
-      if (error) {
-        console.error('Error fetching sorted leads:', error);
-        throw error;
+      if (enhancedError) {
+        console.error('Error fetching sorted leads:', enhancedError);
+        // Keep basic leads if enhanced query fails
+        return;
       }
 
-      console.log(`Fetched ${data?.length || 0} leads with task-based sorting from database`);
-      setLeads(data || []);
+      console.log(`Fetched ${enhancedLeads?.length || 0} leads with task-based sorting from database`);
+      setLeads(enhancedLeads || []);
     } catch (error) {
       console.error('Error in fetchLeads:', error);
       toast({
