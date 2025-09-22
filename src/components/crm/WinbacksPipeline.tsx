@@ -573,25 +573,39 @@ export function WinbacksPipeline() {
 
 
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('🟢 Drag started:', event.active.id);
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (!over) return;
+    console.log('🔵 Drag ended:', { activeId: active.id, overId: over?.id, over });
+    
+    if (!over) {
+      console.log('❌ No drop target found');
+      setActiveId(null);
+      return;
+    }
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
     const activeLead = winbackLeads.find(lead => lead.id === activeId);
-    if (!activeLead) return;
+    if (!activeLead) {
+      console.log('❌ Active lead not found:', activeId);
+      setActiveId(null);
+      return;
+    }
 
     // Handle moving between winback stages or reactivating
     let newStage = activeLead.abandonReason;
     
+    console.log('🔍 Checking target stage:', overId);
+    
     const targetStage = winbackStages.find(stage => stage.id === overId);
     if (targetStage) {
+      console.log('✅ Found target stage:', targetStage.title);
       // Convert stage id back to abandon reason
       switch (targetStage.id) {
         case "never-reached":
@@ -608,10 +622,16 @@ export function WinbacksPipeline() {
           break;
       }
 
+      console.log('🔄 Stage change:', activeLead.abandonReason, '->', newStage);
+
       // Update the abandon reason in lead history if it changed
       if (newStage !== activeLead.abandonReason) {
         updateAbandonReason(activeId, newStage);
+      } else {
+        console.log('⚪ No change needed');
       }
+    } else {
+      console.log('❌ Target stage not found for id:', overId);
     }
 
     setActiveId(null);
@@ -764,19 +784,17 @@ export function WinbacksPipeline() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={winbackLeads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
-          {/* Pipeline Stages */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stagesWithLeads.map((stage) => (
-              <WinbackStage
-                key={stage.id}
-                stage={stage}
-                leads={stage.leads}
-                onReactivate={handleReactivate}
-              />
-            ))}
-          </div>
-        </SortableContext>
+        {/* Pipeline Stages */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stagesWithLeads.map((stage) => (
+            <WinbackStage
+              key={stage.id}
+              stage={stage}
+              leads={stage.leads}
+              onReactivate={handleReactivate}
+            />
+          ))}
+        </div>
 
         <DragOverlay>
           {activeId ? (
