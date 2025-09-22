@@ -55,11 +55,15 @@ export function useTasks() {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          leads!inner(status)
+        `)
+        .neq('leads.status', 'Lost')
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      console.log(`Fetched ${data?.length || 0} tasks`);
+      console.log(`Fetched ${data?.length || 0} tasks (excluding Lost leads)`);
       setTasks(data || []);
     } catch (error) {
       console.error('Error fetching tasks:', error);

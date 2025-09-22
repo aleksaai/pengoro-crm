@@ -12,11 +12,11 @@ export function useLeadTasks(leadId: string) {
     }
   }, [leadId]);
 
-  // Realtime updates for this lead's tasks
+  // Realtime updates for this lead's tasks and lead status
   useEffect(() => {
     if (!leadId) return;
 
-    const channel = supabase
+    const taskChannel = supabase
       .channel(`tasks-lead-${leadId}`)
       .on('postgres_changes', {
         event: '*',
@@ -24,19 +24,49 @@ export function useLeadTasks(leadId: string) {
         table: 'tasks',
         filter: `lead_id=eq.${leadId}`,
       }, (payload) => {
-        console.log("Real-time update received:", payload);
+        console.log("Real-time task update received:", payload);
+        fetchLeadTasks();
+      })
+      .subscribe();
+
+    const leadChannel = supabase
+      .channel(`lead-status-${leadId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'leads',
+        filter: `id=eq.${leadId}`,
+      }, (payload) => {
+        console.log("Real-time lead update received:", payload);
         fetchLeadTasks();
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(taskChannel);
+      supabase.removeChannel(leadChannel);
     };
   }, [leadId]);
 
   const fetchLeadTasks = async () => {
     console.log("fetchLeadTasks called for leadId:", leadId);
     try {
+      // First check if lead exists and get its status
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .select('status')
+        .eq('id', leadId)
+        .single();
+
+      if (leadError) throw leadError;
+
+      // If lead is in "Lost" status, return empty tasks array
+      if (lead?.status === 'Lost') {
+        console.log("fetchLeadTasks - lead is in Lost status, returning empty tasks");
+        setTasks([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
