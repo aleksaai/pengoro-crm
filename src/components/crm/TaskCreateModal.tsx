@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useTasks, Task } from "@/hooks/useTasks";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TaskCreateModalProps {
   open: boolean;
@@ -40,12 +41,68 @@ export function TaskCreateModal({
   const [dueDate, setDueDate] = useState<Date>();
   const [dueTime, setDueTime] = useState("09:00");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLostLead, setIsLostLead] = useState(false);
+  const [checkingLeadStatus, setCheckingLeadStatus] = useState(false);
   const { createTask } = useTasks();
   const { toast } = useToast();
+
+  // Check if lead is in Lost winback status when modal opens
+  useEffect(() => {
+    if (open && leadId) {
+      checkLeadWinbackStatus();
+    }
+  }, [open, leadId]);
+
+  const checkLeadWinbackStatus = async () => {
+    setCheckingLeadStatus(true);
+    try {
+      // Check if lead is abandoned/lost and get latest abandon reason
+      const { data: lead } = await supabase
+        .from('leads')
+        .select('status')
+        .eq('id', leadId)
+        .single();
+
+      if (lead && (lead.status === 'Abandoned' || lead.status === 'Lost')) {
+        // Get latest abandon reason from history
+        const { data: latestHistory } = await supabase
+          .from('lead_history')
+          .select('details')
+          .eq('lead_id', leadId)
+          .eq('action', 'Status Changed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestHistory?.details) {
+          const abandonReason = latestHistory.details.split(' - Reason: ')[1];
+          // If abandoned for reasons other than "Never reached" or "Future Call", it's in Lost status
+          const isInLostStatus = abandonReason && !['Never reached', 'Future Call'].includes(abandonReason);
+          setIsLostLead(isInLostStatus);
+        }
+      } else {
+        setIsLostLead(false);
+      }
+    } catch (error) {
+      console.error('Error checking lead status:', error);
+      setIsLostLead(false);
+    } finally {
+      setCheckingLeadStatus(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isLostLead) {
+      toast({
+        title: "Cannot Create Task",
+        description: "Cannot create tasks for leads in Lost status. Please reactivate the lead first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!title.trim() || !dueDate) {
       toast({
         title: "Error",
@@ -118,17 +175,36 @@ export function TaskCreateModal({
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Task Title *</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter task title..."
-              required
-            />
+        {checkingLeadStatus ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">Checking lead status...</div>
           </div>
+        ) : isLostLead ? (
+          <div className="space-y-4">
+            <div className="p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+              <p className="text-sm text-destructive font-medium">Cannot Create Task</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                This lead is in Lost status. Tasks can only be created when reactivating a lead from the Winbacks page.
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Close
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Task Title *</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter task title..."
+                required
+              />
+            </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
@@ -190,6 +266,7 @@ export function TaskCreateModal({
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
