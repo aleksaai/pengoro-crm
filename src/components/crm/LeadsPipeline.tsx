@@ -323,14 +323,6 @@ export function LeadsPipeline() {
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
   const [isInitialized, setIsInitialized] = useState(false);
   const { tasks: allTasks } = useTasks();
-  
-  // Debug: Log tasks loading
-  useEffect(() => {
-    console.log('[Pipeline Debug] Total tasks loaded:', allTasks.length);
-    if (allTasks.length > 0) {
-      console.log('[Pipeline Debug] Sample task:', allTasks[0]);
-    }
-  }, [allTasks]);
 
   // Get current user's full name for default filtering
   const currentUserName = profiles.find(p => p.user_id === user?.id)?.full_name || user?.email || '';
@@ -415,47 +407,31 @@ export function LeadsPipeline() {
   
   // Sort leads by task urgency within each stage
   const sortLeadsByTaskUrgency = (stageLeads: Lead[]) => {
-    console.log(`[Pipeline Sort] Starting sort for ${stageLeads.length} leads`);
-    
     return stageLeads.sort((a, b) => {
-      const aTasksForLead = allTasks.filter(task => task.lead_id === a.id);
-      const bTasksForLead = allTasks.filter(task => task.lead_id === b.id);
-      
-      console.log(`[Pipeline Sort] Comparing ${a.name} (${aTasksForLead.length} tasks) vs ${b.name} (${bTasksForLead.length} tasks)`);
+      const aTasksForLead = allTasks.filter(task => task.lead_id === a.id && !task.done);
+      const bTasksForLead = allTasks.filter(task => task.lead_id === b.id && !task.done);
       
       const aPriority = getTaskSortingPriority(aTasksForLead);
       const bPriority = getTaskSortingPriority(bTasksForLead);
       
-      console.log(`[Pipeline Sort] Priorities: ${a.name}=${aPriority.priority}, ${b.name}=${bPriority.priority}`);
-      
       // First sort by priority (lower number = higher priority)
       if (aPriority.priority !== bPriority.priority) {
-        const result = aPriority.priority - bPriority.priority;
-        console.log(`[Pipeline Sort] Different priorities, result: ${result}`);
-        return result;
+        return aPriority.priority - bPriority.priority;
       }
       
       // If same priority, sort by due time (earlier time first)
-      const result = aPriority.dueTime - bPriority.dueTime;
-      console.log(`[Pipeline Sort] Same priority, sorting by time, result: ${result}`);
-      return result;
+      if (aPriority.dueTime && bPriority.dueTime) {
+        return aPriority.dueTime - bPriority.dueTime;
+      }
+      
+      // Fallback to created_at for consistent ordering
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
   };
   
   const stagesWithLeads = leadStages.map(stage => {
     const stageLeads = filteredLeads.filter(lead => lead.status === stage.id);
-    
-    // Debug: Log before sorting
-    console.log(`[Pipeline Debug] Stage "${stage.id}": ${stageLeads.length} leads before sorting`);
-    stageLeads.forEach(lead => {
-      const leadTasks = allTasks.filter(task => task.lead_id === lead.id);
-      console.log(`[Pipeline Debug] Lead "${lead.name}": ${leadTasks.length} tasks`);
-    });
-    
     const sortedLeads = sortLeadsByTaskUrgency(stageLeads);
-    
-    // Debug: Log after sorting
-    console.log(`[Pipeline Debug] Stage "${stage.id}": leads after sorting:`, sortedLeads.map(l => l.name));
     
     return {
       ...stage,
