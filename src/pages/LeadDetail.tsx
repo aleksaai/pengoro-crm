@@ -241,6 +241,42 @@ export default function LeadDetail() {
   // Handle task completion with new task creation
   const handleCompleteTask = async (taskId: string, newTaskData: any) => {
     try {
+      // Check if lead is in Lost winback status
+      if (lead && (lead.status === 'Abandoned' || lead.status === 'Lost')) {
+        try {
+          const { data: latestHistory } = await supabase
+            .from('lead_history')
+            .select('details')
+            .eq('lead_id', lead.id)
+            .in('action', ['Lead Abandoned', 'Abandon Reason Updated'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (latestHistory?.details) {
+            const abandonReason = latestHistory.details.includes('Reason: ') 
+              ? latestHistory.details.split('Reason: ')[1]
+              : latestHistory.details.includes('Reason changed to: ')
+                ? latestHistory.details.split('Reason changed to: ')[1]
+                : null;
+            
+            // If abandoned for reasons other than "Never reached" or "Future Call", it's in Lost status
+            const isInLostStatus = abandonReason && !['Never reached', 'Future Call'].includes(abandonReason);
+            
+            if (isInLostStatus) {
+              toast({
+                title: "Cannot Create Task",
+                description: "Cannot create tasks for leads in Lost winback status. Please reactivate the lead first.",
+                variant: "destructive"
+              });
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking winback status:', error);
+        }
+      }
+      
       // First, mark the current task as done
       await updateTask(taskId, { done: true });
       

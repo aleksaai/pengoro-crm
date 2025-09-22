@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { TaskCreateModal } from "./TaskCreateModal";
 import { TaskCompletionModal } from "./TaskCompletionModal";
+import { supabase } from "@/integrations/supabase/client";
 import type { Lead } from "@/hooks/useLeads";
 import type { Task } from "@/hooks/useTasks";
 import { getTaskUrgencyLevel } from "@/lib/utils";
@@ -26,11 +27,49 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isLostWinback, setIsLostWinback] = useState(false);
   
   const { tasks, loading, updateTask, createTask, refetch } = useLeadTasks(lead.id);
   const { user } = useAuth();
   const { isAdmin, isSuperAdmin } = usePermissions();
   const { toast } = useToast();
+
+  // Check if lead is in Lost winback status
+  const checkWinbackStatus = async () => {
+    if (lead.status === 'Abandoned' || lead.status === 'Lost') {
+      try {
+        const { data: latestHistory } = await supabase
+          .from('lead_history')
+          .select('details')
+          .eq('lead_id', lead.id)
+          .in('action', ['Lead Abandoned', 'Abandon Reason Updated'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestHistory?.details) {
+          const abandonReason = latestHistory.details.includes('Reason: ') 
+            ? latestHistory.details.split('Reason: ')[1]
+            : latestHistory.details.includes('Reason changed to: ')
+              ? latestHistory.details.split('Reason changed to: ')[1]
+              : null;
+          
+          // If abandoned for reasons other than "Never reached" or "Future Call", it's in Lost status
+          const isInLostStatus = abandonReason && !['Never reached', 'Future Call'].includes(abandonReason);
+          setIsLostWinback(isInLostStatus);
+        }
+      } catch (error) {
+        console.error('Error checking winback status:', error);
+      }
+    }
+  };
+
+  // Check winback status when modal opens
+  React.useEffect(() => {
+    if (open) {
+      checkWinbackStatus();
+    }
+  }, [open, lead.id]);
 
   // Check if current user can edit this frozen lead
   const canEditFrozenLead = lead.is_frozen ? isSuperAdmin : true;
@@ -69,6 +108,14 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   };
 
   const handleMarkAsDone = async (task: Task) => {
+    if (isLostWinback) {
+      toast({
+        title: "Cannot Complete Task", 
+        description: "Cannot modify tasks for leads in Lost winback status. Please reactivate the lead first.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (isEditingRestricted) {
       toast({
         title: "Access Restricted",
@@ -96,6 +143,14 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   };
 
   const handleCompleteWithNewTask = (task: Task) => {
+    if (isLostWinback) {
+      toast({
+        title: "Cannot Complete Task", 
+        description: "Cannot modify tasks for leads in Lost winback status. Please reactivate the lead first.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (isEditingRestricted) {
       toast({
         title: "Access Restricted",
@@ -169,6 +224,14 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                 <h3 className="text-lg font-medium">Pending Tasks</h3>
                 <Button
                   onClick={() => {
+                    if (isLostWinback) {
+                      toast({
+                        title: "Cannot Create Task",
+                        description: "Cannot create tasks for leads in Lost winback status. Please reactivate the lead first.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
                     if (isEditingRestricted) {
                       toast({
                         title: "Access Restricted",
@@ -181,18 +244,24 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                   }}
                   size="sm"
                   className="gap-2"
-                  disabled={isEditingRestricted}
+                  disabled={isEditingRestricted || isLostWinback}
                 >
                   <Plus className="w-4 h-4" />
                   Add Task
                 </Button>
               </div>
               
-              {isEditingRestricted && (
+              {(isEditingRestricted || isLostWinback) && (
                 <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 space-y-3">
-                  <p className="text-sm text-warning">
-                    ⚠️ This lead is frozen due to overdue tasks. Only Super Admins can manage tasks for frozen leads.
-                  </p>
+                  {isLostWinback ? (
+                    <p className="text-sm text-warning">
+                      ⚠️ This lead is in Lost winback status. Tasks can only be created when reactivating from the Winbacks page.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-warning">
+                      ⚠️ This lead is frozen due to overdue tasks. Only Super Admins can manage tasks for frozen leads.
+                    </p>
+                  )}
                   
                   {showMeetingRequest && (
                     <Button
@@ -253,7 +322,7 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleMarkAsDone(task)}
-                                disabled={isEditingRestricted}
+                                disabled={isEditingRestricted || isLostWinback}
                               >
                                 Mark Done
                               </Button>
@@ -261,7 +330,7 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                               <Button
                                 size="sm"
                                 onClick={() => handleCompleteWithNewTask(task)}
-                                disabled={isEditingRestricted}
+                                disabled={isEditingRestricted || isLostWinback}
                               >
                                 Complete & Add Next Task
                               </Button>

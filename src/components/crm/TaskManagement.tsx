@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { TaskCreateModal } from "./TaskCreateModal";
 import { TaskCompletionModal } from "./TaskCompletionModal";
+import { supabase } from "@/integrations/supabase/client";
 import { getTaskUrgencyLevel } from "@/lib/utils";
 
 // Task interface is now imported from useTasks hook
@@ -121,6 +122,43 @@ export function TaskManagement() {
 
   const handleMarkAsDone = async (task: any) => {
     const lead = leads.find(l => l.id === task.lead_id);
+    
+    // Check if lead is in Lost winback status
+    if (lead && (lead.status === 'Abandoned' || lead.status === 'Lost')) {
+      try {
+        const { data: latestHistory } = await supabase
+          .from('lead_history')
+          .select('details')
+          .eq('lead_id', lead.id)
+          .in('action', ['Lead Abandoned', 'Abandon Reason Updated'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestHistory?.details) {
+          const abandonReason = latestHistory.details.includes('Reason: ') 
+            ? latestHistory.details.split('Reason: ')[1]
+            : latestHistory.details.includes('Reason changed to: ')
+              ? latestHistory.details.split('Reason changed to: ')[1]
+              : null;
+          
+          // If abandoned for reasons other than "Never reached" or "Future Call", it's in Lost status
+          const isInLostStatus = abandonReason && !['Never reached', 'Future Call'].includes(abandonReason);
+          
+          if (isInLostStatus) {
+            toast({
+              title: "Cannot Modify Task",
+              description: "Cannot modify tasks for leads in Lost winback status. Please reactivate the lead first.",
+              variant: "destructive"
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking winback status:', error);
+      }
+    }
+    
     if (lead?.is_frozen && !isSuperAdmin) {
       toast({
         title: "Action Restricted",
