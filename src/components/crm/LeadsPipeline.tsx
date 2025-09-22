@@ -408,11 +408,21 @@ export function LeadsPipeline() {
   // Sort leads by task urgency within each stage
   const sortLeadsByTaskUrgency = (stageLeads: Lead[]) => {
     return stageLeads.sort((a, b) => {
-      const aTasksForLead = allTasks.filter(task => task.lead_id === a.id && !task.done);
-      const bTasksForLead = allTasks.filter(task => task.lead_id === b.id && !task.done);
+      // Get ALL tasks for each lead (not just incomplete ones)
+      const aTasksForLead = allTasks.filter(task => task.lead_id === a.id);
+      const bTasksForLead = allTasks.filter(task => task.lead_id === b.id);
       
       const aPriority = getTaskSortingPriority(aTasksForLead);
       const bPriority = getTaskSortingPriority(bTasksForLead);
+      
+      console.log(`[SORTING] ${a.name} vs ${b.name}:`, {
+        aTaskCount: aTasksForLead.length,
+        bTaskCount: bTasksForLead.length,
+        aPriority: aPriority.priority,
+        bPriority: bPriority.priority,
+        aDueTime: new Date(aPriority.dueTime).toISOString(),
+        bDueTime: new Date(bPriority.dueTime).toISOString()
+      });
       
       // First sort by priority (lower number = higher priority)
       if (aPriority.priority !== bPriority.priority) {
@@ -420,18 +430,16 @@ export function LeadsPipeline() {
       }
       
       // If same priority, sort by due time (earlier time first)
-      if (aPriority.dueTime && bPriority.dueTime) {
-        return aPriority.dueTime - bPriority.dueTime;
-      }
-      
-      // Fallback to created_at for consistent ordering
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return aPriority.dueTime - bPriority.dueTime;
     });
   };
   
   const stagesWithLeads = leadStages.map(stage => {
     const stageLeads = filteredLeads.filter(lead => lead.status === stage.id);
     const sortedLeads = sortLeadsByTaskUrgency(stageLeads);
+    
+    console.log(`[PIPELINE] Stage ${stage.id} has ${stageLeads.length} leads, total tasks: ${allTasks.length}`);
+    console.log(`[PIPELINE] Sorted order for ${stage.id}:`, sortedLeads.map(l => l.name));
     
     return {
       ...stage,
