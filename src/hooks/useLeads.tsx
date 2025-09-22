@@ -20,8 +20,6 @@ export interface Lead {
   id_document_path?: string;
   id_document_back_path?: string;
   is_frozen?: boolean;
-  task_priority?: number;
-  earliest_due_time?: string;
 }
 
 export interface LeadNote {
@@ -64,31 +62,19 @@ export function useLeads() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
+      console.log('Fetching leads using database function for task-based sorting...');
       
-      // First load leads quickly with basic data for immediate display
-      const { data: basicLeads, error: basicError } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (basicError) throw basicError;
-      
-      // Set basic leads immediately for fast rendering
-      setLeads(basicLeads || []);
-      
-      // Then enhance with task priority data for proper sorting
-      console.log('Fetching enhanced leads with task-based sorting...');
-      const { data: enhancedLeads, error: enhancedError } = await supabase
+      // Use the new database function that returns leads sorted by task urgency
+      const { data, error } = await supabase
         .rpc('get_leads_sorted_by_task_urgency');
 
-      if (enhancedError) {
-        console.error('Error fetching sorted leads:', enhancedError);
-        // Keep basic leads if enhanced query fails
-        return;
+      if (error) {
+        console.error('Error fetching sorted leads:', error);
+        throw error;
       }
 
-      console.log(`Fetched ${enhancedLeads?.length || 0} leads with task-based sorting from database`);
-      setLeads(enhancedLeads || []);
+      console.log(`Fetched ${data?.length || 0} leads with task-based sorting from database`);
+      setLeads(data || []);
     } catch (error) {
       console.error('Error in fetchLeads:', error);
       toast({
