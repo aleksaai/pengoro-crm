@@ -372,57 +372,93 @@ export function WinbacksPipeline() {
           .eq('user_id', userData.user?.id)
           .single();
 
-        let cleanedCount = 0;
+    // Cleanup function to delete tasks for leads in "Lost" winback status
+    const cleanupLostLeadTasks = async (winbackLeads: LeadWithReason[]) => {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', userData.user?.id)
+          .single();
 
-        for (const lead of winbackLeads) {
-          // Check if lead is in "Lost" status (not "Never reached" or "Future Call")
-          if (lead.abandonReason && !['Never reached', 'Future Call'].includes(lead.abandonReason)) {
-            const { data: existingTasks, error: tasksError } = await supabase
-              .from('tasks')
-              .select('id')
-              .eq('lead_id', lead.id);
+        // Get all lead IDs that are in "Lost" status (not "Never reached" or "Future Call")
+        const lostLeadIds = winbackLeads
+          .filter(lead => lead.abandonReason && !['Never reached', 'Future Call'].includes(lead.abandonReason))
+          .map(lead => lead.id);
 
-            if (tasksError) {
-              console.error('Error checking tasks for lead:', lead.name, tasksError);
-              continue;
-            }
-
-            if (existingTasks && existingTasks.length > 0) {
-              console.log(`🧹 Cleaning up ${existingTasks.length} tasks for Lost lead: ${lead.name}`);
-              
-              const { error: deleteError } = await supabase
-                .from('tasks')
-                .delete()
-                .eq('lead_id', lead.id);
-
-              if (deleteError) {
-                console.error('Error deleting tasks for lead:', lead.name, deleteError);
-              } else {
-                cleanedCount += existingTasks.length;
-                console.log(`✅ Deleted ${existingTasks.length} tasks for Lost lead: ${lead.name}`);
-                
-                // Log cleanup in history
-                await supabase
-                  .from('lead_history')
-                  .insert({
-                    lead_id: lead.id,
-                    action: 'Tasks Cleaned Up',
-                    details: `Deleted ${existingTasks.length} existing tasks - Lead in Lost winback status (${lead.abandonReason})`,
-                    created_by: userData.user?.id,
-                    user_name: userProfile?.full_name || 'System'
-                  });
-              }
-            }
-          }
+        if (lostLeadIds.length === 0) {
+          console.log('✅ No Lost winback leads found - no cleanup needed');
+          return;
         }
 
-        if (cleanedCount > 0) {
-          console.log(`✅ Cleanup complete: Deleted ${cleanedCount} tasks from Lost winback leads`);
+        // Single batch query to get all tasks for Lost leads
+        const { data: existingTasks, error: tasksError } = await supabase
+          .from('tasks')
+          .select('id, lead_id')
+          .in('lead_id', lostLeadIds);
+
+        if (tasksError) {
+          console.error('Error fetching tasks for Lost leads cleanup:', tasksError);
+          return;
+        }
+
+        if (!existingTasks || existingTasks.length === 0) {
+          console.log('✅ No tasks found for Lost winback leads - no cleanup needed');
+          return;
+        }
+
+        console.log(`🧹 Found ${existingTasks.length} tasks to clean up from ${lostLeadIds.length} Lost leads`);
+        
+        // Single batch delete for all tasks
+        const taskIds = existingTasks.map(task => task.id);
+        const { error: deleteError } = await supabase
+          .from('tasks')
+          .delete()
+          .in('id', taskIds);
+
+        if (deleteError) {
+          console.error('Error batch deleting tasks for Lost leads:', deleteError);
+          return;
+        }
+
+        console.log(`✅ Successfully deleted ${existingTasks.length} tasks from Lost winback leads`);
+        
+        // Group tasks by lead for history logging
+        const tasksByLead = existingTasks.reduce((acc, task) => {
+          if (!acc[task.lead_id]) acc[task.lead_id] = [];
+          acc[task.lead_id].push(task);
+          return acc;
+        }, {} as Record<string, any[]>);
+
+        // Batch insert history entries
+        const historyEntries = Object.entries(tasksByLead).map(([leadId, tasks]) => {
+          const lead = winbackLeads.find(l => l.id === leadId);
+          return {
+            lead_id: leadId,
+            action: 'Tasks Cleaned Up',
+            details: `Deleted ${tasks.length} existing tasks - Lead in Lost winback status (${lead?.abandonReason || 'Unknown'})`,
+            created_by: userData.user?.id,
+            user_name: userProfile?.full_name || 'System'
+          };
+        });
+
+        if (historyEntries.length > 0) {
+          await supabase
+            .from('lead_history')
+            .insert(historyEntries);
+        }
+
+        if (existingTasks.length > 0) {
           toast({
             title: "Tasks Cleaned Up",
-            description: `Removed ${cleanedCount} existing tasks from Lost winback leads`,
+            description: `Removed ${existingTasks.length} existing tasks from Lost winback leads`,
           });
         }
+      } catch (error) {
+        console.error('Error during Lost lead tasks cleanup:', error);
+      }
+    };
       } catch (error) {
         console.error('Error during Lost lead tasks cleanup:', error);
       }
