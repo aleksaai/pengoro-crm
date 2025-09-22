@@ -70,9 +70,6 @@ export function getTaskSortingPriority(tasks: any[]): { priority: number; dueTim
   };
 
   const priority = priorityMap[urgencyLevel] || 6;
-  
-  // Debug logging for task priority calculation
-  console.log(`[Task Priority] Lead tasks: ${tasks.length}, pending: ${pendingTasks.length}, earliest: "${earliestTask.title}" due ${new Date(earliestTask.due_date).toISOString()}, urgency: ${urgencyLevel}, priority: ${priority}`);
 
   return { 
     priority, 
