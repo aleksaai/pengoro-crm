@@ -383,9 +383,79 @@ export default function LeadDetail() {
 
   const handleSave = async () => {
     if (editedLead) {
-      await updateLead(lead.id, editedLead);
-      setIsEditing(false);
-      setEditedLead(null);
+      try {
+        const from = location.state?.from;
+        
+        // If we're in winbacks, handle status changes differently
+        if (from === 'winbacks') {
+          // Don't update the status directly, instead update abandon reason
+          const { status, ...leadUpdates } = editedLead;
+          
+          // Update other lead fields but not status
+          if (Object.keys(leadUpdates).length > 0) {
+            await updateLead(lead.id, leadUpdates);
+          }
+          
+          // If status changed, handle as abandon reason update
+          if (status && status !== lead.status) {
+            let newReason = '';
+            switch (status) {
+              case 'never-reached':
+                newReason = 'Never reached';
+                break;
+              case 'future-call':
+                newReason = 'Future Call';
+                break;
+              case 'lost':
+                newReason = 'Bad Lead Quality';
+                break;
+              case 'cold-leads':
+                newReason = 'No Interest';
+                break;
+              default:
+                // If it's a valid lead status, update normally
+                await updateLead(lead.id, { status });
+                setIsEditing(false);
+                setEditedLead(null);
+                return;
+            }
+            
+            // Update abandon reason via history
+            const { data: userData } = await supabase.auth.getUser();
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('user_id', userData.user?.id)
+              .single();
+
+            await supabase.from('lead_history').insert({
+              lead_id: lead.id,
+              action: 'Abandon Reason Updated',
+              details: `Reason changed to: ${newReason}`,
+              user_name: userProfile?.full_name || 'Unknown User',
+              created_by: userData.user?.id,
+            });
+            
+            toast({
+              title: "Success",
+              description: "Lead stage updated successfully",
+            });
+          }
+        } else {
+          // Normal lead update for non-winback pipelines
+          await updateLead(lead.id, editedLead);
+        }
+        
+        setIsEditing(false);
+        setEditedLead(null);
+      } catch (error) {
+        console.error('Error saving lead:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save changes. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
