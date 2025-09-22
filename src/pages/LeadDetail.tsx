@@ -632,13 +632,34 @@ export default function LeadDetail() {
   };
 
   const getStageOptions = () => {
-    return [
-      { value: "New", label: "New Leads" },
-      { value: "Not Reached", label: "Not Reached" },
-      { value: "Webinar Confirmed", label: "Webinar Confirmed" },
-      { value: "Call-Back", label: "Call-Back Scheduled" },
-      { value: "Abandoned", label: "Abandoned" },
-    ];
+    const from = location.state?.from;
+    
+    switch (from) {
+      case 'pipeline':
+        return [
+          { value: "Discovery Call Booked", label: "Discovery Call" },
+          { value: "Second Meeting Booked", label: "Second Meeting" },
+          { value: "Follow-Up Scheduled", label: "Follow-Up" },
+          { value: "Closing Call Scheduled", label: "Closing Call" },
+          { value: "Stuck", label: "Stuck" },
+        ];
+      case 'winbacks':
+        return [
+          { value: "never-reached", label: "Never Reached" },
+          { value: "future-call", label: "Future Call" },
+          { value: "lost", label: "Lost" },
+          { value: "cold-leads", label: "Cold Leads" },
+        ];
+      case 'leads':
+      default:
+        return [
+          { value: "New", label: "New Leads" },
+          { value: "Not Reached", label: "Not Reached" },
+          { value: "Webinar Confirmed", label: "Webinar Confirmed" },
+          { value: "Call-Back", label: "Call-Back Scheduled" },
+          { value: "Abandoned", label: "Abandoned" },
+        ];
+    }
   };
 
   const getInitials = (name: string) => {
