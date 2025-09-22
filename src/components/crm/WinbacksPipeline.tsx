@@ -12,6 +12,7 @@ import { useProfiles } from "@/hooks/useProfiles";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TaskCreateModal } from "@/components/crm/TaskCreateModal";
 import {
   DndContext,
   DragEndEvent,
@@ -197,6 +198,8 @@ export function WinbacksPipeline() {
   const [winbackLeads, setWinbackLeads] = useState<LeadWithReason[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showTaskCreateModal, setShowTaskCreateModal] = useState(false);
+  const [selectedLeadForTask, setSelectedLeadForTask] = useState<LeadWithReason | null>(null);
   const { leads, updateLead } = useLeads();
   const { user } = useAuth();
   const { isSuperAdmin } = usePermissions();
@@ -402,6 +405,25 @@ export function WinbacksPipeline() {
 
   const handleReactivate = async (leadId: string) => {
     try {
+      // First check if the lead has any tasks
+      const { data: existingTasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('lead_id', leadId);
+
+      if (tasksError) throw tasksError;
+
+      // If no tasks exist, require task creation first
+      if (!existingTasks || existingTasks.length === 0) {
+        const leadToReactivate = winbackLeads.find(lead => lead.id === leadId);
+        if (leadToReactivate) {
+          setSelectedLeadForTask(leadToReactivate);
+          setShowTaskCreateModal(true);
+          return;
+        }
+      }
+
+      // If tasks exist, proceed with reactivation
       await updateLead(leadId, { status: "Discovery Call Booked" });
       
       const { data: userData } = await supabase.auth.getUser();
@@ -492,6 +514,35 @@ export function WinbacksPipeline() {
         .eq('user_id', userData.user?.id)
         .single();
 
+      // Check if moving to "Lost" stage (any reason that's not "Never reached" or "Future Call")
+      const isMovingToLost = !['Never reached', 'Future Call'].includes(newReason);
+      
+      if (isMovingToLost) {
+        // Delete all tasks for this lead when moving to Lost stage
+        const { error: deleteTasksError } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('lead_id', leadId);
+
+        if (deleteTasksError) {
+          console.error('❌ Error deleting tasks:', deleteTasksError);
+          throw deleteTasksError;
+        }
+
+        console.log(`✅ Deleted all tasks for lead ${leadId} (moved to Lost stage)`);
+        
+        // Log task deletion in history
+        await supabase
+          .from('lead_history')
+          .insert({
+            lead_id: leadId,
+            action: 'Tasks Deleted',
+            details: 'All tasks deleted - Lead moved to Lost stage',
+            created_by: userData.user?.id,
+            user_name: userProfile?.full_name || 'Unknown User'
+          });
+      }
+
       // Add new history entry with updated reason
       const { error: historyError } = await supabase
         .from('lead_history')
@@ -521,7 +572,7 @@ export function WinbacksPipeline() {
       
       toast({
         title: "Lead Moved",
-        description: `Lead moved to ${newReason} stage`,
+        description: `Lead moved to ${newReason} stage${isMovingToLost ? ' - All tasks deleted' : ''}`,
       });
       
     } catch (error) {
@@ -543,6 +594,16 @@ export function WinbacksPipeline() {
       </div>
     );
   }
+
+  const handleTaskCreated = () => {
+    setShowTaskCreateModal(false);
+    setSelectedLeadForTask(null);
+    
+    // Now proceed with reactivation since task was created
+    if (selectedLeadForTask) {
+      handleReactivate(selectedLeadForTask.id);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -610,6 +671,24 @@ export function WinbacksPipeline() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Task Creation Modal */}
+      {selectedLeadForTask && user && (
+        <TaskCreateModal
+          open={showTaskCreateModal}
+          onOpenChange={(open) => {
+            setShowTaskCreateModal(open);
+            if (!open) setSelectedLeadForTask(null);
+          }}
+          leadId={selectedLeadForTask.id}
+          leadName={selectedLeadForTask.name}
+          leadEmail={selectedLeadForTask.email}
+          leadPhone={selectedLeadForTask.phone}
+          currentUserId={user.id}
+          currentUserName={profiles.find(p => p.user_id === user.id)?.full_name || user.email || "Unknown User"}
+          onTaskCreated={handleTaskCreated}
+        />
+      )}
     </div>
   );
 }
