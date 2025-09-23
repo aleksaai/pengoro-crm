@@ -61,7 +61,7 @@ export function useLeadTasks(leadId: string) {
   const fetchLeadTasks = async () => {
     console.log("fetchLeadTasks called for leadId:", leadId);
     try {
-      // First check if lead exists and get its status
+      // First check if lead exists and get its status and history
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .select('status')
@@ -70,11 +70,26 @@ export function useLeadTasks(leadId: string) {
 
       if (leadError) throw leadError;
 
-      // If lead is in "Lost" status, return empty tasks array
+      // If lead is in "Lost" status, check if it's a winback lead that should allow tasks
       if (lead?.status === 'Lost') {
-        console.log("fetchLeadTasks - lead is in Lost status, returning empty tasks");
-        setTasks([]);
-        return;
+        // Check if this is a winback lead with "Future Call" abandon reason
+        const { data: historyData } = await supabase
+          .from('lead_history')
+          .select('details')
+          .eq('lead_id', leadId)
+          .in('action', ['Lead Abandoned', 'Abandon Reason Updated'])
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const abandonReason = historyData?.[0]?.details;
+        const isFutureCallWinback = abandonReason?.includes('Future Call');
+        
+        if (!isFutureCallWinback) {
+          console.log("fetchLeadTasks - lead is in Lost status, returning empty tasks");
+          setTasks([]);
+          return;
+        }
+        console.log("fetchLeadTasks - Lost lead with Future Call reason, allowing tasks");
       }
 
       const { data, error } = await supabase
