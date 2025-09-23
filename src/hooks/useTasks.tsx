@@ -159,11 +159,64 @@ export function useTasks() {
     }
   };
 
+  const deleteTask = async (taskId: string) => {
+    console.log('Deleting task:', taskId);
+    try {
+      // Get the task details before deletion
+      const taskToDelete = tasks.find(task => task.id === taskId);
+      if (!taskToDelete) {
+        throw new Error('Task not found');
+      }
+
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Supabase error deleting task:', error);
+        throw error;
+      }
+
+      console.log('Task deleted successfully:', taskId);
+      
+      // Add history entry for task deletion
+      if (taskToDelete.lead_id) {
+        console.log('Adding task deletion to lead history');
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', userData.user?.id)
+          .single();
+
+        await supabase.from('lead_history').insert({
+          lead_id: taskToDelete.lead_id,
+          action: 'Task Deleted',
+          details: `Task "${taskToDelete.title}" (due: ${new Date(taskToDelete.due_date).toLocaleDateString()}) has been deleted`,
+          user_name: profileData?.full_name || 'Unknown User',
+          created_by: userData.user?.id,
+        });
+        console.log('Lead history entry added for task deletion');
+      }
+      
+      // Update local state immediately for responsiveness
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      console.log('Local task state updated');
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      throw error;
+    }
+  };
+
   return {
     tasks,
     loading,
     createTask,
     updateTask,
+    deleteTask,
     refetch: fetchTasks
   };
 }

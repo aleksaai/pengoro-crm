@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Clock, CheckCircle, Calendar, User, AlertTriangle, Filter } from "lucide-react";
+import { Plus, Clock, CheckCircle, Calendar, User, AlertTriangle, Filter, Trash2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -29,7 +29,7 @@ import { getTaskUrgencyLevel } from "@/lib/utils";
 
 export function TaskManagement() {
   const navigate = useNavigate();
-  const { tasks, loading: tasksLoading, createTask, updateTask } = useTasks();
+  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask } = useTasks();
   const { leads } = useLeads();
   const { profiles } = useProfiles();
   const { user } = useAuth();
@@ -248,6 +248,23 @@ export function TaskManagement() {
     }
   };
 
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+      toast({
+        title: "Success",
+        description: "Task deleted successfully"
+      });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Filter tasks based on status and assigned person
   const filteredTasks = tasks.filter(task => {
     // Status filter
@@ -433,47 +450,73 @@ export function TaskManagement() {
                             
                             return (
                               <>
-                                         <Button
-                                           variant="outline"
-                                           size="sm"
-                                           onClick={(e) => {
-                                             e.stopPropagation();
-                                             handleMarkAsDone(task);
-                                           }}
-                                           disabled={lead?.is_frozen && !isSuperAdmin || isOnlyActiveTask}
-                                           title={isOnlyActiveTask ? "Cannot mark as done - this is the only active task for this lead" : ""}
-                                         >
-                                           Mark Done
-                                         </Button>
-                                         <Button
-                                           variant="default"
-                                           size="sm"
-                                           onClick={(e) => {
-                                             e.stopPropagation();
-                                             setSelectedTask(task);
-                                             setShowCompletionModal(true);
-                                           }}
-                                           disabled={lead?.is_frozen && !isSuperAdmin}
-                                         >
-                                           {isOnlyActiveTask ? "Complete & Add Next" : "Complete & Add Next"}
-                                         </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleMarkAsDone(task);
+                                            }}
+                                            disabled={lead?.is_frozen && !isSuperAdmin || isOnlyActiveTask}
+                                            title={isOnlyActiveTask ? "Cannot mark as done - this is the only active task for this lead" : ""}
+                                          >
+                                            Mark Done
+                                          </Button>
+                                          <Button
+                                            variant="default"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedTask(task);
+                                              setShowCompletionModal(true);
+                                            }}
+                                            disabled={lead?.is_frozen && !isSuperAdmin}
+                                          >
+                                            {isOnlyActiveTask ? "Complete & Add Next" : "Complete & Add Next"}
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteTask(task.id);
+                                            }}
+                                            disabled={lead?.is_frozen && !isSuperAdmin}
+                                            className="text-destructive hover:text-destructive"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
                               </>
                             );
                           })()}
                         </>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkAsDone(task);
-                          }}
-                          disabled={lead?.is_frozen && !isSuperAdmin}
-                        >
-                          Reopen Task
-                        </Button>
-                      )}
+                       ) : (
+                         <>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleMarkAsDone(task);
+                             }}
+                             disabled={lead?.is_frozen && !isSuperAdmin}
+                           >
+                             Reopen Task
+                           </Button>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleDeleteTask(task.id);
+                             }}
+                             disabled={lead?.is_frozen && !isSuperAdmin}
+                             className="text-destructive hover:text-destructive"
+                           >
+                             <Trash2 className="w-4 h-4" />
+                           </Button>
+                         </>
+                       )}
                     </div>
                   </div>
                 </CardContent>
