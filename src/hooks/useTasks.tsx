@@ -63,18 +63,55 @@ export function useTasks() {
   const fetchTasks = async () => {
     console.log('Fetching all tasks...');
     try {
-      const { data, error } = await supabase
+      // First get all tasks with lead status
+      const { data: allTasks, error } = await supabase
         .from('tasks')
         .select(`
           *,
           leads!inner(status)
         `)
-        .neq('leads.status', 'Lost')
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      console.log(`Fetched ${data?.length || 0} tasks (excluding Lost leads)`);
-      setTasks(data || []);
+
+      // Filter out tasks from Lost leads, except those with "Future Call" abandon reason
+      const filteredTasks = [];
+      
+      for (const task of allTasks || []) {
+        if (task.leads.status !== 'Lost') {
+          filteredTasks.push(task);
+        } else {
+          // For Lost leads, check if they have "Future Call" abandon reason
+          try {
+            const { data: historyData } = await supabase
+              .from('lead_history')
+              .select('details')
+              .eq('lead_id', task.lead_id)
+              .in('action', ['Lead Abandoned', 'Abandon Reason Updated'])
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
+            if (historyData?.details) {
+              const abandonReason = historyData.details.includes('Reason: ') 
+                ? historyData.details.split('Reason: ')[1]
+                : historyData.details.includes('Reason changed to: ')
+                  ? historyData.details.split('Reason changed to: ')[1]
+                  : null;
+              
+              // Include tasks for Lost leads with "Future Call" abandon reason
+              if (abandonReason === 'Future Call') {
+                filteredTasks.push(task);
+              }
+            }
+          } catch (historyError) {
+            console.log('No abandon reason found for Lost lead, skipping task');
+          }
+        }
+      }
+
+      console.log(`Fetched ${filteredTasks.length} tasks (including Future Call winbacks)`);
+      setTasks(filteredTasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
