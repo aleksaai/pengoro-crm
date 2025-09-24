@@ -949,7 +949,7 @@ export default function LeadDetail() {
                                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                                       <span>Due: {new Date(task.due_date).toLocaleString()}</span>
                                       <span className="hidden sm:inline">•</span>
-                                      <span>Assigned to: {registeredUsers.find(u => u.id === task.assigned_to)?.full_name || 'Unknown User'}</span>
+                                      <span>Assigned to: {currentLead.assigned_to || 'Unassigned'}</span>
                                     </div>
                                   </div>
 
