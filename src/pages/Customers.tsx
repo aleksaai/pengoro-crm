@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro, MoreHorizontal, X, Repeat } from "lucide-react";
+import { Search, Mail, Phone, UserCheck, Filter, Plus, Trash2, Euro, MoreHorizontal, X, Repeat, CheckSquare } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { useCustomerProducts } from "@/hooks/useCustomerProducts";
@@ -17,9 +17,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { AddCustomerProductDialog } from "@/components/crm/AddCustomerProductDialog";
 import { LeadDetailsModal } from "@/components/crm/LeadDetailsModal";
 import { CustomerProductsBreakdown } from "@/components/crm/CustomerProductsBreakdown";
+import { LeadTasksModal } from "@/components/crm/LeadTasksModal";
 
 export default function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState<Lead | null>(null);
+  const [selectedCustomerForTasks, setSelectedCustomerForTasks] = useState<Lead | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [customerTimelines, setCustomerTimelines] = useState<Map<string, {createdAt: string, closedAt: string, cycleDuration: string}>>(new Map());
   const { leads, updateLead, createLead } = useLeads();
@@ -458,12 +460,19 @@ export default function Customers() {
                             <Repeat className="mr-2 h-4 w-4" />
                             New Deal
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleCustomerClick(customer)}
-                            className="cursor-pointer"
-                          >
-                            View Customer
-                          </DropdownMenuItem>
+                           <DropdownMenuItem 
+                             onClick={() => setSelectedCustomerForTasks(customer)}
+                             className="cursor-pointer"
+                           >
+                             <CheckSquare className="mr-2 h-4 w-4" />
+                             Tasks
+                           </DropdownMenuItem>
+                           <DropdownMenuItem 
+                             onClick={() => handleCustomerClick(customer)}
+                             className="cursor-pointer"
+                           >
+                             View Customer
+                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleStorno(customer)}
                             className="cursor-pointer text-destructive"
@@ -510,6 +519,15 @@ export default function Customers() {
             await updateLead(leadId, updates);
           }}
           pipelineType="leads"
+        />
+      )}
+
+      {/* Customer Tasks Modal */}
+      {selectedCustomerForTasks && (
+        <LeadTasksModal 
+          lead={selectedCustomerForTasks} 
+          open={!!selectedCustomerForTasks}
+          onOpenChange={(open) => !open && setSelectedCustomerForTasks(null)}
         />
       )}
     </div>
