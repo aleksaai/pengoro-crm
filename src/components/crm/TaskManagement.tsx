@@ -276,9 +276,15 @@ export function TaskManagement() {
       if (task.done || dueDate >= today) return false;
     }
     
-    // Assigned to filter
-    if (assignedToFilter !== "all" && task.assigned_to_name !== assignedToFilter) {
-      return false;
+    // Assigned to filter - now based on lead assignee instead of task assignee
+    if (assignedToFilter !== "all") {
+      const lead = leads.find(l => l.id === task.lead_id);
+      const leadAssigneeName = lead?.assigned_to 
+        ? profiles.find(p => p.user_id === lead.assigned_to)?.full_name || lead.assigned_to
+        : null;
+      if (leadAssigneeName !== assignedToFilter) {
+        return false;
+      }
     }
     
     return true;
@@ -290,9 +296,14 @@ export function TaskManagement() {
     return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
   });
 
-  // Get unique assigned users for filter dropdown
+  // Get unique lead assignees for filter dropdown
   const uniqueAssignedUsers = Array.from(new Set(
-    tasks.map(task => task.assigned_to_name).filter(name => name)
+    tasks.map(task => {
+      const lead = leads.find(l => l.id === task.lead_id);
+      return lead?.assigned_to 
+        ? profiles.find(p => p.user_id === lead.assigned_to)?.full_name || lead.assigned_to
+        : null;
+    }).filter(name => name)
   )).sort();
 
   const pendingTasks = tasks.filter(t => !t.done);
@@ -427,10 +438,10 @@ export function TaskManagement() {
                           <Calendar className="w-3 h-3" />
                           <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
                         </div>
-                        {task.assigned_to_name && (
+                        {lead?.assigned_to && (
                           <div className="flex items-center gap-1">
                             <User className="w-3 h-3" />
-                            <span>Assigned: {task.assigned_to_name}</span>
+                            <span>Assigned: {profiles.find(p => p.user_id === lead.assigned_to)?.full_name || lead.assigned_to}</span>
                           </div>
                         )}
                         {lead?.is_frozen && (
