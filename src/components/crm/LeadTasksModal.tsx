@@ -10,6 +10,7 @@ import { useLeadTasks } from "@/hooks/useLeadTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
+import { useProfiles } from "@/hooks/useProfiles";
 import { TaskCreateModal } from "./TaskCreateModal";
 import { TaskCompletionModal } from "./TaskCompletionModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,7 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
   const { user } = useAuth();
   const { isAdmin, isSuperAdmin } = usePermissions();
   const { toast } = useToast();
+  const { profiles } = useProfiles();
 
   // Check if lead is in Lost winback status
   const checkWinbackStatus = async () => {
@@ -323,10 +325,10 @@ export function LeadTasksModal({ open, onOpenChange, lead }: LeadTasksModalProps
                                 <Calendar className="w-3 h-3" />
                                 Due: {format(new Date(task.due_date), "PPP p")}
                               </div>
-                              {task.assigned_to_name && (
+                              {lead.assigned_to && (
                                 <div className="flex items-center gap-1">
                                   <User className="w-3 h-3" />
-                                  {task.assigned_to_name}
+                                  Assigned: {profiles.find(p => p.user_id === lead.assigned_to)?.full_name || lead.assigned_to}
                                 </div>
                               )}
                             </div>
