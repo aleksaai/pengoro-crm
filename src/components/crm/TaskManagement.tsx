@@ -453,81 +453,18 @@ export function TaskManagement() {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      {!task.done ? (
-                        <>
-                          {(() => {
-                            const leadActiveTasks = tasks.filter(t => t.lead_id === task.lead_id && !t.done);
-                            const isOnlyActiveTask = leadActiveTasks.length === 1 && leadActiveTasks[0].id === task.id;
-                            
-                            return (
-                              <>
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleMarkAsDone(task);
-                                            }}
-                                            disabled={lead?.is_frozen && !isSuperAdmin || isOnlyActiveTask}
-                                            title={isOnlyActiveTask ? "Cannot mark as done - this is the only active task for this lead" : ""}
-                                          >
-                                            Mark Done
-                                          </Button>
-                                          <Button
-                                            variant="default"
-                                            size="sm"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setSelectedTask(task);
-                                              setShowCompletionModal(true);
-                                            }}
-                                            disabled={lead?.is_frozen && !isSuperAdmin}
-                                          >
-                                            {isOnlyActiveTask ? "Complete & Add Next" : "Complete & Add Next"}
-                                          </Button>
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDeleteTask(task.id);
-                                            }}
-                                            disabled={lead?.is_frozen && !isSuperAdmin}
-                                            className="text-destructive hover:text-destructive"
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                          </Button>
-                              </>
-                            );
-                          })()}
-                        </>
-                       ) : (
-                         <>
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               handleMarkAsDone(task);
-                             }}
-                             disabled={lead?.is_frozen && !isSuperAdmin}
-                           >
-                             Reopen Task
-                           </Button>
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               handleDeleteTask(task.id);
-                             }}
-                             disabled={lead?.is_frozen && !isSuperAdmin}
-                             className="text-destructive hover:text-destructive"
-                           >
-                             <Trash2 className="w-4 h-4" />
-                           </Button>
-                         </>
-                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTask(task.id);
+                        }}
+                        disabled={lead?.is_frozen && !isSuperAdmin}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
