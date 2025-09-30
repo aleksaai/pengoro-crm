@@ -710,8 +710,33 @@ export default function LeadDetail() {
     }
   };
 
+  // Dynamically determine which pipeline this lead belongs to
+  const getCurrentPipeline = (): 'pipeline' | 'winbacks' | 'leads' => {
+    // Check if lead is in Winback pipeline (Abandoned or Lost status)
+    if (lead.status === 'Abandoned' || lead.status === 'Lost') {
+      return 'winbacks';
+    }
+    
+    // Check if lead is in Sales Pipeline
+    const salesPipelineStages = [
+      'Discovery Call Booked',
+      'Second Meeting Booked', 
+      'Follow-Up Scheduled',
+      'Closing Call Scheduled',
+      'Stuck'
+    ];
+    
+    if (salesPipelineStages.includes(lead.status)) {
+      return 'pipeline';
+    }
+    
+    // Default to leads pipeline
+    return 'leads';
+  };
+
   const getStageOptions = () => {
-    const from = location.state?.from;
+    // Use location state if available, otherwise detect dynamically
+    const from = location.state?.from || getCurrentPipeline();
     
     switch (from) {
       case 'pipeline':
