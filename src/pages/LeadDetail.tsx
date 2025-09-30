@@ -123,6 +123,8 @@ export default function LeadDetail() {
         return { text: 'Back to Sales Pipeline', route: '/' };
       case 'winbacks':
         return { text: 'Back to Winbacks', route: '/winbacks' };
+      case 'customers':
+        return { text: 'Back to Customers', route: '/customers' };
       case 'leads':
       default:
         return { text: 'Back to Leads', route: '/leads' };

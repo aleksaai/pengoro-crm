@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,12 +16,11 @@ import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AddCustomerProductDialog } from "@/components/crm/AddCustomerProductDialog";
-import { LeadDetailsModal } from "@/components/crm/LeadDetailsModal";
 import { CustomerProductsBreakdown } from "@/components/crm/CustomerProductsBreakdown";
 import { LeadTasksModal } from "@/components/crm/LeadTasksModal";
 
 export default function Customers() {
-  const [selectedCustomer, setSelectedCustomer] = useState<Lead | null>(null);
+  const navigate = useNavigate();
   const [selectedCustomerForTasks, setSelectedCustomerForTasks] = useState<Lead | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [customerTimelines, setCustomerTimelines] = useState<Map<string, {createdAt: string, closedAt: string, cycleDuration: string}>>(new Map());
@@ -209,7 +209,7 @@ export default function Customers() {
   });
 
   const handleCustomerClick = (customer: Lead) => {
-    setSelectedCustomer(customer);
+    navigate(`/leads/${customer.id}`, { state: { from: 'customers' } });
   };
 
   const handleDeleteProduct = async (productId: string) => {
@@ -508,19 +508,6 @@ export default function Customers() {
           </TableBody>
         </Table>
       </div>
-
-      {/* Customer Details Modal */}
-      {selectedCustomer && (
-        <LeadDetailsModal 
-          lead={selectedCustomer} 
-          open={!!selectedCustomer}
-          onOpenChange={(open) => !open && setSelectedCustomer(null)}
-          onUpdateLead={async (leadId: string, updates: Partial<Lead>) => {
-            await updateLead(leadId, updates);
-          }}
-          pipelineType="leads"
-        />
-      )}
 
       {/* Customer Tasks Modal */}
       {selectedCustomerForTasks && (
