@@ -54,15 +54,18 @@ export function TaskManagement() {
     }
     return saved || 'all';
   };
+  const getDefaultDueDateFilter = () => getPreference('tasks_dueDateFilter', 'all');
   
   const [statusFilter, setStatusFilter] = useState<string>(getDefaultStatusFilter());
   const [assignedToFilter, setAssignedToFilter] = useState<string>(getDefaultAssignedToFilter());
+  const [dueDateFilter, setDueDateFilter] = useState<string>(getDefaultDueDateFilter());
   
   // Update filters when preferences load
   useEffect(() => {
     if (!preferencesLoading) {
       setStatusFilter(getDefaultStatusFilter());
       setAssignedToFilter(getDefaultAssignedToFilter());
+      setDueDateFilter(getDefaultDueDateFilter());
     }
   }, [preferencesLoading, preferences, currentProfile?.full_name, isSuperAdmin]);
 
@@ -75,6 +78,11 @@ export function TaskManagement() {
   const handleAssignedToFilterChange = (value: string) => {
     setAssignedToFilter(value);
     updatePreference('tasks_assignedToFilter', value);
+  };
+
+  const handleDueDateFilterChange = (value: string) => {
+    setDueDateFilter(value);
+    updatePreference('tasks_dueDateFilter', value);
   };
 
   // Utility functions for task styling and urgency
@@ -265,7 +273,7 @@ export function TaskManagement() {
     }
   };
 
-  // Filter tasks based on status and assigned person
+  // Filter tasks based on status, assigned person, and due date
   const filteredTasks = tasks.filter(task => {
     // Status filter
     if (statusFilter === "pending" && task.done) return false;
@@ -284,6 +292,27 @@ export function TaskManagement() {
         : null;
       if (leadAssigneeName !== assignedToFilter) {
         return false;
+      }
+    }
+    
+    // Due date filter
+    if (dueDateFilter !== "all") {
+      const dueDate = new Date(task.due_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      
+      dueDate.setHours(0, 0, 0, 0);
+      
+      if (dueDateFilter === "today") {
+        if (dueDate.getTime() !== today.getTime()) return false;
+      } else if (dueDateFilter === "today-tomorrow") {
+        if (dueDate.getTime() > tomorrow.getTime()) return false;
+      } else if (dueDateFilter === "next-7-days") {
+        if (dueDate.getTime() > nextWeek.getTime()) return false;
       }
     }
     
@@ -338,7 +367,7 @@ export function TaskManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Status:</span>
               <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
@@ -367,6 +396,21 @@ export function TaskManagement() {
                       {userName}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Due Date:</span>
+              <Select value={dueDateFilter} onValueChange={handleDueDateFilterChange}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="today-tomorrow">Today & Tomorrow</SelectItem>
+                  <SelectItem value="next-7-days">Next 7 Days</SelectItem>
                 </SelectContent>
               </Select>
             </div>
