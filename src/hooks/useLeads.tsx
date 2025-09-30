@@ -351,14 +351,35 @@ export function useLeadDetails(leadId: string | null) {
       if (historyRes.error) throw historyRes.error;
       if (transcriptsRes.error) throw transcriptsRes.error;
 
-      setNotes(notesRes.data || []);
-      setHistory((historyRes.data || []).map(item => ({
+      // Deduplicate notes by ID (in case same note is fetched from multiple leads)
+      const uniqueNotesMap = new Map();
+      (notesRes.data || []).forEach(note => {
+        uniqueNotesMap.set(note.id, note);
+      });
+      const uniqueNotes = Array.from(uniqueNotesMap.values());
+      
+      // Deduplicate history by ID
+      const uniqueHistoryMap = new Map();
+      (historyRes.data || []).forEach(entry => {
+        uniqueHistoryMap.set(entry.id, entry);
+      });
+      const uniqueHistory = Array.from(uniqueHistoryMap.values());
+      
+      // Deduplicate transcripts by ID
+      const uniqueTranscriptsMap = new Map();
+      (transcriptsRes.data || []).forEach(transcript => {
+        uniqueTranscriptsMap.set(transcript.id, transcript);
+      });
+      const uniqueTranscripts = Array.from(uniqueTranscriptsMap.values());
+
+      setNotes(uniqueNotes);
+      setHistory(uniqueHistory.map(item => ({
         ...item,
         changed_fields: item.changed_fields as Record<string, any> | null,
         old_values: item.old_values as Record<string, any> | null,
         new_values: item.new_values as Record<string, any> | null,
       })));
-      setTranscripts(transcriptsRes.data || []);
+      setTranscripts(uniqueTranscripts);
     } catch (error) {
       console.error('Error fetching lead details:', error);
       toast({
