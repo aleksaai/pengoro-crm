@@ -18,7 +18,7 @@ export interface Task {
   created_by: string;
 }
 
-export function useTasks() {
+export function useTasks(statusFilter: string = 'pending', dueDateFilter: string = 'today-tomorrow') {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,19 +58,49 @@ export function useTasks() {
       clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [statusFilter, dueDateFilter]);
 
   const fetchTasks = async () => {
-    console.log('Fetching all tasks...');
+    console.log('Fetching tasks with filters:', { statusFilter, dueDateFilter });
     try {
-      // First get all tasks with lead status
-      const { data: allTasks, error } = await supabase
+      // Build the query with filters
+      let query = supabase
         .from('tasks')
         .select(`
           *,
           leads!inner(status)
-        `)
-        .order('due_date', { ascending: true });
+        `);
+      
+      // Apply status filter
+      if (statusFilter === 'pending') {
+        query = query.eq('done', false);
+      } else if (statusFilter === 'completed') {
+        query = query.eq('done', true);
+      } else if (statusFilter === 'overdue') {
+        query = query.eq('done', false).lt('due_date', new Date().toISOString());
+      }
+      
+      // Apply due date filter
+      if (dueDateFilter !== 'all') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (dueDateFilter === 'today') {
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          query = query.gte('due_date', today.toISOString()).lt('due_date', tomorrow.toISOString());
+        } else if (dueDateFilter === 'today-tomorrow') {
+          const dayAfterTomorrow = new Date(today);
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+          query = query.gte('due_date', today.toISOString()).lt('due_date', dayAfterTomorrow.toISOString());
+        } else if (dueDateFilter === 'next-7-days') {
+          const nextWeek = new Date(today);
+          nextWeek.setDate(nextWeek.getDate() + 8);
+          query = query.gte('due_date', today.toISOString()).lt('due_date', nextWeek.toISOString());
+        }
+      }
+      
+      const { data: allTasks, error } = await query.order('due_date', { ascending: true });
 
       if (error) throw error;
 

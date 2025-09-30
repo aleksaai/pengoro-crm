@@ -29,7 +29,6 @@ import { getTaskUrgencyLevel } from "@/lib/utils";
 
 export function TaskManagement() {
   const navigate = useNavigate();
-  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask } = useTasks();
   const { leads } = useLeads();
   const { profiles } = useProfiles();
   const { user } = useAuth();
@@ -45,7 +44,7 @@ export function TaskManagement() {
   const currentProfile = profiles.find(p => p.user_id === user?.id);
   
   // Initialize filters with user preferences or defaults
-  const getDefaultStatusFilter = () => getPreference('tasks_statusFilter', 'all');
+  const getDefaultStatusFilter = () => getPreference('tasks_statusFilter', 'pending');
   const getDefaultAssignedToFilter = () => {
     const saved = getPreference('tasks_assignedToFilter', null);
     // If no saved preference and user is not super admin, default to their own tasks
@@ -54,11 +53,14 @@ export function TaskManagement() {
     }
     return saved || 'all';
   };
-  const getDefaultDueDateFilter = () => getPreference('tasks_dueDateFilter', 'all');
+  const getDefaultDueDateFilter = () => getPreference('tasks_dueDateFilter', 'today-tomorrow');
   
   const [statusFilter, setStatusFilter] = useState<string>(getDefaultStatusFilter());
   const [assignedToFilter, setAssignedToFilter] = useState<string>(getDefaultAssignedToFilter());
   const [dueDateFilter, setDueDateFilter] = useState<string>(getDefaultDueDateFilter());
+  
+  // Pass filters to useTasks hook for server-side filtering
+  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask } = useTasks(statusFilter, dueDateFilter);
   
   // Update filters when preferences load
   useEffect(() => {
@@ -273,17 +275,8 @@ export function TaskManagement() {
     }
   };
 
-  // Filter tasks based on status, assigned person, and due date
+  // Filter tasks based on assigned person only (status and due date already filtered by useTasks)
   const filteredTasks = tasks.filter(task => {
-    // Status filter
-    if (statusFilter === "pending" && task.done) return false;
-    if (statusFilter === "completed" && !task.done) return false;
-    if (statusFilter === "overdue") {
-      const dueDate = new Date(task.due_date);
-      const today = new Date();
-      if (task.done || dueDate >= today) return false;
-    }
-    
     // Assigned to filter - now based on lead assignee instead of task assignee
     if (assignedToFilter !== "all") {
       const lead = leads.find(l => l.id === task.lead_id);
@@ -292,27 +285,6 @@ export function TaskManagement() {
         : null;
       if (leadAssigneeName !== assignedToFilter) {
         return false;
-      }
-    }
-    
-    // Due date filter
-    if (dueDateFilter !== "all") {
-      const dueDate = new Date(task.due_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const nextWeek = new Date(today);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      
-      dueDate.setHours(0, 0, 0, 0);
-      
-      if (dueDateFilter === "today") {
-        if (dueDate.getTime() !== today.getTime()) return false;
-      } else if (dueDateFilter === "today-tomorrow") {
-        if (dueDate.getTime() > tomorrow.getTime()) return false;
-      } else if (dueDateFilter === "next-7-days") {
-        if (dueDate.getTime() > nextWeek.getTime()) return false;
       }
     }
     
