@@ -391,10 +391,12 @@ export function useLeadDetails(leadId: string | null) {
         .eq('id', leadId)
         .single();
       
-      // Build list of lead IDs to add notes for
-      const leadIds = [leadId];
+      // Use a Set to collect unique lead IDs to avoid duplicates
+      const leadIdsSet = new Set<string>([leadId]);
+      
+      // Add related customer if exists
       if (leadData?.related_customer_id) {
-        leadIds.push(leadData.related_customer_id);
+        leadIdsSet.add(leadData.related_customer_id);
       }
       
       // Also check if this lead is a customer with related deals
@@ -404,10 +406,13 @@ export function useLeadDetails(leadId: string | null) {
         .eq('related_customer_id', leadId);
       
       if (relatedDeals && relatedDeals.length > 0) {
-        leadIds.push(...relatedDeals.map(d => d.id));
+        relatedDeals.forEach(deal => leadIdsSet.add(deal.id));
       }
 
-      // Add note for all related leads
+      // Convert Set to Array for insertion
+      const leadIds = Array.from(leadIdsSet);
+
+      // Add note for all unique related leads
       const notesToInsert = leadIds.map(id => ({
         lead_id: id,
         content,
@@ -422,7 +427,7 @@ export function useLeadDetails(leadId: string | null) {
 
       if (error) throw error;
 
-      // Add history entries for all related leads
+      // Add history entries for all unique related leads
       const historyEntries = leadIds.map(id => ({
         lead_id: id,
         action: 'Added note',
@@ -437,7 +442,9 @@ export function useLeadDetails(leadId: string | null) {
       
       toast({
         title: "Note added",
-        description: "Your note has been saved to all related leads.",
+        description: leadIds.length > 1 
+          ? "Your note has been saved to all related leads." 
+          : "Your note has been saved.",
       });
 
       return data;
