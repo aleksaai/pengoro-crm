@@ -218,49 +218,58 @@ export default function Customers() {
 
   const handleNewDeal = async (customer: Lead) => {
     try {
-      // Create a new lead with the customer's details for the sales pipeline
-      const newLeadData = {
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        source: "Existing Customer - New Deal",
-        status: "Discovery Call Booked" as const,
-        assigned_to: customer.assigned_to,
-        interested_products: customer.interested_products,
-        age: customer.age,
-        net_salary: customer.net_salary,
-        gross_salary: customer.gross_salary
-      };
-
-      await createLead(newLeadData);
-      
-      // Add specific history entry for existing customer upsell
+      // First, get the current user
       const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+
+      // Create a new lead with the customer's details for the sales pipeline
+      const { data: newLead, error: createError } = await supabase
+        .from('leads')
+        .insert({
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          source: "Existing Customer - New Deal",
+          status: "Discovery Call Booked",
+          assigned_to: customer.assigned_to,
+          interested_products: customer.interested_products,
+          age: customer.age,
+          net_salary: customer.net_salary,
+          gross_salary: customer.gross_salary,
+          related_customer_id: customer.id,
+          created_by: userId
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      
+      // Add history entries for both the new deal and the original customer
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
-        .eq('user_id', userData.user?.id)
+        .eq('user_id', userId)
         .single();
 
-      // Find the newly created lead to get its ID
-      const { data: newLead } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('email', customer.email)
-        .eq('status', 'Discovery Call Booked')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const userName = profile?.full_name || userData.user?.email || 'Unknown User';
+      
+      // Add history to the new deal
+      await supabase.from('lead_history').insert({
+        lead_id: newLead.id,
+        action: 'Upsell Creation',
+        details: 'Lead is an existing customer and is an upsell creation',
+        user_name: userName,
+        created_by: userId,
+      });
 
-      if (newLead) {
-        await supabase.from('lead_history').insert({
-          lead_id: newLead.id,
-          action: 'Upsell Creation',
-          details: 'Lead is an existing customer and is an upsale creation',
-          user_name: profile?.full_name || userData.user?.email || 'Unknown User',
-          created_by: userData.user?.id,
-        });
-      }
+      // Add history to the original customer
+      await supabase.from('lead_history').insert({
+        lead_id: customer.id,
+        action: 'New Deal Created',
+        details: `New deal created for upsell opportunity`,
+        user_name: userName,
+        created_by: userId,
+      });
       
       toast({
         title: "Success",

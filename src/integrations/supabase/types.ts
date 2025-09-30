@@ -192,6 +192,7 @@ export type Database = {
           name: string
           net_salary: number | null
           phone: string | null
+          related_customer_id: string | null
           source: string | null
           status: string
           updated_at: string
@@ -211,6 +212,7 @@ export type Database = {
           name: string
           net_salary?: number | null
           phone?: string | null
+          related_customer_id?: string | null
           source?: string | null
           status?: string
           updated_at?: string
@@ -230,11 +232,20 @@ export type Database = {
           name?: string
           net_salary?: number | null
           phone?: string | null
+          related_customer_id?: string | null
           source?: string | null
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_related_customer_id_fkey"
+            columns: ["related_customer_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
