@@ -405,67 +405,33 @@ export function useLeadDetails(leadId: string | null) {
 
       const authorName = profile?.full_name || userData.user?.email || 'Unknown User';
       
-      // Get the lead to check for related_customer_id
-      const { data: leadData } = await supabase
-        .from('leads')
-        .select('related_customer_id')
-        .eq('id', leadId)
-        .single();
-      
-      // Use a Set to collect unique lead IDs to avoid duplicates
-      const leadIdsSet = new Set<string>([leadId]);
-      
-      // Add related customer if exists
-      if (leadData?.related_customer_id) {
-        leadIdsSet.add(leadData.related_customer_id);
-      }
-      
-      // Also check if this lead is a customer with related deals
-      const { data: relatedDeals } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('related_customer_id', leadId);
-      
-      if (relatedDeals && relatedDeals.length > 0) {
-        relatedDeals.forEach(deal => leadIdsSet.add(deal.id));
-      }
-
-      // Convert Set to Array for insertion
-      const leadIds = Array.from(leadIdsSet);
-
-      // Add note for all unique related leads
-      const notesToInsert = leadIds.map(id => ({
-        lead_id: id,
-        content,
-        created_by: userData.user?.id,
-        author_name: authorName
-      }));
-      
+      // Only create ONE note for the current lead
       const { data, error } = await supabase
         .from('lead_notes')
-        .insert(notesToInsert)
+        .insert({
+          lead_id: leadId,
+          content,
+          created_by: userData.user?.id,
+          author_name: authorName
+        })
         .select();
 
       if (error) throw error;
 
-      // Add history entries for all unique related leads
-      const historyEntries = leadIds.map(id => ({
-        lead_id: id,
+      // Only create ONE history entry for the current lead
+      await supabase.from('lead_history').insert({
+        lead_id: leadId,
         action: 'Added note',
         details: content,
         created_by: userData.user?.id,
         user_name: authorName
-      }));
-      
-      await supabase.from('lead_history').insert(historyEntries);
+      });
 
       fetchLeadDetails(); // Refresh to get updated notes and history
       
       toast({
         title: "Note added",
-        description: leadIds.length > 1 
-          ? "Your note has been saved to all related leads." 
-          : "Your note has been saved.",
+        description: "Your note has been saved.",
       });
 
       return data;
