@@ -290,6 +290,21 @@ export default function Customers() {
     try {
       await updateLead(customer.id, { status: "Lost" });
       
+      // Delete all tasks for this customer (storno reason is not "Never reached" or "Future Call")
+      const { data: tasksToDelete } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('lead_id', customer.id);
+
+      if (tasksToDelete && tasksToDelete.length > 0) {
+        await supabase
+          .from('tasks')
+          .delete()
+          .eq('lead_id', customer.id);
+
+        console.log(`✅ Deleted ${tasksToDelete.length} tasks for Storno customer ${customer.id}`);
+      }
+      
       // Log the storno action in history with proper abandon reason
       await supabase.from('lead_history').insert({
         lead_id: customer.id,

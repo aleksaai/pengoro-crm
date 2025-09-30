@@ -597,6 +597,25 @@ export function PipelineDashboard() {
         .eq('user_id', userData.user?.id)
         .single();
 
+      // Delete all tasks if NOT "Never reached" or "Future Call"
+      const shouldDeleteTasks = !['Never reached', 'Future Call'].includes(reason);
+      
+      if (shouldDeleteTasks) {
+        const { data: tasksToDelete } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('lead_id', pendingLostLead.id);
+
+        if (tasksToDelete && tasksToDelete.length > 0) {
+          await supabase
+            .from('tasks')
+            .delete()
+            .eq('lead_id', pendingLostLead.id);
+
+          console.log(`✅ Deleted ${tasksToDelete.length} tasks for Lost lead ${pendingLostLead.id}`);
+        }
+      }
+
       // Create lead history entry with the abandon reason
       await supabase
         .from('lead_history')
