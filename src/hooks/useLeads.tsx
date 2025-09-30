@@ -237,6 +237,58 @@ export function useLeads() {
         new_values: Object.keys(newValues).length > 0 ? newValues : null,
       }]);
 
+      // If status changed to "Lost", delete all tasks (except for "Never reached" and "Future Call" winbacks)
+      if (updates.status === 'Lost' && currentLead.status !== 'Lost') {
+        try {
+          // Get the latest history entry to determine abandon reason
+          const { data: historyData } = await supabase
+            .from('lead_history')
+            .select('details')
+            .eq('lead_id', leadId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          const abandonReason = historyData?.details?.includes('Reason: ') 
+            ? historyData.details.split('Reason: ')[1]?.trim() 
+            : null;
+
+          // Only delete tasks if NOT "Never reached" or "Future Call"
+          const shouldDeleteTasks = abandonReason && 
+            !['Never reached', 'Future Call'].includes(abandonReason);
+
+          if (shouldDeleteTasks) {
+            // Get all tasks for this lead
+            const { data: tasksToDelete } = await supabase
+              .from('tasks')
+              .select('id')
+              .eq('lead_id', leadId);
+
+            if (tasksToDelete && tasksToDelete.length > 0) {
+              // Delete all tasks
+              await supabase
+                .from('tasks')
+                .delete()
+                .eq('lead_id', leadId);
+
+              // Log the deletion
+              await supabase.from('lead_history').insert([{
+                lead_id: leadId,
+                action: 'Tasks deleted',
+                details: `Automatically deleted ${tasksToDelete.length} task(s) - Lead marked as Lost (${abandonReason})`,
+                created_by: userData.data.user?.id,
+                user_name: profile?.full_name || userData.data.user?.email || 'Unknown User',
+              }]);
+
+              console.log(`Deleted ${tasksToDelete.length} tasks for Lost lead ${leadId}`);
+            }
+          }
+        } catch (taskError) {
+          console.error('Error deleting tasks for Lost lead:', taskError);
+          // Don't throw - we still want the lead update to succeed
+        }
+      }
+
       setLeads(prev => prev.map(lead => lead.id === leadId ? data : lead));
       
       toast({
