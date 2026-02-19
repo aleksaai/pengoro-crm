@@ -372,12 +372,9 @@ export type Database = {
         Args: { lead_uuid: string; user_uuid: string }
         Returns: boolean
       }
-      check_and_freeze_overdue_leads: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      check_and_freeze_overdue_leads: { Args: never; Returns: undefined }
       get_leads_sorted_by_task_urgency: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           age: number
           assigned_to: string
