@@ -1,0 +1,1 @@
+UPDATE public.profiles SET account_type = 'super_admin' WHERE user_id = 'fc6e2189-d7d8-4059-b29c-c44adcc67257';
