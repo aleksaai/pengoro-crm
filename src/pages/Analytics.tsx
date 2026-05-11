@@ -2,7 +2,7 @@ import { PipelineConversionAnalytics } from "@/components/analytics/PipelineConv
 import { CommissionAnalyticsByAgent } from "@/components/analytics/CommissionAnalyticsByAgent";
 import { AverageDealValueCard } from "@/components/analytics/AverageDealValueCard";
 import { DealDurationCard } from "@/components/analytics/DealDurationCard";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -74,9 +74,10 @@ const Analytics = () => {
   ];
 
   // Real-time updates
+  const analyticsChannelRef = useRef(`analytics-${Math.random().toString(36).slice(2)}`);
   useEffect(() => {
     const channel = supabase
-      .channel('analytics-updates')
+      .channel(analyticsChannelRef.current)
       .on(
         'postgres_changes',
         {

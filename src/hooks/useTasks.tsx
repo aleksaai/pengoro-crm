@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Task {
@@ -21,6 +21,7 @@ export interface Task {
 export function useTasks(statusFilter: string = 'pending', dueDateFilter: string = 'today-tomorrow') {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelIdRef = useRef(`global-tasks-${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
     fetchTasks();
@@ -28,7 +29,7 @@ export function useTasks(statusFilter: string = 'pending', dueDateFilter: string
     // Set up real-time subscription for tasks with debouncing
     console.log('Setting up real-time subscription for global tasks');
     let timeoutId: NodeJS.Timeout;
-    
+
     const debouncedFetchTasks = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
@@ -36,9 +37,10 @@ export function useTasks(statusFilter: string = 'pending', dueDateFilter: string
         fetchTasks();
       }, 1000); // 1000ms debounce for global tasks to reduce API calls
     };
-    
+
+    const channelName = `${channelIdRef.current}-${statusFilter}-${dueDateFilter}`;
     const channel = supabase
-      .channel('global-tasks-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
