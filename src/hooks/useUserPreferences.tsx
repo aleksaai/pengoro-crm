@@ -13,6 +13,12 @@ export function useUserPreferences() {
   const [preferences, setPreferences] = useState<UserPreferences>({});
   const [loading, setLoading] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const preferencesRef = useRef<UserPreferences>(preferences);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    preferencesRef.current = preferences;
+  }, [preferences]);
 
   useEffect(() => {
     if (user) {
@@ -47,7 +53,7 @@ export function useUserPreferences() {
     if (!user) return;
 
     // Update local state immediately for smooth UX
-    const newPreferences = { ...preferences, [key]: value };
+    const newPreferences = { ...preferencesRef.current, [key]: value };
     setPreferences(newPreferences);
 
     // Debounce the database update
@@ -61,7 +67,7 @@ export function useUserPreferences() {
           .from('user_preferences')
           .upsert({
             user_id: user.id,
-            preferences: newPreferences
+            preferences: { ...preferencesRef.current }
           }, {
             onConflict: 'user_id'
           });
@@ -73,7 +79,7 @@ export function useUserPreferences() {
         fetchPreferences();
       }
     }, 300); // 300ms debounce
-  }, [user, preferences]);
+  }, [user]);
 
   const getPreference = useCallback((key: string, defaultValue: any = null) => {
     return preferences[key] ?? defaultValue;
