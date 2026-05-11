@@ -1,4 +1,4 @@
-import { BarChart3, Users, CheckSquare, RotateCcw, TrendingUp, UserCheck, Info } from "lucide-react";
+import { BarChart3, Users, CheckSquare, RotateCcw, TrendingUp, UserCheck, Info, Shield } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
 import pengoroLogo from "@/assets/pengoro-logo.png";
 
 const navItems = [
@@ -32,6 +33,12 @@ export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { accountType } = useAuth();
+  const isAdmin = accountType === "super_admin" || accountType === "admin";
+
+  const allNavItems = isAdmin
+    ? [...navItems, { title: "Admin", url: "/admin", icon: Shield }]
+    : navItems;
 
   return (
     <Sidebar collapsible="icon" className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
@@ -63,7 +70,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-3">
-              {navItems.map((item, index) => {
+              {allNavItems.map((item, index) => {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>

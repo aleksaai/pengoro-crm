@@ -12,17 +12,21 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password, full_name } = await req.json();
-    
+    const { email, password, full_name, account_type } = await req.json();
+
     if (!email || !password || !full_name) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: email, password, full_name' }),
-        { 
-          status: 400, 
+        {
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
+
+    // Validate account_type if provided
+    const validRoles = ['super_admin', 'admin', 'user'];
+    const role = validRoles.includes(account_type) ? account_type : 'user';
 
     console.log('Creating user account for:', email);
     
@@ -104,11 +108,20 @@ Deno.serve(async (req) => {
       if (!profileExists) {
         const { error: insertError } = await supabaseAdmin
           .from('profiles')
-          .insert({ user_id: targetUserId, email: targetEmail, full_name });
+          .insert({ user_id: targetUserId, email: targetEmail, full_name, account_type: role });
         if (insertError) {
           console.error('Profile insert failed:', insertError);
         } else {
-          console.log('Profile created for user:', { user_id: targetUserId });
+          console.log('Profile created for user:', { user_id: targetUserId, account_type: role });
+        }
+      } else {
+        // Update existing profile with role if provided
+        const { error: updateError } = await supabaseAdmin
+          .from('profiles')
+          .update({ full_name, account_type: role })
+          .eq('user_id', targetUserId);
+        if (updateError) {
+          console.error('Profile update failed:', updateError);
         }
       }
     }

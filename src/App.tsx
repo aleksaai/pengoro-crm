@@ -50,7 +50,13 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/setup" element={<Setup />} />
-            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <Admin />
+                </CRMLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/" element={
               <ProtectedRoute>
                 <CRMLayout>
