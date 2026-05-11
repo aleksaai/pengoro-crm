@@ -143,8 +143,33 @@ export default function Login() {
                 />
               </div>
 
-              <Button 
-                type="submit" 
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!email) {
+                      setError("Bitte gib zuerst deine E-Mail-Adresse ein.");
+                      return;
+                    }
+                    setError("");
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/reset-password`,
+                    });
+                    if (error) {
+                      setError(error.message);
+                    } else {
+                      setError("");
+                      alert("Passwort-Reset-Link wurde an " + email + " gesendet.");
+                    }
+                  }}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Passwort vergessen?
+                </button>
+              </div>
+
+              <Button
+                type="submit"
                 className="w-full modern-button"
                 disabled={loading}
               >

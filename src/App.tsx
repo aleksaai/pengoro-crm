@@ -18,7 +18,23 @@ import Login from "./pages/Login";
 import Setup from "./pages/Setup";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
 const queryClient = new QueryClient();
+
+function PasswordRecoveryRedirect() {
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        window.location.href = "/reset-password";
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+  return null;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -26,9 +42,11 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PasswordRecoveryRedirect />
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/" element={
