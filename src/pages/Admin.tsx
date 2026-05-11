@@ -4,12 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLeads, Lead } from "@/hooks/useLeads";
 import { useProfiles } from "@/hooks/useProfiles";
+import { useTasks } from "@/hooks/useTasks";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -35,6 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   UserPlus,
   Shield,
@@ -49,9 +55,14 @@ import {
   Search,
   ArrowUpDown,
   Eye,
+  CalendarIcon,
+  Plus,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { format, isPast } from "date-fns";
 import { de } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -71,6 +82,9 @@ interface TaskInfo {
   done: boolean;
   assigned_to: string;
 }
+
+type SortField = "name" | "status" | "assigned_to" | "created_at";
+type SortDir = "asc" | "desc";
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -139,7 +153,8 @@ export default function Admin() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { leads, loading: leadsLoading } = useLeads();
-  const { profiles: profilesList, loading: profilesListLoading, refetch: refetchProfiles } = useProfiles();
+  const { profiles: profilesList } = useProfiles();
+  const { createTask } = useTasks();
 
   // ── User management state ──
   const [profiles, setProfiles] = useState<ProfileWithRole[]>([]);
@@ -160,9 +175,20 @@ export default function Admin() {
   const [unfreezing, setUnfreezing] = useState(false);
   const [leadSearch, setLeadSearch] = useState("");
   const [leadStatusFilter, setLeadStatusFilter] = useState<string>("all");
-  const [leadFreezeFilter, setLeadFreezeFilter] = useState<string>("frozen");
+  const [leadFreezeFilter, setLeadFreezeFilter] = useState<string>("all");
+  const [leadAssignmentFilter, setLeadAssignmentFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [changingStatus, setChangingStatus] = useState<string | null>(null);
   const [changingAssignment, setChangingAssignment] = useState<string | null>(null);
+
+  // ── Unfreeze + Follow-up task state ──
+  const [createFollowUp, setCreateFollowUp] = useState(true);
+  const [followUpTitle, setFollowUpTitle] = useState("");
+  const [followUpDescription, setFollowUpDescription] = useState("");
+  const [followUpDate, setFollowUpDate] = useState<Date | undefined>(undefined);
+  const [followUpTime, setFollowUpTime] = useState("09:00");
+  const [followUpAssignee, setFollowUpAssignee] = useState<string>("");
 
   const isAllowed = accountType === "super_admin" || accountType === "admin";
 
@@ -195,7 +221,6 @@ export default function Admin() {
         .in("lead_id", frozenIds)
         .eq("done", false)
         .order("due_date", { ascending: true });
-
       if (error) throw error;
 
       const grouped: Record<string, TaskInfo[]> = {};
@@ -211,21 +236,32 @@ export default function Admin() {
     }
   };
 
-  // ── Filtered leads for the lead management tab ──
+  // ── Get unique agent names ──
+  const agentNames = useMemo(
+    () => profilesList.map((p) => p.full_name).filter(Boolean).sort(),
+    [profilesList]
+  );
+
+  // ── Get unique assigned_to values actually in use ──
+  const usedAssignees = useMemo(() => {
+    const set = new Set(leads.map((l) => l.assigned_to).filter(Boolean));
+    return Array.from(set).sort() as string[];
+  }, [leads]);
+
+  // ── Filtered + sorted leads ──
   const filteredLeads = useMemo(() => {
     let result = [...leads];
 
     // Freeze filter
-    if (leadFreezeFilter === "frozen") {
-      result = result.filter((l) => l.is_frozen);
-    } else if (leadFreezeFilter === "active") {
-      result = result.filter((l) => !l.is_frozen);
-    }
+    if (leadFreezeFilter === "frozen") result = result.filter((l) => l.is_frozen);
+    else if (leadFreezeFilter === "active") result = result.filter((l) => !l.is_frozen);
 
     // Status filter
-    if (leadStatusFilter !== "all") {
-      result = result.filter((l) => l.status === leadStatusFilter);
-    }
+    if (leadStatusFilter !== "all") result = result.filter((l) => l.status === leadStatusFilter);
+
+    // Assignment filter
+    if (leadAssignmentFilter === "unassigned") result = result.filter((l) => !l.assigned_to);
+    else if (leadAssignmentFilter !== "all") result = result.filter((l) => l.assigned_to === leadAssignmentFilter);
 
     // Search
     if (leadSearch.trim()) {
@@ -239,8 +275,28 @@ export default function Admin() {
       );
     }
 
+    // Sort
+    result.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "name":
+          cmp = (a.name || "").localeCompare(b.name || "");
+          break;
+        case "status":
+          cmp = (a.status || "").localeCompare(b.status || "");
+          break;
+        case "assigned_to":
+          cmp = (a.assigned_to || "zzz").localeCompare(b.assigned_to || "zzz");
+          break;
+        case "created_at":
+          cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+      }
+      return sortDir === "desc" ? -cmp : cmp;
+    });
+
     return result;
-  }, [leads, leadFreezeFilter, leadStatusFilter, leadSearch]);
+  }, [leads, leadFreezeFilter, leadStatusFilter, leadAssignmentFilter, leadSearch, sortField, sortDir]);
 
   // ── Profiles fetch ──
   const fetchProfiles = async () => {
@@ -301,33 +357,42 @@ export default function Admin() {
     }
   };
 
+  // ── Open unfreeze dialog ──
+  const openUnfreezeDialog = (lead: Lead) => {
+    setUnfreezeConfirm(lead);
+    setCreateFollowUp(true);
+    setFollowUpTitle("Nachfassen: " + lead.name);
+    setFollowUpDescription("");
+    // Default: tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setFollowUpDate(tomorrow);
+    setFollowUpTime("09:00");
+    setFollowUpAssignee(lead.assigned_to || "");
+  };
+
   // ── Unfreeze lead ──
   const handleUnfreeze = async () => {
     if (!unfreezeConfirm) return;
     setUnfreezing(true);
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      const adminProfile = profiles.find((p) => p.user_id === userData.user?.id);
+
       // Mark all overdue incomplete tasks as done for this lead
-      const overdueTasks = frozenLeadTasks[unfreezeConfirm.id] || [];
-      const overdueIds = overdueTasks.filter((t) => isPast(new Date(t.due_date))).map((t) => t.id);
+      const overdueTasks = (frozenLeadTasks[unfreezeConfirm.id] || []).filter((t) => isPast(new Date(t.due_date)));
+      const overdueIds = overdueTasks.map((t) => t.id);
 
       if (overdueIds.length > 0) {
-        const { error: taskError } = await supabase
-          .from("tasks")
-          .update({ done: true })
-          .in("id", overdueIds);
+        const { error: taskError } = await supabase.from("tasks").update({ done: true }).in("id", overdueIds);
         if (taskError) throw taskError;
       }
 
-      // Also directly unfreeze the lead (the trigger should do this, but be explicit)
-      const { error: leadError } = await supabase
-        .from("leads")
-        .update({ is_frozen: false })
-        .eq("id", unfreezeConfirm.id);
+      // Directly unfreeze the lead
+      const { error: leadError } = await supabase.from("leads").update({ is_frozen: false }).eq("id", unfreezeConfirm.id);
       if (leadError) throw leadError;
 
       // Add history entry
-      const { data: userData } = await supabase.auth.getUser();
-      const adminProfile = profiles.find((p) => p.user_id === userData.user?.id);
       await supabase.from("lead_history").insert({
         lead_id: unfreezeConfirm.id,
         action: "Lead Unfrozen",
@@ -336,12 +401,44 @@ export default function Admin() {
         user_name: adminProfile?.full_name || "Admin",
       });
 
+      // Create follow-up task if requested
+      if (createFollowUp && followUpTitle.trim() && followUpDate) {
+        const assigneeProfile = profilesList.find((p) => p.full_name === followUpAssignee);
+        const assigneeId = assigneeProfile?.user_id || userData.user?.id || "";
+        const assigneeName = followUpAssignee || adminProfile?.full_name || "Admin";
+
+        await createTask({
+          lead_id: unfreezeConfirm.id,
+          lead_name: unfreezeConfirm.name,
+          email_address: unfreezeConfirm.email || null,
+          phone_number: unfreezeConfirm.phone || null,
+          title: followUpTitle.trim(),
+          description: followUpDescription.trim() || null,
+          due_date: format(
+            new Date(`${format(followUpDate, "yyyy-MM-dd")}T${followUpTime}`),
+            "yyyy-MM-dd HH:mm:ssXXX"
+          ),
+          assigned_to: assigneeId,
+          assigned_to_name: assigneeName,
+          done: false,
+          created_by: userData.user?.id || "",
+        });
+
+        await supabase.from("lead_history").insert({
+          lead_id: unfreezeConfirm.id,
+          action: "Follow-Up Task Created",
+          details: `Neuer Follow-Up-Task erstellt: "${followUpTitle.trim()}" — fällig ${format(followUpDate, "dd.MM.yyyy", { locale: de })} ${followUpTime}, zugewiesen an ${assigneeName}`,
+          created_by: userData.user?.id,
+          user_name: adminProfile?.full_name || "Admin",
+        });
+      }
+
       toast({
         title: "Lead entfroren",
-        description: `${unfreezeConfirm.name} wurde erfolgreich freigeschaltet.`,
+        description: `${unfreezeConfirm.name} wurde freigeschaltet.${createFollowUp && followUpTitle.trim() && followUpDate ? " Follow-Up-Task wurde erstellt." : ""}`,
       });
+
       setUnfreezeConfirm(null);
-      // Refresh tasks
       setTimeout(() => fetchFrozenLeadTasks(), 500);
     } catch (e: any) {
       toast({ title: "Fehler", description: e.message || "Lead konnte nicht entfroren werden.", variant: "destructive" });
@@ -391,14 +488,14 @@ export default function Admin() {
       await supabase.from("lead_history").insert({
         lead_id: leadId,
         action: "Reassigned by Admin",
-        details: `Zugewiesen: ${lead?.assigned_to || "Niemand"} → ${newAssignment}`,
+        details: `Zugewiesen: ${lead?.assigned_to || "Niemand"} → ${newAssignment || "Niemand"}`,
         created_by: userData.user?.id,
         user_name: adminProfile?.full_name || "Admin",
         old_values: { assigned_to: lead?.assigned_to },
         new_values: { assigned_to: newAssignment },
       });
 
-      toast({ title: "Zuweisung geändert", description: `Lead wurde ${newAssignment} zugewiesen.` });
+      toast({ title: "Zuweisung geändert", description: `Lead wurde ${newAssignment || "niemandem"} zugewiesen.` });
     } catch (e: any) {
       toast({ title: "Fehler", description: e.message, variant: "destructive" });
     } finally {
@@ -406,10 +503,22 @@ export default function Admin() {
     }
   };
 
-  if (!isAllowed) return null;
+  // ── Sort toggle helper ──
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
-  // Get unique agent names from profiles
-  const agentNames = profilesList.map((p) => p.full_name).filter(Boolean).sort();
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
+
+  if (!isAllowed) return null;
 
   return (
     <div className="space-y-6">
@@ -428,6 +537,11 @@ export default function Admin() {
           <TabsTrigger value="leads" className="flex items-center gap-2">
             <Lock className="h-4 w-4" />
             Lead-Management
+            {frozenLeads.length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+                {frozenLeads.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -540,12 +654,10 @@ export default function Admin() {
         <TabsContent value="leads" className="space-y-6">
           {/* Stats Cards */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card>
+            <Card className="cursor-pointer hover:border-red-300 transition-colors" onClick={() => { setLeadFreezeFilter("frozen"); setLeadStatusFilter("all"); setLeadAssignmentFilter("all"); }}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-red-500/10">
-                    <Lock className="h-5 w-5 text-red-500" />
-                  </div>
+                  <div className="p-2 rounded-lg bg-red-500/10"><Lock className="h-5 w-5 text-red-500" /></div>
                   <div>
                     <p className="text-2xl font-bold">{frozenLeads.length}</p>
                     <p className="text-xs text-muted-foreground">Gefrorene Leads</p>
@@ -553,12 +665,10 @@ export default function Admin() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="cursor-pointer hover:border-green-300 transition-colors" onClick={() => { setLeadFreezeFilter("active"); setLeadStatusFilter("all"); setLeadAssignmentFilter("all"); }}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-green-500/10">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  </div>
+                  <div className="p-2 rounded-lg bg-green-500/10"><CheckCircle className="h-5 w-5 text-green-500" /></div>
                   <div>
                     <p className="text-2xl font-bold">{leads.filter((l) => !l.is_frozen).length}</p>
                     <p className="text-xs text-muted-foreground">Aktive Leads</p>
@@ -566,12 +676,10 @@ export default function Admin() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="cursor-pointer hover:border-amber-300 transition-colors" onClick={() => { setLeadFreezeFilter("all"); setLeadStatusFilter("Stuck"); setLeadAssignmentFilter("all"); }}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/10">
-                    <AlertTriangle className="h-5 w-5 text-amber-500" />
-                  </div>
+                  <div className="p-2 rounded-lg bg-amber-500/10"><AlertTriangle className="h-5 w-5 text-amber-500" /></div>
                   <div>
                     <p className="text-2xl font-bold">{leads.filter((l) => l.status === "Stuck").length}</p>
                     <p className="text-xs text-muted-foreground">Stuck Leads</p>
@@ -579,12 +687,10 @@ export default function Admin() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="cursor-pointer hover:border-blue-300 transition-colors" onClick={() => { setLeadFreezeFilter("all"); setLeadStatusFilter("all"); setLeadAssignmentFilter("all"); }}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-500/10">
-                    <Users className="h-5 w-5 text-blue-500" />
-                  </div>
+                  <div className="p-2 rounded-lg bg-blue-500/10"><Users className="h-5 w-5 text-blue-500" /></div>
                   <div>
                     <p className="text-2xl font-bold">{leads.length}</p>
                     <p className="text-xs text-muted-foreground">Leads gesamt</p>
@@ -600,10 +706,10 @@ export default function Admin() {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg text-red-600">
                   <Lock className="h-5 w-5" />
-                  Gefrorene Leads — sofortige Aufmerksamkeit erforderlich
+                  Gefrorene Leads — sofortige Aufmerksamkeit ({frozenLeads.length})
                 </CardTitle>
                 <CardDescription>
-                  Diese Leads sind gesperrt weil überfällige Tasks nicht erledigt wurden. Du kannst sie hier manuell entfrieren.
+                  Gesperrt wegen überfälliger Tasks. Entfrieren erstellt automatisch einen Follow-Up-Task.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -647,9 +753,7 @@ export default function Admin() {
                                     </div>
                                   ))}
                                   {overdueTasks.length > 3 && (
-                                    <span className="text-xs text-muted-foreground">
-                                      +{overdueTasks.length - 3} weitere
-                                    </span>
+                                    <span className="text-xs text-muted-foreground">+{overdueTasks.length - 3} weitere</span>
                                   )}
                                 </div>
                               ) : (
@@ -658,22 +762,11 @@ export default function Admin() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => navigate(`/leads/${lead.id}`)}
-                                  className="h-8"
-                                >
-                                  <Eye className="h-3.5 w-3.5 mr-1" />
-                                  Öffnen
+                                <Button size="sm" variant="outline" onClick={() => navigate(`/leads/${lead.id}`)} className="h-8">
+                                  <Eye className="h-3.5 w-3.5 mr-1" />Öffnen
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => setUnfreezeConfirm(lead)}
-                                  className="h-8 bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                  <Unlock className="h-3.5 w-3.5 mr-1" />
-                                  Entfrieren
+                                <Button size="sm" onClick={() => openUnfreezeDialog(lead)} className="h-8 bg-green-600 hover:bg-green-700 text-white">
+                                  <Unlock className="h-3.5 w-3.5 mr-1" />Entfrieren
                                 </Button>
                               </div>
                             </TableCell>
@@ -695,7 +788,7 @@ export default function Admin() {
                 Alle Leads verwalten
               </CardTitle>
               <CardDescription>
-                Status ändern, Leads zuweisen, gefrorene Leads freischalten.
+                Filtern, sortieren, Status ändern, zuweisen, entfrieren.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -703,19 +796,14 @@ export default function Admin() {
               <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 min-w-[200px] max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Name, E-Mail, Telefon..."
-                    value={leadSearch}
-                    onChange={(e) => setLeadSearch(e.target.value)}
-                    className="pl-9"
-                  />
+                  <Input placeholder="Name, E-Mail, Telefon..." value={leadSearch} onChange={(e) => setLeadSearch(e.target.value)} className="pl-9" />
                 </div>
                 <Select value={leadFreezeFilter} onValueChange={setLeadFreezeFilter}>
-                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle Leads</SelectItem>
-                    <SelectItem value="frozen">🔒 Nur gefroren</SelectItem>
-                    <SelectItem value="active">✅ Nur aktive</SelectItem>
+                    <SelectItem value="frozen">Nur gefroren</SelectItem>
+                    <SelectItem value="active">Nur aktive</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={leadStatusFilter} onValueChange={setLeadStatusFilter}>
@@ -724,6 +812,16 @@ export default function Admin() {
                     <SelectItem value="all">Alle Status</SelectItem>
                     {ALL_STATUSES.map((s) => (
                       <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={leadAssignmentFilter} onValueChange={setLeadAssignmentFilter}>
+                  <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Mitarbeiter</SelectItem>
+                    <SelectItem value="unassigned">Nicht zugewiesen</SelectItem>
+                    {usedAssignees.map((name) => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -744,9 +842,26 @@ export default function Admin() {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-[30px]"></TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Zugewiesen an</TableHead>
+                          <TableHead>
+                            <button onClick={() => toggleSort("name")} className="flex items-center hover:text-foreground transition-colors">
+                              Name <SortIcon field="name" />
+                            </button>
+                          </TableHead>
+                          <TableHead>
+                            <button onClick={() => toggleSort("status")} className="flex items-center hover:text-foreground transition-colors">
+                              Status <SortIcon field="status" />
+                            </button>
+                          </TableHead>
+                          <TableHead>
+                            <button onClick={() => toggleSort("assigned_to")} className="flex items-center hover:text-foreground transition-colors">
+                              Zugewiesen an <SortIcon field="assigned_to" />
+                            </button>
+                          </TableHead>
+                          <TableHead>
+                            <button onClick={() => toggleSort("created_at")} className="flex items-center hover:text-foreground transition-colors">
+                              Erstellt <SortIcon field="created_at" />
+                            </button>
+                          </TableHead>
                           <TableHead className="text-right">Aktionen</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -763,37 +878,24 @@ export default function Admin() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Select
-                                value={lead.status}
-                                onValueChange={(v) => handleStatusChange(lead.id, v)}
-                                disabled={changingStatus === lead.id}
-                              >
-                                <SelectTrigger className="w-[200px] h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
+                              <Select value={lead.status} onValueChange={(v) => handleStatusChange(lead.id, v)} disabled={changingStatus === lead.id}>
+                                <SelectTrigger className="w-[190px] h-8 text-xs"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                  {ALL_STATUSES.map((s) => (
-                                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                                  ))}
+                                  {ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
                                 </SelectContent>
                               </Select>
                             </TableCell>
                             <TableCell>
-                              <Select
-                                value={lead.assigned_to || "unassigned"}
-                                onValueChange={(v) => handleAssignmentChange(lead.id, v === "unassigned" ? "" : v)}
-                                disabled={changingAssignment === lead.id}
-                              >
-                                <SelectTrigger className="w-[160px] h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
+                              <Select value={lead.assigned_to || "unassigned"} onValueChange={(v) => handleAssignmentChange(lead.id, v === "unassigned" ? "" : v)} disabled={changingAssignment === lead.id}>
+                                <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="unassigned">Nicht zugewiesen</SelectItem>
-                                  {agentNames.map((name) => (
-                                    <SelectItem key={name} value={name}>{name}</SelectItem>
-                                  ))}
+                                  {agentNames.map((name) => (<SelectItem key={name} value={name}>{name}</SelectItem>))}
                                 </SelectContent>
                               </Select>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {format(new Date(lead.created_at), "dd.MM.yy", { locale: de })}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
@@ -801,11 +903,7 @@ export default function Admin() {
                                   <Eye className="h-3.5 w-3.5" />
                                 </Button>
                                 {lead.is_frozen && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => setUnfreezeConfirm(lead)}
-                                    className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white"
-                                  >
+                                  <Button size="sm" onClick={() => openUnfreezeDialog(lead)} className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white">
                                     <Unlock className="h-3.5 w-3.5" />
                                   </Button>
                                 )}
@@ -828,31 +926,32 @@ export default function Admin() {
         </TabsContent>
       </Tabs>
 
-      {/* ═══════════ UNFREEZE CONFIRMATION DIALOG ═══════════ */}
+      {/* ═══════════ UNFREEZE + FOLLOW-UP DIALOG ═══════════ */}
       <Dialog open={!!unfreezeConfirm} onOpenChange={() => setUnfreezeConfirm(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Unlock className="h-5 w-5 text-green-600" />
-              Lead entfrieren?
+              Lead entfrieren
             </DialogTitle>
             <DialogDescription>
-              <strong>{unfreezeConfirm?.name}</strong> ist aktuell gesperrt. Beim Entfrieren werden alle überfälligen Tasks als erledigt markiert und der Lead wird wieder freigegeben.
+              <strong>{unfreezeConfirm?.name}</strong> wird freigeschaltet. Überfällige Tasks werden als erledigt markiert.
             </DialogDescription>
           </DialogHeader>
 
-          {unfreezeConfirm && (frozenLeadTasks[unfreezeConfirm.id] || []).length > 0 && (
+          {/* Overdue tasks list */}
+          {unfreezeConfirm && (frozenLeadTasks[unfreezeConfirm.id] || []).filter((t) => isPast(new Date(t.due_date))).length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Betroffene überfällige Tasks:</p>
-              <div className="rounded-md border p-3 space-y-2 bg-muted/30">
+              <p className="text-sm font-medium">Wird als erledigt markiert:</p>
+              <div className="rounded-md border p-3 space-y-2 bg-muted/30 max-h-[120px] overflow-y-auto">
                 {(frozenLeadTasks[unfreezeConfirm.id] || [])
                   .filter((t) => isPast(new Date(t.due_date)))
                   .map((task) => (
                     <div key={task.id} className="flex items-center gap-2 text-sm">
                       <Clock className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                      <span>{task.title}</span>
-                      <span className="text-muted-foreground text-xs ml-auto">
-                        fällig {format(new Date(task.due_date), "dd.MM.yyyy HH:mm", { locale: de })}
+                      <span className="truncate">{task.title}</span>
+                      <span className="text-muted-foreground text-xs ml-auto shrink-0">
+                        {format(new Date(task.due_date), "dd.MM. HH:mm", { locale: de })}
                       </span>
                     </div>
                   ))}
@@ -860,16 +959,90 @@ export default function Admin() {
             </div>
           )}
 
+          <Separator />
+
+          {/* Follow-up task section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="create-followup"
+                checked={createFollowUp}
+                onCheckedChange={(v) => setCreateFollowUp(!!v)}
+              />
+              <Label htmlFor="create-followup" className="flex items-center gap-2 cursor-pointer font-medium">
+                <Plus className="h-4 w-4" />
+                Follow-Up-Task direkt erstellen
+              </Label>
+            </div>
+
+            {createFollowUp && (
+              <div className="space-y-3 pl-7 border-l-2 border-green-500/30">
+                <div className="space-y-1.5">
+                  <Label htmlFor="fu-title" className="text-xs">Aufgabe</Label>
+                  <Input
+                    id="fu-title"
+                    value={followUpTitle}
+                    onChange={(e) => setFollowUpTitle(e.target.value)}
+                    placeholder="z.B. Anrufen und neuen Termin vereinbaren"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="fu-desc" className="text-xs">Beschreibung (optional)</Label>
+                  <Textarea
+                    id="fu-desc"
+                    value={followUpDescription}
+                    onChange={(e) => setFollowUpDescription(e.target.value)}
+                    placeholder="Weitere Details..."
+                    className="resize-none h-16 text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Datum</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-9 text-xs", !followUpDate && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                          {followUpDate ? format(followUpDate, "dd.MM.yy") : "Datum"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={followUpDate}
+                          onSelect={setFollowUpDate}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Uhrzeit</Label>
+                    <Input type="time" value={followUpTime} onChange={(e) => setFollowUpTime(e.target.value)} className="h-9 text-xs" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Zuweisen an</Label>
+                    <Select value={followUpAssignee || "unset"} onValueChange={(v) => setFollowUpAssignee(v === "unset" ? "" : v)}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Mitarbeiter" /></SelectTrigger>
+                      <SelectContent>
+                        {agentNames.map((name) => (<SelectItem key={name} value={name}>{name}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUnfreezeConfirm(null)}>
-              Abbrechen
-            </Button>
+            <Button variant="outline" onClick={() => setUnfreezeConfirm(null)}>Abbrechen</Button>
             <Button
               onClick={handleUnfreeze}
-              disabled={unfreezing}
+              disabled={unfreezing || (createFollowUp && (!followUpTitle.trim() || !followUpDate))}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
-              {unfreezing ? "Wird entfroren..." : "Entfrieren bestätigen"}
+              {unfreezing ? "Wird entfroren..." : createFollowUp ? "Entfrieren + Task erstellen" : "Entfrieren"}
             </Button>
           </DialogFooter>
         </DialogContent>
