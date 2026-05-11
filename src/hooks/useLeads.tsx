@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -260,10 +260,13 @@ export function useLeads() {
     fetchLeads();
   }, []);
 
+  // Unique channel name per hook instance to avoid conflicts when multiple components use useLeads
+  const channelIdRef = useRef(`realtime-leads-${Math.random().toString(36).slice(2)}`);
+
   // Realtime sync for leads across pages (auto-updates counts on convert/move)
   useEffect(() => {
     const channel = supabase
-      .channel('realtime-leads')
+      .channel(channelIdRef.current)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
         try {
           const newRow: any = (payload as any).new;
